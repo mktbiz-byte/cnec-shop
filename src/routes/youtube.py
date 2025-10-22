@@ -7,10 +7,12 @@ data_api_path = '/opt/.manus/.sandbox-runtime'
 if os.path.exists(data_api_path) and data_api_path not in sys.path:
     sys.path.append(data_api_path)
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, session, request
 import requests
 from src.utils.cache import cache, get_channel_cache_key, get_videos_cache_key
 from src.models.channel_database import channel_db
+from src.models.user_consent import user_consent_db
+import uuid
 
 youtube_bp = Blueprint('youtube', __name__)
 
@@ -20,14 +22,12 @@ _api_keys_cache = None
 
 def get_youtube_api_keys():
     """
-    환경변수에서 YouTube API 키 목록 가져오기
+    환경변수에서 YouTube API 키 가져오기 (단일 키만 사용)
     
-    환경변수 형식:
-    - YOUTUBE_API_KEY: 단일 키
-    - YOUTUBE_API_KEY_1, YOUTUBE_API_KEY_2, ...: 여러 키
+    ToS 준수를 위해 하나의 프로젝트만 사용
     
     Returns:
-        list: API 키 리스트
+        list: API 키 리스트 (단일 키)
     """
     global _api_keys_cache
     
@@ -37,22 +37,10 @@ def get_youtube_api_keys():
     
     api_keys = []
     
-    # 단일 키 확인
+    # 단일 키만 확인 (ToS 준수)
     single_key = os.getenv('YOUTUBE_API_KEY')
     if single_key:
         api_keys.append(single_key)
-    
-    # 여러 키 확인 (YOUTUBE_API_KEY_1, YOUTUBE_API_KEY_2, ...)
-    index = 1
-    while True:
-        key = os.getenv(f'YOUTUBE_API_KEY_{index}')
-        if not key:
-            break
-        api_keys.append(key)
-        index += 1
-    
-    # 중복 제거
-    api_keys = list(set(api_keys))
     
     # 캐시 저장
     _api_keys_cache = api_keys if api_keys else None
@@ -61,29 +49,20 @@ def get_youtube_api_keys():
 
 def get_youtube_api_key():
     """
-    YouTube API 키 가져오기 - 로드 밸런싱
+    YouTube API 키 가져오기 (단일 키)
     
-    여러 키가 있으면 라운드 로빈 방식으로 순환
+    ToS 준수를 위해 단일 프로젝트만 사용
     
     Returns:
         str: API 키
     """
-    global _api_key_index
-    
     api_keys = get_youtube_api_keys()
     
     if not api_keys:
         return None
     
-    # 단일 키면 바로 반환
-    if len(api_keys) == 1:
-        return api_keys[0]
-    
-    # 여러 키면 라운드 로빈
-    key = api_keys[_api_key_index % len(api_keys)]
-    _api_key_index += 1
-    
-    return key
+    # 단일 키 반환 (ToS 준수)
+    return api_keys[0]
 
 def resolve_channel_id(input_str, api_key):
     """핸들(@) 또는 채널명을 채널 ID로 변환"""
@@ -116,7 +95,22 @@ def resolve_channel_id(input_str, api_key):
 
 @youtube_bp.route('/channel/<channel_id>', methods=['GET'])
 def get_channel(channel_id):
-    """채널 정보 조회 (YouTube Data API v3)"""
+    """채널 정보 조회 (YouTube Data API v3) - 사용자 동의 필요"""
+    # 세션 ID 생성 또는 가져오기
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+    
+    session_id = session['session_id']
+    
+    # 사용자 동의 확인
+    if not user_consent_db.check_consent(session_id, 'youtube_data'):
+        return jsonify({
+            'error': 'User consent required',
+            'message': 'YouTube 데이터 조회를 위해서는 사용자 동의가 필요합니다.',
+            'consent_required': True,
+            'consent_url': '/api/youtube/consent'
+        }), 403
+    
     api_key = get_youtube_api_key()
     
     if not api_key:
@@ -191,11 +185,21 @@ def get_channel(channel_id):
         if 'brandingSettings' in channel and 'channel' in channel['brandingSettings']:
             result['keywords'] = channel['brandingSettings']['channel'].get('keywords', '')
         
-        # 데이터베이스에 저장
+        # 데이터 저장 로그 기록 (ToS 준수)
         try:
-            channel_db.save_channel(result)
+            user_consent_db.log_data_storage(
+                session_id=session_id,
+                data_type='channel_info',
+                data_purpose='사용자 요청에 따른 채널 정보 조회',
+                channel_id=channel_id,
+                retention_hours=24
+            )
+            
+            # 사용자 동의가 있는 경우에만 데이터베이스에 저장
+            if user_consent_db.check_consent(session_id, 'channel_storage'):
+                channel_db.save_channel(result)
         except Exception as e:
-            print(f"Failed to save channel to database: {e}")
+            print(f"Failed to log data storage: {e}")
         
         # 캐시에 저장 (24시간)
         cache_key = get_channel_cache_key(channel_id)
@@ -208,7 +212,22 @@ def get_channel(channel_id):
 
 @youtube_bp.route('/channel/<channel_id>/videos', methods=['GET'])
 def get_channel_videos(channel_id):
-    """채널의 최신 동영상 조회"""
+    """채널의 최신 동영상 조회 - 사용자 동의 필요"""
+    # 세션 ID 생성 또는 가져오기
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+    
+    session_id = session['session_id']
+    
+    # 사용자 동의 확인
+    if not user_consent_db.check_consent(session_id, 'youtube_data'):
+        return jsonify({
+            'error': 'User consent required',
+            'message': 'YouTube 데이터 조회를 위해서는 사용자 동의가 필요합니다.',
+            'consent_required': True,
+            'consent_url': '/api/youtube/consent'
+        }), 403
+    
     api_key = get_youtube_api_key()
     
     if not api_key:
@@ -298,8 +317,11 @@ def get_channel_videos(channel_id):
                 'likeCount': like_count,
                 'commentCount': comment_count,
                 'viewCountText': f"{format_count(view_count)} 조회",
+                'viewCountKorean': f"{format_count(view_count)} 조회수",  # ToS 준수
                 'likeCountText': format_count(like_count),
-                'commentCountText': format_count(comment_count)
+                'likeCountKorean': f"{format_count(like_count)} 좋아요",  # 한국어 용어
+                'commentCountText': format_count(comment_count),
+                'commentCountKorean': f"{format_count(comment_count)} 댓글"  # 한국어 용어
             })
         
         return jsonify({'videos': videos})
@@ -506,8 +528,11 @@ def get_trends():
                 'likes': like_count,
                 'comments': comment_count,
                 'viewCountText': f"{format_count(view_count)} 조회",
+                'viewCountKorean': f"{format_count(view_count)} 조회수",  # ToS 준수
                 'likeCountText': format_count(like_count),
-                'commentCountText': format_count(comment_count)
+                'likeCountKorean': f"{format_count(like_count)} 좋아요",  # 한국어 용어
+                'commentCountText': format_count(comment_count),
+                'commentCountKorean': f"{format_count(comment_count)} 댓글"  # 한국어 용어
             })
         
         return jsonify({'trends': trends})

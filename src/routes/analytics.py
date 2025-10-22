@@ -1,8 +1,10 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 import requests
 import json
 import os
 from datetime import datetime
+from src.models.user_consent import user_consent_db
+import uuid
 
 analytics_bp = Blueprint('analytics', __name__)
 
@@ -57,7 +59,22 @@ def resolve_channel_id(input_str, api_key):
 
 @analytics_bp.route('/channel/<channel_id>/performance', methods=['GET'])
 def analyze_channel_performance(channel_id):
-    """채널 성과 분석 - 실용적인 인사이트 제공"""
+    """채널 성과 분석 - YouTube API 데이터만 사용 (ToS 준수)"""
+    # 세션 ID 생성 또는 가져오기
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+    
+    session_id = session['session_id']
+    
+    # 사용자 동의 확인
+    if not user_consent_db.check_consent(session_id, 'youtube_data'):
+        return jsonify({
+            'error': 'User consent required',
+            'message': 'YouTube 데이터 분석을 위해서는 사용자 동의가 필요합니다.',
+            'consent_required': True,
+            'consent_url': '/api/youtube/consent'
+        }), 403
+    
     api_key = get_youtube_api_key()
     
     if not api_key:
@@ -132,71 +149,62 @@ def analyze_channel_performance(channel_id):
                     'comments': comments
                 })
         
-        # 5. 성과 분석
+        # 5. YouTube API 데이터 직접 제공 (ToS 준수 - 독립 메트릭 제거)
         if not videos:
             return jsonify({'error': 'No videos found'}), 404
         
-        # 평균 지표 계산
-        total_views = sum(v['views'] for v in videos)
-        total_likes = sum(v['likes'] for v in videos)
-        total_comments = sum(v['comments'] for v in videos)
-        avg_views = total_views / len(videos)
-        avg_likes = total_likes / len(videos)
-        avg_comments = total_comments / len(videos)
+        # YouTube API에서 직접 제공되는 데이터만 사용
+        # 독립적인 계산이나 도출 메트릭 제거
         
-        # 인기 영상 Top 5
+        # 인기 영상 Top 5 (조회수 기준)
         top_videos = sorted(videos, key=lambda x: x['views'], reverse=True)[:5]
         
-        # 저조한 영상 Bottom 5
-        bottom_videos = sorted(videos, key=lambda x: x['views'])[:5]
+        # 최신 영상 5개
+        recent_videos = videos[:5]
         
-        # 제목 패턴 분석
-        title_lengths = [len(v['title']) for v in videos]
-        avg_title_length = sum(title_lengths) / len(title_lengths)
-        
-        # 업로드 주기 분석
-        upload_dates = [datetime.fromisoformat(v['publishedAt'].replace('Z', '+00:00')) for v in videos]
-        if len(upload_dates) > 1:
-            date_diffs = [(upload_dates[i] - upload_dates[i+1]).days for i in range(len(upload_dates)-1)]
-            avg_upload_interval = sum(date_diffs) / len(date_diffs)
-        else:
-            avg_upload_interval = 0
-        
-        # 구독자 대비 조회수 비율
+        # 채널 기본 정보 (YouTube API 직접 데이터)
         subscribers = int(channel['statistics'].get('subscriberCount', '0'))
-        views_per_subscriber = avg_views / subscribers if subscribers > 0 else 0
+        total_channel_views = int(channel['statistics'].get('viewCount', '0'))
+        total_channel_videos = int(channel['statistics'].get('videoCount', '0'))
         
+        # ToS 준수: YouTube API 데이터만 제공, 독립 메트릭 제거
         result = {
-            'summary': {
-                'total_videos_analyzed': len(videos),
-                'avg_views': int(avg_views),
-                'avg_likes': int(avg_likes),
-                'avg_comments': int(avg_comments),
-                'avg_title_length': int(avg_title_length),
-                'avg_upload_interval_days': round(avg_upload_interval, 1),
-                'views_per_subscriber': round(views_per_subscriber, 2),
-                'subscribers': subscribers
+            'channel_info': {
+                'title': channel['snippet']['title'],
+                'description': channel['snippet']['description'],
+                'subscribers': subscribers,
+                'subscribersKorean': f"{subscribers:,} 구독자",  # ToS 준수
+                'total_views': total_channel_views,
+                'viewsKorean': f"{total_channel_views:,} 조회수",  # ToS 준수
+                'total_videos': total_channel_videos,
+                'videosKorean': f"{total_channel_videos:,} 동영상"  # ToS 준수
             },
             'top_videos': [
                 {
                     'title': v['title'],
                     'views': v['views'],
+                    'viewsKorean': f"{v['views']:,} 조회수",  # ToS 준수
                     'likes': v['likes'],
-                    'comments': v['comments']
+                    'likesKorean': f"{v['likes']:,} 좋아요",  # 한국어 용어
+                    'comments': v['comments'],
+                    'commentsKorean': f"{v['comments']:,} 댓글",  # 한국어 용어
+                    'publishedAt': v['publishedAt']
                 } for v in top_videos
             ],
-            'bottom_videos': [
+            'recent_videos': [
                 {
                     'title': v['title'],
                     'views': v['views'],
+                    'viewsKorean': f"{v['views']:,} 조회수",  # ToS 준수
                     'likes': v['likes'],
-                    'comments': v['comments']
-                } for v in bottom_videos
+                    'likesKorean': f"{v['likes']:,} 좋아요",  # 한국어 용어
+                    'comments': v['comments'],
+                    'commentsKorean': f"{v['comments']:,} 댓글",  # 한국어 용어
+                    'publishedAt': v['publishedAt']
+                } for v in recent_videos
             ],
-            'insights': {
-                'performance_vs_subscribers': 'good' if views_per_subscriber > 0.1 else 'needs_improvement',
-                'upload_consistency': 'consistent' if avg_upload_interval < 7 else 'irregular'
-            }
+            'data_source': 'YouTube Data API v3',  # 데이터 출처 명시
+            'compliance_note': '모든 데이터는 YouTube API에서 직접 제공되며, 독립적인 계산 메트릭은 포함되지 않습니다.'  # ToS 준수 명시
         }
         
         return jsonify(result)
