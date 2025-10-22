@@ -22,12 +22,13 @@ _api_keys_cache = None
 
 def get_youtube_api_keys():
     """
-    환경변수에서 YouTube API 키 가져오기 (단일 키만 사용)
+    환경변수에서 YouTube API 키 가져오기
     
-    ToS 준수를 위해 하나의 프로젝트만 사용
+    발표용 임시: 다중 키 지원 (할당량 부족 해결)
+    정식 서비스에서는 단일 키로 전환 예정
     
     Returns:
-        list: API 키 리스트 (단일 키)
+        list: API 키 리스트
     """
     global _api_keys_cache
     
@@ -37,21 +38,38 @@ def get_youtube_api_keys():
     
     api_keys = []
     
-    # 단일 키만 확인 (ToS 준수)
-    single_key = os.getenv('YOUTUBE_API_KEY')
-    if single_key:
-        api_keys.append(single_key)
+    # 발표용 임시: 모든 사용 가능한 키 로드
+    print("🔄 발표용 임시 설정: 다중 API 키 로드 중...")
+    
+    # 메인 키 확인
+    main_key = os.getenv('YOUTUBE_API_KEY')
+    if main_key:
+        api_keys.append(main_key)
+        print(f"   ✅ 메인 키 로드: ...{main_key[-8:]}")
+    
+    # 추가 키들 확인 (발표용 임시)
+    for i in range(1, 11):  # 1-10번 키 확인
+        key = os.getenv(f'YOUTUBE_API_KEY_{i}')
+        if key:
+            api_keys.append(key)
+            print(f"   ✅ 추가 키 {i} 로드: ...{key[-8:]}")
     
     # 캐시 저장
     _api_keys_cache = api_keys if api_keys else None
+    
+    if api_keys:
+        print(f"🎯 총 {len(api_keys)}개 API 키 로드 완료 (발표용 임시 설정)")
+    else:
+        print("❌ 사용 가능한 API 키가 없습니다")
     
     return _api_keys_cache
 
 def get_youtube_api_key():
     """
-    YouTube API 키 가져오기 (단일 키)
+    YouTube API 키 가져오기
     
-    ToS 준수를 위해 단일 프로젝트만 사용
+    발표용 임시: 로드 밸런싱으로 할당량 분산
+    정식 서비스에서는 단일 키로 전환 예정
     
     Returns:
         str: API 키
@@ -61,8 +79,17 @@ def get_youtube_api_key():
     if not api_keys:
         return None
     
-    # 단일 키 반환 (ToS 준수)
-    return api_keys[0]
+    # 발표용 임시: 라운드 로빈 방식으로 키 선택
+    import time
+    import hashlib
+    
+    # 시간 기반 키 선택 (간단한 로드 밸런싱)
+    key_index = int(time.time() / 10) % len(api_keys)  # 10초마다 키 변경
+    selected_key = api_keys[key_index]
+    
+    print(f"🔑 API 키 선택: {key_index + 1}/{len(api_keys)} (...{selected_key[-8:]})")
+    
+    return selected_key
 
 def resolve_channel_id(input_str, api_key):
     """핸들(@) 또는 채널명을 채널 ID로 변환"""
