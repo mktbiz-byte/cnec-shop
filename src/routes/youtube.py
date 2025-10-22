@@ -19,6 +19,7 @@ youtube_bp = Blueprint('youtube', __name__)
 # API 키 로드 밸런싱을 위한 전역 변수
 _api_key_index = 0
 _api_keys_cache = None
+_current_key_index = 0
 
 def get_youtube_api_keys():
     """
@@ -48,46 +49,62 @@ def get_youtube_api_keys():
         print(f"   ✅ 메인 키 로드: ...{main_key[-8:]}")
     
     # 추가 키들 확인 (발표용 임시)
-    for i in range(1, 11):  # 1-10번 키 확인
+    for i in range(1, 21):  # 1-20번 키까지 확인 (더 많은 키 지원)
         key = os.getenv(f'YOUTUBE_API_KEY_{i}')
-        if key:
+        if key and key not in api_keys:  # 중복 방지
             api_keys.append(key)
             print(f"   ✅ 추가 키 {i} 로드: ...{key[-8:]}")
+    
+    # Gemini 키들도 확인 (다른 프로젝트의 키들)
+    for i in range(1, 11):
+        key = os.getenv(f'GEMINI_API_KEY_{i}')
+        if key and key not in api_keys:
+            api_keys.append(key)
+            print(f"   ✅ Gemini 키 {i} 로드: ...{key[-8:]}")
+    
+    # 중복 제거
+    api_keys = list(dict.fromkeys(api_keys))  # 순서 유지하면서 중복 제거
     
     # 캐시 저장
     _api_keys_cache = api_keys if api_keys else None
     
     if api_keys:
         print(f"🎯 총 {len(api_keys)}개 API 키 로드 완료 (발표용 임시 설정)")
+        print(f"🔄 로테이션 모드: 요청마다 다음 키로 자동 전환")
+        for idx, key in enumerate(api_keys):
+            print(f"   [{idx+1}] ...{key[-8:]}")
     else:
         print("❌ 사용 가능한 API 키가 없습니다")
     
     return _api_keys_cache
 
+
+
 def get_youtube_api_key():
     """
     YouTube API 키 가져오기
     
-    발표용 임시: 로드 밸런싱으로 할당량 분산
+    발표용 임시: 라운드 로빈 방식으로 할당량 분산
     정식 서비스에서는 단일 키로 전환 예정
     
     Returns:
         str: API 키
     """
+    global _current_key_index
+    
     api_keys = get_youtube_api_keys()
     
     if not api_keys:
+        print("❌ 사용 가능한 API 키가 없습니다")
         return None
     
-    # 발표용 임시: 라운드 로빈 방식으로 키 선택
-    import time
-    import hashlib
+    # 발표용 임시: 요청마다 다음 키로 로테이션
+    selected_key = api_keys[_current_key_index]
     
-    # 시간 기반 키 선택 (간단한 로드 밸런싱)
-    key_index = int(time.time() / 10) % len(api_keys)  # 10초마다 키 변경
-    selected_key = api_keys[key_index]
+    print(f"🔑 API 키 선택: {_current_key_index + 1}/{len(api_keys)} (...{selected_key[-8:]})")
     
-    print(f"🔑 API 키 선택: {key_index + 1}/{len(api_keys)} (...{selected_key[-8:]})")
+    # 다음 요청을 위해 인덱스 증가
+    _current_key_index = (_current_key_index + 1) % len(api_keys)
     
     return selected_key
 

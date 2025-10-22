@@ -28,6 +28,7 @@ from src.routes.search_history_routes import search_history_bp
 from src.routes.shorts_planner import shorts_planner_bp
 from src.routes.consent import consent_bp
 from src.routes.data_management import data_management_bp
+from src.routes.debug_keys import debug_keys_bp
 from src.utils.data_retention import data_retention_manager
 from src.middleware.visitor_tracker import track_visitor
 
@@ -56,6 +57,7 @@ app.register_blueprint(search_history_bp)  # /api/search-history
 app.register_blueprint(shorts_planner_bp)  # /api/shorts-planner
 app.register_blueprint(consent_bp, url_prefix='/api/youtube')  # /api/youtube/consent
 app.register_blueprint(data_management_bp, url_prefix='/api/data')  # /api/data
+app.register_blueprint(debug_keys_bp, url_prefix='/api/debug')  # /api/debug (발표용 임시)
 
 # 저장된 API 키 로드
 init_api_keys()
