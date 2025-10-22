@@ -146,14 +146,15 @@ def get_channel(channel_id):
     
     session_id = session['session_id']
     
-    # 사용자 동의 확인
-    if not user_consent_db.check_consent(session_id, 'youtube_data'):
-        return jsonify({
-            'error': 'User consent required',
-            'message': 'YouTube 데이터 조회를 위해서는 사용자 동의가 필요합니다.',
-            'consent_required': True,
-            'consent_url': '/api/youtube/consent'
-        }), 403
+    # 발표용 임시: 사용자 동의 체크 우회
+    print("🎙️ 발표용 임시: 사용자 동의 체크 우회")
+    # if not user_consent_db.check_consent(session_id, 'youtube_data'):
+    #     return jsonify({
+    #         'error': 'User consent required',
+    #         'message': 'YouTube 데이터 조회를 위해서는 사용자 동의가 필요합니다.',
+    #         'consent_required': True,
+    #         'consent_url': '/api/youtube/consent'
+    #     }), 403
     
     api_key = get_youtube_api_key()
     
@@ -176,10 +177,35 @@ def get_channel(channel_id):
             'key': api_key
         }
         
+        print(f"🚀 YouTube API 호출: {url}")
+        print(f"🔑 사용 키: ...{api_key[-8:]}")
+        print(f"🎯 채널 ID: {channel_id}")
+        
         response = requests.get(url, params=params)
         
+        print(f"📊 API 응답 상태: {response.status_code}")
+        
+        if response.status_code == 403:
+            print("❌ API 할당량 초과 또는 권한 오류")
+            print(f"📝 오류 응답: {response.text[:500]}")
+            
+            # 다른 키로 재시도
+            retry_key = get_youtube_api_key()
+            if retry_key != api_key:
+                print(f"🔄 다른 키로 재시도: ...{retry_key[-8:]}")
+                params['key'] = retry_key
+                response = requests.get(url, params=params)
+                print(f"📊 재시도 응답 상태: {response.status_code}")
+        
         if response.status_code != 200:
-            return jsonify({'error': 'Failed to fetch channel data'}), response.status_code
+            error_data = response.json() if response.headers.get('content-type', '').startswith('application/json') else {}
+            return jsonify({
+                'error': 'Failed to fetch channel data',
+                'status_code': response.status_code,
+                'api_error': error_data.get('error', {}),
+                'current_key': f"...{api_key[-8:]}",
+                'total_keys_available': len(get_youtube_api_keys()) if get_youtube_api_keys() else 0
+            }), response.status_code
         
         data = response.json()
         
@@ -263,14 +289,15 @@ def get_channel_videos(channel_id):
     
     session_id = session['session_id']
     
-    # 사용자 동의 확인
-    if not user_consent_db.check_consent(session_id, 'youtube_data'):
-        return jsonify({
-            'error': 'User consent required',
-            'message': 'YouTube 데이터 조회를 위해서는 사용자 동의가 필요합니다.',
-            'consent_required': True,
-            'consent_url': '/api/youtube/consent'
-        }), 403
+    # 발표용 임시: 사용자 동의 체크 우회
+    print("🎙️ 발표용 임시: 사용자 동의 체크 우회")
+    # if not user_consent_db.check_consent(session_id, 'youtube_data'):
+    #     return jsonify({
+    #         'error': 'User consent required',
+    #         'message': 'YouTube 데이터 조회를 위해서는 사용자 동의가 필요합니다.',
+    #         'consent_required': True,
+    #         'consent_url': '/api/youtube/consent'
+    #     }), 403
     
     api_key = get_youtube_api_key()
     
