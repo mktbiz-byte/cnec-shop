@@ -4,12 +4,29 @@
 
 import os
 import sqlite3
-import schedule
 import time
 import threading
 from datetime import datetime, timedelta
-from src.models.user_consent import user_consent_db
-from src.utils.cache import cache
+
+# schedule 패키지를 선택적으로 import
+try:
+    import schedule
+    SCHEDULE_AVAILABLE = True
+except ImportError:
+    SCHEDULE_AVAILABLE = False
+    print("⚠️ schedule 패키지가 없습니다. 자동 스케줄링이 비활성화됩니다.")
+
+try:
+    from src.models.user_consent import user_consent_db
+except ImportError:
+    user_consent_db = None
+    print("⚠️ user_consent_db를 로드할 수 없습니다.")
+
+try:
+    from src.utils.cache import cache
+except ImportError:
+    cache = None
+    print("⚠️ cache를 로드할 수 없습니다.")
 
 class DataRetentionManager:
     """데이터 보존 기간 관리자"""
@@ -34,6 +51,10 @@ class DataRetentionManager:
     
     def setup_scheduler(self):
         """자동 정리 스케줄러 설정"""
+        if not SCHEDULE_AVAILABLE:
+            print("⚠️ schedule 패키지가 없어 스케줄러가 비활성화됩니다.")
+            return
+            
         # 매시간 실행
         schedule.every().hour.do(self.cleanup_expired_data)
         
@@ -49,6 +70,9 @@ class DataRetentionManager:
     
     def run_scheduler(self):
         """스케줄러 실행"""
+        if not SCHEDULE_AVAILABLE:
+            return
+            
         while True:
             schedule.run_pending()
             time.sleep(60)  # 1분마다 체크
@@ -78,8 +102,11 @@ class DataRetentionManager:
     def cleanup_user_consent(self):
         """사용자 동의 데이터 정리"""
         try:
-            user_consent_db.cleanup_expired_data()
-            print("사용자 동의 데이터 정리 완료")
+            if user_consent_db:
+                user_consent_db.cleanup_expired_data()
+                print("사용자 동의 데이터 정리 완료")
+            else:
+                print("사용자 동의 DB가 사용할 수 없습니다.")
         except Exception as e:
             print(f"사용자 동의 데이터 정리 실패: {e}")
     
@@ -115,9 +142,11 @@ class DataRetentionManager:
         try:
             # 캐시 시스템의 만료된 항목들은 자동으로 정리되지만
             # 명시적으로 정리할 수 있는 경우 여기서 처리
-            if hasattr(cache, 'clear_expired'):
+            if cache and hasattr(cache, 'clear_expired'):
                 cache.clear_expired()
                 print("캐시 데이터 정리 완료")
+            else:
+                print("캐시 시스템을 사용할 수 없습니다.")
         except Exception as e:
             print(f"캐시 데이터 정리 실패: {e}")
     
@@ -279,7 +308,7 @@ data_retention_manager = DataRetentionManager()
 
 # ToS 준수 확인 함수
 def verify_tos_compliance():
-    """YouTube API ToS 준수 상태 확인"""
+    """유튜브 API ToS 준수 상태 확인"""
     compliance_status = {
         'single_project': True,  # 단일 프로젝트 사용
         'user_consent': True,  # 사용자 동의 시스템 구현
@@ -292,9 +321,10 @@ def verify_tos_compliance():
     # 실제 준수 상태 확인 로직
     try:
         # 1. 사용자 동의 시스템 확인
-        consent_stats = user_consent_db.get_consent_stats()
-        if not consent_stats:
-            compliance_status['user_consent'] = False
+        if user_consent_db:
+            consent_stats = user_consent_db.get_consent_stats()
+            if not consent_stats:
+                compliance_status['user_consent'] = False
         
         # 2. 데이터 보존 정책 확인
         retention_stats = data_retention_manager.get_retention_stats()

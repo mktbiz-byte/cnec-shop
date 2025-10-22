@@ -1,0 +1,52 @@
+{
+  "verification_time": "2025-10-21T21:40:24.258159",
+  "base_url": "https://cnecplus.onrender.com",
+  "summary": {
+    "total_tests": 5,
+    "passed": 0,
+    "failed": 5,
+    "warnings": 0,
+    "success_rate": 0.0
+  },
+  "results": [
+    {
+      "test": "동의 시스템 - 접근 제어",
+      "status": "FAIL",
+      "message": "동의 없는 API 호출이 차단되지 않음 (상태코드: 200)",
+      "details": null,
+      "timestamp": "2025-10-21T21:40:22.133596"
+    },
+    {
+      "test": "동의 시스템 - 전체",
+      "status": "FAIL",
+      "message": "테스트 중 예외 발생: Expecting value: line 1 column 1 (char 0)",
+      "details": null,
+      "timestamp": "2025-10-21T21:40:22.967002"
+    },
+    {
+      "test": "준수 상태 - 전체",
+      "status": "FAIL",
+      "message": "테스트 중 예외 발생: Expecting value: line 1 column 1 (char 0)",
+      "details": null,
+      "timestamp": "2025-10-21T21:40:23.218586"
+    },
+    {
+      "test": "한국어 용어 - 통계",
+      "status": "FAIL",
+      "message": "통계 데이터에 한국어 필드가 누락됨",
+      "details": [
+        "subscribersKorean",
+        "viewsKorean",
+        "videosKorean"
+      ],
+      "timestamp": "2025-10-21T21:40:23.960530"
+    },
+    {
+      "test": "데이터 보존 - 전체",
+      "status": "FAIL",
+      "message": "테스트 중 예외 발생: Expecting value: line 1 column 1 (char 0)",
+      "details": null,
+      "timestamp": "2025-10-21T21:40:24.258025"
+    }
+  ]
+}
