@@ -9,6 +9,7 @@ from src.models.user import db
 class SpecialUser(db.Model):
     """특별 계정 (관리자가 직접 발급)"""
     __tablename__ = 'special_users'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
