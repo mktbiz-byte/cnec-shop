@@ -66,7 +66,7 @@ def planner_login_page():
 
 
 # Assets 파일 제공
-@planner_pages_bp.route('/assets/<path:filename>')
+@planner_pages_bp.route('/planner-assets/<path:filename>')
 def serve_assets(filename):
     """React 빌드 assets 제공"""
     assets_dir = os.path.join(PLANNER_TEMPLATE_DIR, 'assets')
@@ -74,7 +74,7 @@ def serve_assets(filename):
 
 
 # vite.svg 제공
-@planner_pages_bp.route('/vite.svg')
+@planner_pages_bp.route('/planner-vite.svg')
 def serve_vite_svg():
     """vite.svg 제공"""
     return send_from_directory(PLANNER_TEMPLATE_DIR, 'vite.svg')
