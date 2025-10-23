@@ -79,3 +79,29 @@ def serve_vite_svg():
     """vite.svg 제공"""
     return send_from_directory(PLANNER_TEMPLATE_DIR, 'vite.svg')
 
+
+
+
+@planner_pages_bp.route('/guide/<unique_url>')
+def public_guide(unique_url):
+    """공개 가이드 페이지 (로그인 불필요)"""
+    return send_from_directory(PLANNER_TEMPLATE_DIR, 'index.html')
+
+
+@planner_pages_bp.route('/guide/<unique_url>/edit')
+def public_guide_edit(unique_url):
+    """공개 가이드 수정 페이지 (로그인 필요)"""
+    if not check_planner_auth():
+        return redirect('/planner-login')
+    
+    return send_from_directory(PLANNER_TEMPLATE_DIR, 'index.html')
+
+
+@planner_pages_bp.route('/plan-list')
+def plan_list():
+    """기획안 목록 페이지"""
+    if not check_planner_auth():
+        return redirect('/planner-login')
+    
+    return send_from_directory(PLANNER_TEMPLATE_DIR, 'index.html')
+
