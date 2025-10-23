@@ -4,14 +4,16 @@
 
 from src.models.user import db
 from datetime import datetime
+from sqlalchemy.dialects.postgresql import UUID
+import uuid
 
 
 class ShortsPlan(db.Model):
     """숏폼 기획안 저장 테이블"""
     __tablename__ = 'shorts_plans'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(100), nullable=False)  # 생성한 사용자 ID
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(UUID(as_uuid=True), nullable=True)  # 생성한 사용자 ID (auth.users 참조)
     plan_type = db.Column(db.String(50), nullable=False)  # 'youtube' 또는 'instagram'
     
     # 입력 정보

@@ -76,17 +76,21 @@ print("✅ 데이터 보존 관리자 초기화 완료 - YouTube API ToS 준수"
 def before_request():
     track_visitor()
 
-# 데이터베이스 설정 (Render.com Persistent Disk 지원)
-if os.path.exists('/data'):
-    # Render.com Persistent Disk 사용
-    db_path = '/data/app.db'
-    print(f"✅ Using persistent database at {db_path}")
+# 데이터베이스 설정 (Supabase PostgreSQL 또는 로컬 SQLite)
+supabase_db_url = os.getenv('DATABASE_URL')
+if supabase_db_url:
+    # Supabase PostgreSQL 사용 (프로덕션)
+    # Render.com에서 제공하는 DATABASE_URL이 postgres://로 시작하면 postgresql://로 변경
+    if supabase_db_url.startswith('postgres://'):
+        supabase_db_url = supabase_db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = supabase_db_url
+    print(f"✅ Using Supabase PostgreSQL database")
 else:
-    # 로컬 개발 환경
+    # 로컬 개발 환경 - SQLite 사용
     db_path = os.path.join(os.path.dirname(__file__), 'database', 'app.db')
-    print(f"ℹ️ Using local database at {db_path}")
+    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
+    print(f"ℹ️ Using local SQLite database at {db_path}")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{db_path}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 with app.app_context():
