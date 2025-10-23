@@ -9,7 +9,9 @@ import sys
 from src.utils.api_key_manager import get_gemini_api_key, make_youtube_api_request
 from src.models.user import db
 from src.models.shorts_plan import ShortsPlan
+from src.utils.plan_parser import parse_plan_content
 from datetime import datetime
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -372,17 +374,60 @@ def generate_shorts_plan():
 - **텍스트:** (큰 글씨, 강조 문구)
 - **색상/스타일:** (눈에 띄는 색상, 대비)
 
-### 3. 초별 구성 (테이블 형식)
+### 3. 씬별 구성 (1~10번)
 
-| 순서 | 시간 | 촬영 장면 | 대사/자막 | 효과음/음악 | 편집 팁 |
-|:---:|:---:|:---|:---|:---|:---|
-| 1 | 0-3초 | (첫 화면 구성, 강렬한 비주얼) | (강렬한 한 문장, 큰 자막) | (트렌드 음악 시작) | 빠른 컷, 줌인 효과 |
-| 2 | 3-10초 | (문제 상황 제시) | (공감 유발 멘트) | (배경음악 지속) | 화면 전환, 자막 강조 |
-| 3 | 10-20초 | (첫 번째 핵심 내용) | (핵심 포인트 1) | (효과음 추가) | 클로즈업, 하이라이트 |
-| 4 | 20-30초 | (두 번째 핵심 내용) | (핵심 포인트 2) | (효과음 추가) | 화면 분할, 비교 |
-| 5 | 30-40초 | (세 번째 핵심 내용) | (핵심 포인트 3) | (효과음 추가) | 빠른 몽타주 |
-| 6 | 40-50초 | (결과/정리) | (요약 멘트) | (음악 크레센도) | 슬로우 모션, 강조 |
-| 7 | 50-60초 | (CTA 또는 반전) | (구독/좋아요 유도) | (음악 마무리) | 엔딩 자막, 로고 | 
+**중요: 촬영 장면과 대사/자막에는 이모티콘을 절대 사용하지 마세요. 텍스트만 작성하세요.**
+
+**씬 1 (0-3초)**
+- 시간: 0-3초
+- 촬영 장면: (첫 화면 구성, 강렬한 비주얼)
+- 대사/자막: (강렬한 한 문장, 큰 자막)
+- 효과음/음악: (트렌드 음악 시작)
+- 편집 팁: 빠른 컷, 줌인 효과
+
+**씬 2 (3-10초)**
+- 시간: 3-10초
+- 촬영 장면: (문제 상황 제시)
+- 대사/자막: (공감 유발 멘트)
+- 효과음/음악: (배경음악 지속)
+- 편집 팁: 화면 전환, 자막 강조
+
+**씬 3 (10-20초)**
+- 시간: 10-20초
+- 촬영 장면: (첫 번째 핵심 내용)
+- 대사/자막: (핵심 포인트 1)
+- 효과음/음악: (효과음 추가)
+- 편집 팁: 클로즈업, 하이라이트
+
+**씬 4 (20-30초)**
+- 시간: 20-30초
+- 촬영 장면: (두 번째 핵심 내용)
+- 대사/자막: (핵심 포인트 2)
+- 효과음/음악: (효과음 추가)
+- 편집 팁: 화면 분할, 비교
+
+**씬 5 (30-40초)**
+- 시간: 30-40초
+- 촬영 장면: (세 번째 핵심 내용)
+- 대사/자막: (핵심 포인트 3)
+- 효과음/음악: (효과음 추가)
+- 편집 팁: 빠른 몽타주
+
+**씬 6 (40-50초)**
+- 시간: 40-50초
+- 촬영 장면: (결과/정리)
+- 대사/자막: (요약 멘트)
+- 효과음/음악: (음악 크레센도)
+- 편집 팁: 슬로우 모션, 강조
+
+**씬 7 (50-60초)**
+- 시간: 50-60초
+- 촬영 장면: (CTA 또는 반전)
+- 대사/자막: (구독/좋아요 유도)
+- 효과음/음악: (음악 마무리)
+- 편집 팁: 엔딩 자막, 로고
+
+(영상 길이에 따라 씬 8, 9, 10도 동일한 형식으로 작성) 
 
 ### 4. 자막 스타일
 - **폰트:** (추천 폰트)
@@ -432,7 +477,10 @@ def generate_shorts_plan():
         
         unique_url = generate_unique_url()
         
-        # 6. 데이터베이스에 저장 (미발행 상태)
+        # 6. 기획안 파싱 (구조화)
+        parsed_data = parse_plan_content(plan)
+        
+        # 7. 데이터베이스에 저장 (미발행 상태)
         shorts_plan = ShortsPlan(
             user_id=session.get('special_user_id'),
             plan_type='youtube',
@@ -446,7 +494,16 @@ def generate_shorts_plan():
             required_content=required_content,
             plan_content=plan,
             unique_url=unique_url,
-            is_published=False
+            is_published=False,
+            # 구조화된 데이터
+            channel_analysis=parsed_data.get('channel_analysis', ''),
+            title_options=json.dumps(parsed_data.get('title_options', []), ensure_ascii=False),
+            thumbnail_idea=parsed_data.get('thumbnail_idea', ''),
+            scenes=json.dumps(parsed_data.get('scenes', []), ensure_ascii=False),
+            subtitle_style=parsed_data.get('subtitle_style', ''),
+            music_effects=parsed_data.get('music_effects', ''),
+            hashtags=parsed_data.get('hashtags', ''),
+            expected_results=parsed_data.get('expected_results', '')
         )
         db.session.add(shorts_plan)
         db.session.commit()

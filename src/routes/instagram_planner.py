@@ -9,7 +9,9 @@ import sys
 from src.utils.api_key_manager import get_gemini_api_key, make_youtube_api_request
 from src.models.user import db
 from src.models.shorts_plan import ShortsPlan
+from src.utils.plan_parser import parse_plan_content
 from datetime import datetime
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -233,6 +235,9 @@ def generate_instagram_plan():
         
         unique_url = generate_unique_url()
         
+        # 기획안 파싱 (구조화)
+        parsed_data = parse_plan_content(plan)
+        
         # 데이터베이스에 저장 (미발행 상태)
         instagram_plan = ShortsPlan(
             user_id=session.get('special_user_id'),
@@ -247,7 +252,16 @@ def generate_instagram_plan():
             required_content=required_content,
             plan_content=plan,
             unique_url=unique_url,
-            is_published=False
+            is_published=False,
+            # 구조화된 데이터
+            channel_analysis=parsed_data.get('channel_analysis', ''),
+            title_options=json.dumps(parsed_data.get('title_options', []), ensure_ascii=False),
+            thumbnail_idea=parsed_data.get('thumbnail_idea', ''),
+            scenes=json.dumps(parsed_data.get('scenes', []), ensure_ascii=False),
+            subtitle_style=parsed_data.get('subtitle_style', ''),
+            music_effects=parsed_data.get('music_effects', ''),
+            hashtags=parsed_data.get('hashtags', ''),
+            expected_results=parsed_data.get('expected_results', '')
         )
         db.session.add(instagram_plan)
         db.session.commit()

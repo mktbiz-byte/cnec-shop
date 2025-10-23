@@ -28,6 +28,18 @@ class ShortsPlan(db.Model):
     # 생성된 기획안
     plan_content = db.Column(db.Text, nullable=False)
     
+    # 구조화된 기획안 데이터 (JSON)
+    reference_urls = db.Column(db.Text)  # JSON 배열
+    channel_analysis = db.Column(db.Text)
+    title_options = db.Column(db.Text)  # JSON 배열 (3개)
+    selected_title_index = db.Column(db.Integer, default=0)
+    thumbnail_idea = db.Column(db.Text)
+    scenes = db.Column(db.Text)  # JSON 배열 (1~10번 씬)
+    subtitle_style = db.Column(db.Text)
+    music_effects = db.Column(db.Text)
+    hashtags = db.Column(db.Text)
+    expected_results = db.Column(db.Text)
+    
     # URL 및 발행 상태
     unique_url = db.Column(db.String(20), unique=True, nullable=False)  # 난수 URL
     is_published = db.Column(db.Boolean, default=False)  # 발행 여부
@@ -53,6 +65,16 @@ class ShortsPlan(db.Model):
             'main_content': self.main_content,
             'required_content': self.required_content,
             'plan_content': self.plan_content,
+            'reference_urls': self.reference_urls,
+            'channel_analysis': self.channel_analysis,
+            'title_options': self.title_options,
+            'selected_title_index': self.selected_title_index,
+            'thumbnail_idea': self.thumbnail_idea,
+            'scenes': self.scenes,
+            'subtitle_style': self.subtitle_style,
+            'music_effects': self.music_effects,
+            'hashtags': self.hashtags,
+            'expected_results': self.expected_results,
             'unique_url': self.unique_url,
             'is_published': self.is_published,
             'published_at': self.published_at.isoformat() if self.published_at else None,
