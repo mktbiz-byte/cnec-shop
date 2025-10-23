@@ -482,7 +482,7 @@ def generate_shorts_plan():
         
         # 7. 데이터베이스에 저장 (미발행 상태)
         shorts_plan = ShortsPlan(
-            user_id=session.get('special_user_id'),
+            user_id=None,  # UUID 타입이므로 None으로 설정
             plan_type='youtube',
             channel_url=channel_url,
             topic=topic,
