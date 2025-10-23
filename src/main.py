@@ -27,6 +27,8 @@ from src.routes.creator_contact import creator_contact_bp
 from src.routes.search_history_routes import search_history_bp
 from src.routes.shorts_planner import shorts_planner_bp
 from src.routes.instagram_planner import instagram_planner_bp
+from src.routes.planner_pages import planner_pages_bp
+from src.routes.planner_admin import planner_admin_bp
 from src.routes.consent import consent_bp
 from src.routes.data_management import data_management_bp
 from src.routes.debug_keys import debug_keys_bp
@@ -57,6 +59,8 @@ app.register_blueprint(creator_contact_bp, url_prefix='/api/creator-contact')
 app.register_blueprint(search_history_bp)  # /api/search-history
 app.register_blueprint(shorts_planner_bp)  # /api/shorts-planner
 app.register_blueprint(instagram_planner_bp)  # /api/instagram-planner
+app.register_blueprint(planner_pages_bp)  # /video-planner, /instagram-planner pages
+app.register_blueprint(planner_admin_bp, url_prefix='/api/admin')  # /api/admin/planner-users
 app.register_blueprint(consent_bp, url_prefix='/api/youtube')  # /api/youtube/consent
 app.register_blueprint(data_management_bp, url_prefix='/api/data')  # /api/data
 app.register_blueprint(debug_keys_bp, url_prefix='/api/debug')  # /api/debug (발표용 임시)
