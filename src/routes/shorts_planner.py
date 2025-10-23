@@ -732,3 +732,48 @@ def get_public_plan(unique_url):
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+
+
+
+# ============================================================
+# 기획안 재파싱 API (scenes 업데이트)
+# ============================================================
+
+@shorts_planner_bp.route('/reparse/<unique_url>', methods=['POST'])
+def reparse_plan_scenes(unique_url):
+    """기존 기획안의 plan_content를 다시 파싱하여 scenes 업데이트"""
+    
+    try:
+        plan = ShortsPlan.query.filter_by(unique_url=unique_url).first()
+        
+        if not plan:
+            return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
+        
+        if not plan.plan_content:
+            return jsonify({'error': 'plan_content가 없습니다'}), 400
+        
+        # Re-parse plan_content
+        parsed_data = parse_plan_content(plan.plan_content)
+        scenes = parsed_data.get('scenes', [])
+        
+        if not scenes:
+            return jsonify({'error': 'scenes를 파싱할 수 없습니다', 'parsed_data': parsed_data}), 400
+        
+        # Update scenes
+        plan.scenes = json.dumps(scenes, ensure_ascii=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'unique_url': unique_url,
+            'scenes_count': len(scenes),
+            'scenes': scenes
+        }), 200
+        
+    except Exception as e:
+        print(f"Reparse error: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
