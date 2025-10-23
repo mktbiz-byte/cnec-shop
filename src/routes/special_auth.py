@@ -339,3 +339,62 @@ def list_special_accounts():
             'message': str(e)
         }), 500
 
+
+
+
+@special_auth_bp.route('/login', methods=['POST'])
+def login():
+    """
+    아이디/비밀번호 로그인 (SpecialUser 전용)
+    """
+    try:
+        from src.models.special_user import SpecialUser
+        
+        data = request.json
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        
+        if not username or not password:
+            return jsonify({'error': '아이디와 비밀번호를 입력해주세요'}), 400
+        
+        # 사용자 조회
+        user = SpecialUser.query.filter_by(username=username).first()
+        
+        if not user:
+            return jsonify({'error': '아이디 또는 비밀번호가 일치하지 않습니다'}), 401
+        
+        # 비밀번호 확인
+        if not user.check_password(password):
+            return jsonify({'error': '아이디 또는 비밀번호가 일치하지 않습니다'}), 401
+        
+        # 활성 상태 확인
+        if not user.is_active:
+            return jsonify({'error': '비활성화된 계정입니다'}), 403
+        
+        # 세션 설정
+        session['special_user_id'] = user.id
+        session['special_username'] = user.username
+        session['login_time'] = datetime.now().isoformat()
+        
+        # 마지막 로그인 시간 업데이트
+        from src.models.user import db
+        user.last_login = datetime.now()
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '로그인 성공',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'display_name': user.display_name
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"Login error: {e}")
+        return jsonify({
+            'error': '로그인 중 오류가 발생했습니다',
+            'message': str(e)
+        }), 500
+
