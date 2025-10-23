@@ -28,6 +28,11 @@ class ShortsPlan(db.Model):
     # 생성된 기획안
     plan_content = db.Column(db.Text, nullable=False)
     
+    # URL 및 발행 상태
+    unique_url = db.Column(db.String(20), unique=True, nullable=False)  # 난수 URL
+    is_published = db.Column(db.Boolean, default=False)  # 발행 여부
+    published_at = db.Column(db.DateTime)  # 발행 시간
+    
     # 메타 정보
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -48,6 +53,9 @@ class ShortsPlan(db.Model):
             'main_content': self.main_content,
             'required_content': self.required_content,
             'plan_content': self.plan_content,
+            'unique_url': self.unique_url,
+            'is_published': self.is_published,
+            'published_at': self.published_at.isoformat() if self.published_at else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

@@ -416,7 +416,23 @@ def generate_shorts_plan():
         if not plan:
             return jsonify({'error': 'AI 기획안 생성에 실패했습니다'}), 500
         
-        # 5. 데이터베이스에 저장
+        # 5. 난수 URL 생성
+        import secrets
+        import string
+        
+        def generate_unique_url():
+            """8자리 난수 URL 생성"""
+            chars = string.ascii_lowercase + string.digits
+            while True:
+                url = ''.join(secrets.choice(chars) for _ in range(8))
+                # 중복 확인
+                existing = ShortsPlan.query.filter_by(unique_url=url).first()
+                if not existing:
+                    return url
+        
+        unique_url = generate_unique_url()
+        
+        # 6. 데이터베이스에 저장 (미발행 상태)
         shorts_plan = ShortsPlan(
             user_id=session.get('special_user_id'),
             plan_type='youtube',
@@ -428,14 +444,18 @@ def generate_shorts_plan():
             product_features=product_features,
             main_content=main_content,
             required_content=required_content,
-            plan_content=plan
+            plan_content=plan,
+            unique_url=unique_url,
+            is_published=False
         )
         db.session.add(shorts_plan)
         db.session.commit()
         
-        # 6. 응답
+        # 7. 응답
         return jsonify({
             'plan_id': shorts_plan.id,
+            'unique_url': unique_url,
+            'is_published': False,
             'channel_info': {
                 'name': channel_analysis['channel_name'],
                 'subscribers': channel_analysis['subscriber_count'],
@@ -590,5 +610,68 @@ def delete_plan(plan_id):
         import traceback
         traceback.print_exc()
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+# ============================================================
+# 기획안 발행 API
+# ============================================================
+
+@shorts_planner_bp.route('/plans/<int:plan_id>/publish', methods=['POST'])
+def publish_plan(plan_id):
+    """기획안 발행 (공개 URL 활성화)"""
+    
+    # 로그인 확인
+    if 'special_user_id' not in session:
+        return jsonify({'error': '로그인이 필요합니다'}), 401
+    
+    try:
+        user_id = session.get('special_user_id')
+        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        
+        if not plan:
+            return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
+        
+        # 발행 상태 업데이트
+        plan.is_published = True
+        plan.published_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': '기획안이 발행되었습니다',
+            'unique_url': plan.unique_url,
+            'public_url': f'/guide/{plan.unique_url}'
+        }), 200
+        
+    except Exception as e:
+        print(f"Plan publish error: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# 공개 기획안 조회 API (로그인 불필요)
+# ============================================================
+
+@shorts_planner_bp.route('/public/<unique_url>', methods=['GET'])
+def get_public_plan(unique_url):
+    """공개된 기획안 조회 (난수 URL로 접근, 로그인 불필요)"""
+    
+    try:
+        plan = ShortsPlan.query.filter_by(unique_url=unique_url, is_published=True).first()
+        
+        if not plan:
+            return jsonify({'error': '기획안을 찾을 수 없거나 아직 발행되지 않았습니다'}), 404
+        
+        return jsonify(plan.to_dict()), 200
+        
+    except Exception as e:
+        print(f"Public plan retrieval error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
