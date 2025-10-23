@@ -93,13 +93,14 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# PostgreSQL 연결 풀 설정 (Supabase Session pooler 지원)
+# PostgreSQL 연결 풀 설정 (Supabase Transaction pooler 지원)
 if supabase_db_url:
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,  # 연결 상태 확인
         'pool_recycle': 300,  # 5분마다 연결 재생성
-        'pool_size': 10,  # 연결 풀 크기
-        'max_overflow': 20,  # 최대 추가 연결
+        'pool_size': 5,  # 연결 풀 크기 (Transaction pooler는 작게 유지)
+        'max_overflow': 10,  # 최대 추가 연결
+        'pool_timeout': 30,  # 연결 대기 시간
     }
 
 db.init_app(app)
