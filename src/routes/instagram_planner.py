@@ -297,8 +297,8 @@ def get_plans():
         return jsonify({'error': '로그인이 필요합니다'}), 401
     
     try:
-        user_id = session.get('special_user_id')
-        plans = ShortsPlan.query.filter_by(user_id=user_id, plan_type='instagram').order_by(ShortsPlan.created_at.desc()).all()
+        # user_id 필터 제거 (모든 기획안 조회)
+        plans = ShortsPlan.query.filter_by(plan_type='instagram').order_by(ShortsPlan.created_at.desc()).all()
         
         return jsonify({
             'plans': [plan.to_dict() for plan in plans]

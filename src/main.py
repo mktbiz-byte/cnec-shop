@@ -100,13 +100,27 @@ with app.app_context():
     # 특별 사용자 초기화
     init_special_users()
 
-# SPA를 위한 catch-all 라우트
+# 크리에이터 분석기 정적 파일 제공
+@app.route('/creator/<path:path>')
+def serve_creator(path):
+    """크리에이터 분석기 정적 파일 제공"""
+    creator_folder = os.path.join(app.static_folder, 'creator')
+    return send_from_directory(creator_folder, path)
+
+# 메인 페이지 (크리에이터 분석기)
+@app.route('/')
+@app.route('/admin')
+def serve_creator_hub():
+    """크리에이터 분석기 메인 페이지"""
+    creator_folder = os.path.join(app.static_folder, 'creator')
+    return send_from_directory(creator_folder, 'index.html')
+
+# SPA를 위한 catch-all 라우트 (숏폼 기획안 생성기)
 # 중요: 이 라우트는 블루프린트가 매칭되지 않은 경로만 처리합니다
-@app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
     """
-    정적 파일 또는 index.html 제공
+    정적 파일 또는 index.html 제공 (숏폼 기획안 생성기)
     블루프린트가 먼저 매칭되므로 API 경로는 여기 도달하지 않음
     """
     static_folder_path = app.static_folder
