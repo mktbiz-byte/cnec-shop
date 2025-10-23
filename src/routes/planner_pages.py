@@ -3,13 +3,19 @@
 /video-planner, /instagram-planner 등 별도 HTML 제공
 """
 
-from flask import Blueprint, send_from_directory, session, redirect, url_for
+from flask import Blueprint, send_from_directory, session, redirect
 import os
-
-planner_pages_bp = Blueprint('planner_pages', __name__)
 
 # 템플릿 폴더 경로
 PLANNER_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates', 'planner')
+
+# Blueprint에 static_folder 지정
+planner_pages_bp = Blueprint(
+    'planner_pages', 
+    __name__,
+    static_folder=PLANNER_TEMPLATE_DIR,
+    static_url_path='/planner-static'
+)
 
 
 def check_planner_auth():
@@ -59,9 +65,17 @@ def planner_login_page():
     return send_from_directory(PLANNER_TEMPLATE_DIR, 'index.html')
 
 
-@planner_pages_bp.route('/planner/assets/<path:filename>')
-def planner_assets(filename):
-    """기획안 생성기 정적 파일 제공"""
+# Assets 파일 제공
+@planner_pages_bp.route('/assets/<path:filename>')
+def serve_assets(filename):
+    """React 빌드 assets 제공"""
     assets_dir = os.path.join(PLANNER_TEMPLATE_DIR, 'assets')
     return send_from_directory(assets_dir, filename)
+
+
+# vite.svg 제공
+@planner_pages_bp.route('/vite.svg')
+def serve_vite_svg():
+    """vite.svg 제공"""
+    return send_from_directory(PLANNER_TEMPLATE_DIR, 'vite.svg')
 
