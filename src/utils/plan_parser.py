@@ -67,7 +67,7 @@ def parse_plan_content(plan_content):
                 _save_section(result, current_section, current_content)
             current_section = 'thumbnail_idea'
             current_content = []
-        elif '초별 구성' in line or '씬 구성' in line:
+        elif '초별 구성' in line or '씬 구성' in line or '씬별 구성' in line:
             if current_section:
                 _save_section(result, current_section, current_content)
             current_section = 'scenes'
@@ -77,7 +77,7 @@ def parse_plan_content(plan_content):
                 _save_section(result, current_section, current_content)
             current_section = 'subtitle_style'
             current_content = []
-        elif '음악' in line and ('효과음' in line or '배경음악' in line):
+        elif '음악' in line and ('효과음' in line or '배경음악' in line) and not line.startswith('*'):
             if current_section:
                 _save_section(result, current_section, current_content)
             current_section = 'music_effects'
@@ -123,9 +123,12 @@ def _save_section(result, section, content):
         result['thumbnail_idea'] = '\n'.join(content)
     
     elif section == 'scenes':
-        # 테이블에서 씬 추출
+        # 테이블 형식 또는 리스트 형식에서 씬 추출
         scenes = []
+        current_scene = None
+        
         for line in content:
+            # 테이블 형식
             if line.startswith('|') and not line.startswith('|:'):
                 parts = [p.strip() for p in line.split('|')[1:-1]]
                 if len(parts) >= 5 and parts[0].isdigit():
@@ -138,6 +141,45 @@ def _save_section(result, section, content):
                         'editing_tips': parts[5] if len(parts) > 5 else ''
                     }
                     scenes.append(scene)
+            
+            # 리스트 형식: **씬 1 (0-3초)**
+            elif re.match(r'\*\*씬\s*(\d+)', line):
+                if current_scene:
+                    scenes.append(current_scene)
+                
+                scene_match = re.match(r'\*\*씬\s*(\d+)\s*\(([^)]+)\)\*\*', line)
+                if scene_match:
+                    current_scene = {
+                        'scene_number': int(scene_match.group(1)),
+                        'time': scene_match.group(2),
+                        'scene_description': '',
+                        'dialogue': '',
+                        'sound_effects': '',
+                        'editing_tips': ''
+                    }
+            
+            # 리스트 항목 파싱 (더 구체적인 패턴을 먼저 체크)
+            elif current_scene and line.startswith('*'):
+                line_clean = line.lstrip('*').strip()
+                if '시간:' in line_clean:
+                    current_scene['time'] = line_clean.split(':', 1)[1].strip()
+                elif '촬영 장면:' in line_clean:
+                    current_scene['scene_description'] = _remove_emoji(line_clean.split(':', 1)[1].strip())
+                elif '장면:' in line_clean and '촬영' not in line_clean:
+                    current_scene['scene_description'] = _remove_emoji(line_clean.split(':', 1)[1].strip())
+                elif '대사/자막:' in line_clean or '대사:' in line_clean or '자막:' in line_clean:
+                    current_scene['dialogue'] = _remove_emoji(line_clean.split(':', 1)[1].strip())
+                elif '효과음/음악:' in line_clean:
+                    current_scene['sound_effects'] = line_clean.split(':', 1)[1].strip()
+                elif '효과음:' in line_clean or '음악:' in line_clean:
+                    current_scene['sound_effects'] = line_clean.split(':', 1)[1].strip()
+                elif '편집 팁:' in line_clean or '편집:' in line_clean:
+                    current_scene['editing_tips'] = line_clean.split(':', 1)[1].strip()
+        
+        # 마지막 씬 추가
+        if current_scene:
+            scenes.append(current_scene)
+        
         result['scenes'] = scenes
     
     elif section == 'subtitle_style':
@@ -154,15 +196,15 @@ def _save_section(result, section, content):
 
 
 def _remove_emoji(text):
-    """이모티콘 제거"""
-    # 이모티콘 패턴 제거
+    """이모티콘 제거 (한글은 보존)"""
+    # 이모티콘만 제거, 한글/영문/숫자/기본 문장부호는 보존
     emoji_pattern = re.compile("["
         u"\U0001F600-\U0001F64F"  # 이모티콘
         u"\U0001F300-\U0001F5FF"  # 기호 & 픽토그램
         u"\U0001F680-\U0001F6FF"  # 교통 & 지도
         u"\U0001F1E0-\U0001F1FF"  # 국기
-        u"\U00002702-\U000027B0"
-        u"\U000024C2-\U0001F251"
+        u"\U0001F900-\U0001F9FF"  # 추가 이모티콘
+        u"\U0001FA00-\U0001FA6F"  # 추가 기호
         "]+", flags=re.UNICODE)
     return emoji_pattern.sub(r'', text).strip()
 
