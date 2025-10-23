@@ -53,6 +53,19 @@ class ShortsPlan(db.Model):
     
     def to_dict(self):
         """딕셔너리로 변환"""
+        import json
+        
+        # JSON 필드 파싱 헬퍼 함수
+        def parse_json_field(field_value):
+            if not field_value:
+                return None
+            if isinstance(field_value, str):
+                try:
+                    return json.loads(field_value)
+                except:
+                    return field_value
+            return field_value
+        
         return {
             'id': self.id,
             'user_id': self.user_id,
@@ -67,12 +80,12 @@ class ShortsPlan(db.Model):
             'main_content': self.main_content,
             'required_content': self.required_content,
             'plan_content': self.plan_content,
-            'reference_urls': self.reference_urls,
+            'reference_urls': parse_json_field(self.reference_urls),
             'channel_analysis': self.channel_analysis,
-            'title_options': self.title_options,
+            'title_options': parse_json_field(self.title_options),
             'selected_title_index': self.selected_title_index,
             'thumbnail_idea': self.thumbnail_idea,
-            'scenes': self.scenes,
+            'scenes': parse_json_field(self.scenes),
             'subtitle_style': self.subtitle_style,
             'music_effects': self.music_effects,
             'hashtags': self.hashtags,

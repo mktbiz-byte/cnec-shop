@@ -726,11 +726,14 @@ def get_public_plan(unique_url):
         
         # scenes가 비어있으면 plan_content에서 자동 파싱
         plan_dict = plan.to_dict()
-        if (not plan_dict.get('scenes') or plan_dict['scenes'] == []) and plan.plan_content:
+        scenes_data = plan_dict.get('scenes')
+        # scenes가 None, 빈 문자열, 빈 배열인 경우 파싱
+        if (not scenes_data or scenes_data == [] or scenes_data == '[]') and plan.plan_content:
             parsed_data = parse_plan_content(plan.plan_content)
             scenes = parsed_data.get('scenes', [])
             if scenes:
                 plan_dict['scenes'] = scenes
+                print(f"Auto-parsed {len(scenes)} scenes for plan {unique_url}")
         
         return jsonify(plan_dict), 200
         
