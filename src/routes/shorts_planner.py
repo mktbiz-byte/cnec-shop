@@ -724,7 +724,15 @@ def get_public_plan(unique_url):
         if not plan:
             return jsonify({'error': '기획안을 찾을 수 없거나 아직 발행되지 않았습니다'}), 404
         
-        return jsonify(plan.to_dict()), 200
+        # scenes가 비어있으면 plan_content에서 자동 파싱
+        plan_dict = plan.to_dict()
+        if (not plan_dict.get('scenes') or plan_dict['scenes'] == []) and plan.plan_content:
+            parsed_data = parse_plan_content(plan.plan_content)
+            scenes = parsed_data.get('scenes', [])
+            if scenes:
+                plan_dict['scenes'] = scenes
+        
+        return jsonify(plan_dict), 200
         
     except Exception as e:
         print(f"Public plan retrieval error: {e}")
