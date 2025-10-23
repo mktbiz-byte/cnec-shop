@@ -41,7 +41,7 @@ def instagram_planner_page():
     return send_from_directory(PLANNER_TEMPLATE_DIR, 'index.html')
 
 
-@planner_pages_bp.route('/shorts-plan/<int:plan_id>')
+@planner_pages_bp.route('/shorts-plan/<string:plan_id>')
 def shorts_plan_view(plan_id):
     """YouTube Shorts 기획안 보기 페이지"""
     if not check_planner_auth():
@@ -50,7 +50,7 @@ def shorts_plan_view(plan_id):
     return send_from_directory(PLANNER_TEMPLATE_DIR, 'index.html')
 
 
-@planner_pages_bp.route('/instagram-plan/<int:plan_id>')
+@planner_pages_bp.route('/instagram-plan/<string:plan_id>')
 def instagram_plan_view(plan_id):
     """Instagram Reels 기획안 보기 페이지"""
     if not check_planner_auth():

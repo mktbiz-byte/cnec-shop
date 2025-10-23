@@ -557,7 +557,7 @@ def get_plans():
         return jsonify({'error': str(e)}), 500
 
 
-@shorts_planner_bp.route('/plans/<int:plan_id>', methods=['GET'])
+@shorts_planner_bp.route('/plans/<string:plan_id>', methods=['GET'])
 def get_plan(plan_id):
     """특정 기획안 조회"""
     
@@ -567,7 +567,7 @@ def get_plan(plan_id):
     
     try:
         user_id = session.get('special_user_id')
-        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        plan = ShortsPlan.query.filter_by(id=plan_id).first()
         
         if not plan:
             return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
@@ -585,7 +585,7 @@ def get_plan(plan_id):
 # 기획안 수정 API
 # ============================================================
 
-@shorts_planner_bp.route('/plans/<int:plan_id>', methods=['PUT'])
+@shorts_planner_bp.route('/plans/<string:plan_id>', methods=['PUT'])
 def update_plan(plan_id):
     """기획안 수정"""
     
@@ -595,7 +595,7 @@ def update_plan(plan_id):
     
     try:
         user_id = session.get('special_user_id')
-        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        plan = ShortsPlan.query.filter_by(id=plan_id).first()
         
         if not plan:
             return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
@@ -640,7 +640,7 @@ def update_plan(plan_id):
 # 기획안 삭제 API
 # ============================================================
 
-@shorts_planner_bp.route('/plans/<int:plan_id>', methods=['DELETE'])
+@shorts_planner_bp.route('/plans/<string:plan_id>', methods=['DELETE'])
 def delete_plan(plan_id):
     """기획안 삭제"""
     
@@ -650,7 +650,7 @@ def delete_plan(plan_id):
     
     try:
         user_id = session.get('special_user_id')
-        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        plan = ShortsPlan.query.filter_by(id=plan_id).first()
         
         if not plan:
             return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
@@ -676,7 +676,7 @@ def delete_plan(plan_id):
 # 기획안 발행 API
 # ============================================================
 
-@shorts_planner_bp.route('/plans/<int:plan_id>/publish', methods=['POST'])
+@shorts_planner_bp.route('/plans/<string:plan_id>/publish', methods=['POST'])
 def publish_plan(plan_id):
     """기획안 발행 (공개 URL 활성화)"""
     
@@ -686,7 +686,7 @@ def publish_plan(plan_id):
     
     try:
         user_id = session.get('special_user_id')
-        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        plan = ShortsPlan.query.filter_by(id=plan_id).first()
         
         if not plan:
             return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
