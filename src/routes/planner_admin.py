@@ -3,7 +3,8 @@
 """
 
 from flask import Blueprint, request, jsonify, session
-from src.models.user import db, SpecialUser
+from src.models.user import db
+from src.models.special_user import SpecialUser
 from werkzeug.security import generate_password_hash
 
 planner_admin_bp = Blueprint('planner_admin', __name__)
