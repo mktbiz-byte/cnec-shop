@@ -7,6 +7,9 @@ from flask import Blueprint, request, jsonify, session
 import os
 import sys
 from src.utils.api_key_manager import get_gemini_api_key, make_youtube_api_request
+from src.models.user import db
+from src.models.shorts_plan import ShortsPlan
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -281,6 +284,10 @@ def generate_shorts_plan():
         topic = data.get('topic')
         keywords = data.get('keywords', '')
         length = data.get('length', '30초')  # 기본 30초
+        brand_name = data.get('brand_name', '')  # 브랜드/상품명
+        product_features = data.get('product_features', '')  # 상품 특징
+        main_content = data.get('main_content', '')  # 영상 주요내용
+        required_content = data.get('required_content', '')  # 크리에이터가 꼭 넣어야 할 내용
         
         if not channel_url or not topic:
             return jsonify({'error': '채널 URL과 주제를 입력해주세요'}), 400
@@ -339,6 +346,10 @@ def generate_shorts_plan():
 - 주제: {topic}
 - 키워드: {keywords}
 - 목표 길이: {length}
+- 브랜드/상품명: {brand_name}
+- 상품 특징: {product_features}
+- 영상 주요내용: {main_content}
+- 크리에이터가 꼭 넣어야 할 내용: {required_content}
 
 **숏폼 기획안 작성 가이드:**
 1. **후킹 (0-3초)**: 시청자를 즉시 사로잡을 강력한 오프닝
@@ -405,8 +416,26 @@ def generate_shorts_plan():
         if not plan:
             return jsonify({'error': 'AI 기획안 생성에 실패했습니다'}), 500
         
-        # 5. 응답
+        # 5. 데이터베이스에 저장
+        shorts_plan = ShortsPlan(
+            user_id=session.get('special_user_id'),
+            plan_type='youtube',
+            channel_url=channel_url,
+            topic=topic,
+            keywords=keywords,
+            length=length,
+            brand_name=brand_name,
+            product_features=product_features,
+            main_content=main_content,
+            required_content=required_content,
+            plan_content=plan
+        )
+        db.session.add(shorts_plan)
+        db.session.commit()
+        
+        # 6. 응답
         return jsonify({
+            'plan_id': shorts_plan.id,
             'channel_info': {
                 'name': channel_analysis['channel_name'],
                 'subscribers': channel_analysis['subscriber_count'],
@@ -419,5 +448,147 @@ def generate_shorts_plan():
         print(f"Shorts plan generation error: {e}")
         import traceback
         traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+# ============================================================
+# 기획안 조회 API
+# ============================================================
+
+@shorts_planner_bp.route('/plans', methods=['GET'])
+def get_plans():
+    """사용자의 모든 기획안 조회"""
+    
+    # 로그인 확인
+    if 'special_user_id' not in session:
+        return jsonify({'error': '로그인이 필요합니다'}), 401
+    
+    try:
+        user_id = session.get('special_user_id')
+        plans = ShortsPlan.query.filter_by(user_id=user_id).order_by(ShortsPlan.created_at.desc()).all()
+        
+        return jsonify({
+            'plans': [plan.to_dict() for plan in plans]
+        }), 200
+        
+    except Exception as e:
+        print(f"Plans retrieval error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@shorts_planner_bp.route('/plans/<int:plan_id>', methods=['GET'])
+def get_plan(plan_id):
+    """특정 기획안 조회"""
+    
+    # 로그인 확인
+    if 'special_user_id' not in session:
+        return jsonify({'error': '로그인이 필요합니다'}), 401
+    
+    try:
+        user_id = session.get('special_user_id')
+        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        
+        if not plan:
+            return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
+        
+        return jsonify(plan.to_dict()), 200
+        
+    except Exception as e:
+        print(f"Plan retrieval error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# 기획안 수정 API
+# ============================================================
+
+@shorts_planner_bp.route('/plans/<int:plan_id>', methods=['PUT'])
+def update_plan(plan_id):
+    """기획안 수정"""
+    
+    # 로그인 확인
+    if 'special_user_id' not in session:
+        return jsonify({'error': '로그인이 필요합니다'}), 401
+    
+    try:
+        user_id = session.get('special_user_id')
+        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        
+        if not plan:
+            return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
+        
+        data = request.json
+        
+        # 수정 가능한 필드 업데이트
+        if 'topic' in data:
+            plan.topic = data['topic']
+        if 'keywords' in data:
+            plan.keywords = data['keywords']
+        if 'length' in data:
+            plan.length = data['length']
+        if 'brand_name' in data:
+            plan.brand_name = data['brand_name']
+        if 'product_features' in data:
+            plan.product_features = data['product_features']
+        if 'main_content' in data:
+            plan.main_content = data['main_content']
+        if 'required_content' in data:
+            plan.required_content = data['required_content']
+        if 'plan_content' in data:
+            plan.plan_content = data['plan_content']
+        
+        plan.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            'message': '기획안이 수정되었습니다',
+            'plan': plan.to_dict()
+        }), 200
+        
+    except Exception as e:
+        print(f"Plan update error: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================================
+# 기획안 삭제 API
+# ============================================================
+
+@shorts_planner_bp.route('/plans/<int:plan_id>', methods=['DELETE'])
+def delete_plan(plan_id):
+    """기획안 삭제"""
+    
+    # 로그인 확인
+    if 'special_user_id' not in session:
+        return jsonify({'error': '로그인이 필요합니다'}), 401
+    
+    try:
+        user_id = session.get('special_user_id')
+        plan = ShortsPlan.query.filter_by(id=plan_id, user_id=user_id).first()
+        
+        if not plan:
+            return jsonify({'error': '기획안을 찾을 수 없습니다'}), 404
+        
+        db.session.delete(plan)
+        db.session.commit()
+        
+        return jsonify({
+            'message': '기획안이 삭제되었습니다'
+        }), 200
+        
+    except Exception as e:
+        print(f"Plan deletion error: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
