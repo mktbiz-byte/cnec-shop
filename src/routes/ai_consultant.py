@@ -154,7 +154,8 @@ def get_channel_score():
     
     try:
         channel_data = request.json
-        channel_id = channel_data.get('channel_id')
+        # 'channel_id' 또는 'id' 필드 모두 지원 (프론트엔드 호환성)
+        channel_id = channel_data.get('channel_id') or channel_data.get('id')
         
         if not channel_id:
             return jsonify({'error': 'Channel ID not provided'}), 400
@@ -291,8 +292,10 @@ def analyze_channel():
     """채널 AI 분석 및 성장 조언"""
     try:
         channel_data = request.json
-        channel_id = channel_data.get('channel_id')
-        channel_name = channel_data.get('name', '알 수 없음')
+        # 'channel_id' 또는 'id' 필드 모두 지원 (프론트엔드 호환성)
+        channel_id = channel_data.get('channel_id') or channel_data.get('id')
+        # 'name' 또는 'title' 필드 모두 지원
+        channel_name = channel_data.get('name') or channel_data.get('title', '알 수 없음')
         
         if not channel_id:
             return jsonify({'error': 'Channel ID not provided'}), 400
@@ -400,7 +403,8 @@ def get_content_ideas():
     """채널 맞춤형 콘텐츠 아이디어 생성"""
     try:
         channel_data = request.json
-        channel_id = channel_data.get('channel_id')
+        # 'channel_id' 또는 'id' 필드 모두 지원 (프론트엔드 호환성)
+        channel_id = channel_data.get('channel_id') or channel_data.get('id')
         
         if not channel_id:
             return jsonify({'error': 'Channel ID not provided'}), 400
