@@ -2,7 +2,7 @@
 API 요청/응답 스키마 (Pydantic)
 """
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 # ===== 예측 관련 스키마 =====
@@ -27,7 +27,7 @@ class PredictionOutput(BaseModel):
     probability: float = Field(..., ge=0, le=100, description="떡상 확률 (%)")
     is_viral_predicted: bool = Field(..., description="떡상 예상 여부")
     guideline: str = Field(..., description="AI 성장 가이드라인")
-    top_features: List[Dict[str, any]] = Field(..., description="주요 영향 요인")
+    top_features: List[Dict[str, Any]] = Field(..., description="주요 영향 요인")
     
     class Config:
         json_schema_extra = {
@@ -88,7 +88,7 @@ class WeeklyTrends(BaseModel):
     week_number: int
     year: int
     top_keywords: List[TrendKeyword]
-    success_patterns: Dict[str, any]
+    success_patterns: Dict[str, Any]
     rising_trends: List[str]
     generated_at: datetime
 
