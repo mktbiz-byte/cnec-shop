@@ -30,7 +30,7 @@ src/database/*.db
 src/config/api_keys.json
 
 # Build files
-dist/
+# dist/  # Commented out to allow frontend/dist
 build/
 
 # Temporary files
