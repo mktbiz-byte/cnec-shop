@@ -7,38 +7,17 @@ services:
     region: singapore
     plan: standard
     branch: main
-    rootDir: ./
-    buildCommand: "bash build.sh"
-    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    rootDir: ./backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: NODE_VERSION
-        value: 22.13.0
       - key: DATABASE_URL
         value: sqlite:///./cnecplus.db
       - key: SECRET_KEY
         generateValue: true
       - key: GEMINI_API_KEY
         sync: false
-      - key: YOUTUBE_API_KEY
-        sync: false
-
-  # 데이터 수집 Cron Job (매일 새벽 3시 실행)
-  - type: cron
-    name: cnecplus-collector
-    runtime: python
-    env: python
-    region: singapore
-    plan: free
-    schedule: "0 3 * * *"
-    rootDir: ./backend
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python -m app.tasks.youtube_collector"
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: DATABASE_URL
-        value: sqlite:///./cnecplus.db
       - key: YOUTUBE_API_KEY
         sync: false

@@ -37,7 +37,7 @@ app.include_router(newsletter.router, prefix="/api/newsletter", tags=["뉴스레
 app.include_router(trends.router, prefix="/api/trends", tags=["트렌드"])
 
 # 정적 파일 서빙 (프론트엔드 빌드 파일)
-static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "client", "dist")
+static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
 if os.path.exists(static_path):
     app.mount("/assets", StaticFiles(directory=os.path.join(static_path, "assets")), name="assets")
 
