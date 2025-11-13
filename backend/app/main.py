@@ -33,7 +33,7 @@ app.include_router(reports.router, prefix="/api/reports", tags=["리포트"])
 # 정적 파일 서빙 (프론트엔드 빌드 파일)
 # Render 환경에서는 /opt/render/project/src/가 루트 경로
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-static_path = os.path.join(base_dir, "frontend", "dist")
+static_path = os.path.join(base_dir, "frontend", "dist", "public")
 print(f"[DEBUG] Base dir: {base_dir}")
 print(f"[DEBUG] Static path: {static_path}")
 print(f"[DEBUG] Static path exists: {os.path.exists(static_path)}")
