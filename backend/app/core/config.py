@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     # 데이터베이스
     DATABASE_URL: str = "sqlite:///./cnecplus.db"  # 기본값, Render에서 PostgreSQL로 오버라이드
     
+    # Supabase 설정
+    SUPABASE_URL: str = "https://miwcvuwvuhnsieytvife.supabase.co"
+    SUPABASE_ANON_KEY: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pd2N2dXd2dWhuc2lleXR2aWZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwMTExNTEsImV4cCI6MjA3ODU4NzE1MX0.1R2AzSNeZvpnDZFxYT8Y6iqGkhykHD86Ulj2V-UHqUQ"
+    
     # API 키
     YOUTUBE_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None

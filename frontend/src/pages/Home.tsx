@@ -125,30 +125,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* 최근 분석 리포트 섹션 */}
       <section className="border-t bg-secondary/30 py-16">
         <div className="container">
-          <div className="grid gap-8 md:grid-cols-3 text-center">
-            <div>
-              <div className="text-4xl font-bold text-primary">10,000+</div>
-              <div className="mt-2 text-sm text-muted-foreground">분석된 영상 데이터</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-primary">85%</div>
-              <div className="mt-2 text-sm text-muted-foreground">예측 정확도</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-primary">500+</div>
-              <div className="mt-2 text-sm text-muted-foreground">구독자</div>
-            </div>
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold mb-2">최근 분석된 급상승 영상</h3>
+            <p className="text-muted-foreground">AI가 분석한 최신 성공 사례를 확인하세요</p>
+          </div>
+          <div className="flex justify-center">
+            <Link href="/reports">
+              <Button size="lg" variant="outline" className="gap-2">
+                <BarChart3 className="h-5 w-5" />
+                분석 리포트 보기
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="border-t py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>© 2025 CnecPlus AI. Powered by AI & YouTube Data API.</p>
+        <div className="container space-y-4">
+          <div className="text-center text-sm text-muted-foreground">
+            <p className="mb-4">© 2025 CnecPlus AI. Powered by AI & YouTube Data API.</p>
+            <div className="max-w-3xl mx-auto text-xs space-y-2 border-t pt-4">
+              <p className="font-semibold">유튜브 API 사용 약관</p>
+              <p>본 서비스는 YouTube API Services를 사용하며, 사용 시 <a href="https://www.youtube.com/t/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">YouTube 서비스 약관</a> 및 <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google 개인정보처리방침</a>에 동의하는 것으로 간주됩니다.</p>
+              <p>수집된 데이터는 30일 동안 보관되며, YouTube API 정책에 따라 자동으로 삭제됩니다.</p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
