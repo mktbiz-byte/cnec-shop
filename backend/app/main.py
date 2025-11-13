@@ -38,7 +38,10 @@ app.add_middleware(
 
 # 정적 파일 서빙 (프론트엔드 빌드 파일)
 static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+print(f"[DEBUG] Static path: {static_path}")
+print(f"[DEBUG] Static path exists: {os.path.exists(static_path)}")
 if os.path.exists(static_path):
+    print(f"[DEBUG] Mounting /assets from {os.path.join(static_path, 'assets')}")
     app.mount("/assets", StaticFiles(directory=os.path.join(static_path, "assets")), name="assets")
 
 @app.get("/")
