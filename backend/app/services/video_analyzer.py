@@ -72,7 +72,7 @@ def generate_analysis_report(video_data: Dict) -> Dict:
         }
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         prompt = f"""
 당신은 뷰티 유튜브 전문 분석가입니다. 다음 영상을 분석하여 상세한 리포트를 작성해주세요.
