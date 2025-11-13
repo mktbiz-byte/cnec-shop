@@ -5,7 +5,7 @@ services:
     runtime: python
     env: python
     region: singapore
-    plan: starter  # 24시간 실행을 위해 유료 플랜 권장 (무료는 15분 후 sleep)
+    plan: free
     rootDir: ./backend
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
@@ -13,15 +13,13 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DATABASE_URL
-        value: sqlite:///./cnecplus.db  # 프로덕션에서는 PostgreSQL 권장
+        value: sqlite:///./cnecplus.db
       - key: SECRET_KEY
         generateValue: true
       - key: GEMINI_API_KEY
-        sync: false  # Render 대시보드에서 직접 입력
+        sync: false
       - key: YOUTUBE_API_KEY
-        sync: false  # Render 대시보드에서 직접 입력
-      - key: OPENAI_API_KEY
-        sync: false  # 선택사항
+        sync: false
 
   # 프론트엔드 웹사이트 (React/Vite)
   - type: web
@@ -30,14 +28,13 @@ services:
     env: node
     region: singapore
     plan: free
-    rootDir: ./frontend
-    buildCommand: "cd client && pnpm install && pnpm run build"
-    startCommand: "cd client && pnpm preview --host 0.0.0.0 --port $PORT"
+    buildCommand: "cd frontend && pnpm install && cd client && pnpm run build"
+    startCommand: "cd frontend/client && pnpm preview --host 0.0.0.0 --port $PORT"
     envVars:
       - key: NODE_VERSION
         value: 22.13.0
       - key: VITE_API_URL
-        value: https://cnecplus-backend.onrender.com  # 백엔드 서비스 URL
+        value: https://cnecplus-backend.onrender.com
 
   # 데이터 수집 Cron Job (매일 새벽 3시 실행)
   - type: cron
@@ -46,7 +43,7 @@ services:
     env: python
     region: singapore
     plan: free
-    schedule: "0 3 * * *"  # 매일 새벽 3시 (UTC)
+    schedule: "0 3 * * *"
     rootDir: ./backend
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python -m app.tasks.youtube_collector"
