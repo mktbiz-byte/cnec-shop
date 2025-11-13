@@ -37,12 +37,18 @@ app.add_middleware(
 # app.include_router(trends.router, prefix="/api/trends", tags=["트렌드"])
 
 # 정적 파일 서빙 (프론트엔드 빌드 파일)
-static_path = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
+# Render 환경에서는 /opt/render/project/src/가 루트 경로
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+static_path = os.path.join(base_dir, "frontend", "dist")
+print(f"[DEBUG] Base dir: {base_dir}")
 print(f"[DEBUG] Static path: {static_path}")
 print(f"[DEBUG] Static path exists: {os.path.exists(static_path)}")
 if os.path.exists(static_path):
-    print(f"[DEBUG] Mounting /assets from {os.path.join(static_path, 'assets')}")
-    app.mount("/assets", StaticFiles(directory=os.path.join(static_path, "assets")), name="assets")
+    assets_path = os.path.join(static_path, "assets")
+    print(f"[DEBUG] Mounting /assets from {assets_path}")
+    print(f"[DEBUG] Assets path exists: {os.path.exists(assets_path)}")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
 
 @app.get("/")
 async def root():
