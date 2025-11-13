@@ -89,7 +89,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground">화장품 브랜드 네트워크</p>
               </div>
               <div className="p-4 rounded-lg bg-background/50">
-                <div className="text-3xl font-bold text-primary mb-2">30%</div>
+                <div className="text-3xl font-bold text-primary mb-2">20%</div>
                 <p className="text-sm text-muted-foreground">중개 수수료 (성사 시)</p>
               </div>
             </div>
