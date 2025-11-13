@@ -59,6 +59,20 @@ async def root():
         "docs": "/docs"
     }
 
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    """모든 경로를 index.html로 리다이렉트 (SPA 지원)"""
+    # API 경로는 제외
+    if full_path.startswith("api/") or full_path == "health":
+        return {"error": "Not found"}
+    
+    if os.path.exists(static_path):
+        index_path = os.path.join(static_path, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+    
+    return {"error": "Frontend not found"}
+
 @app.get("/health")
 async def health_check():
     """헬스 체크 엔드포인트"""
