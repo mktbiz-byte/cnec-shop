@@ -8,12 +8,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-from app.api import prediction, newsletter, trends, reports
+from app.api import reports
 from app.core.config import settings
-from app.db.database import engine, Base
-
-# 데이터베이스 테이블 생성
-Base.metadata.create_all(bind=engine)
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -32,9 +28,6 @@ app.add_middleware(
 )
 
 # API 라우터 등록
-app.include_router(prediction.router, prefix="/api/prediction", tags=["예측"])
-app.include_router(newsletter.router, prefix="/api/newsletter", tags=["뉴스레터"])
-app.include_router(trends.router, prefix="/api/trends", tags=["트렌드"])
 app.include_router(reports.router, prefix="/api/reports", tags=["리포트"])
 
 # 정적 파일 서빙 (프론트엔드 빌드 파일)
