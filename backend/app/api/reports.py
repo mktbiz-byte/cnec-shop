@@ -75,10 +75,12 @@ async def generate_report(request: VideoReportRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"리포트 생성 중 오류 발생: {str(e)}")
 
+@router.get("", response_model=List[VideoReport])
 @router.get("/", response_model=List[VideoReport])
 async def get_reports(limit: int = 10, offset: int = 0):
     """
     저장된 리포트 목록 조회 (최신순)
+    슬래시 있는 경로와 없는 경로 모두 지원
     """
     try:
         result = supabase.table('video_reports')\
