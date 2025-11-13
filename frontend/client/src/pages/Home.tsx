@@ -14,15 +14,15 @@ export default function Home() {
             <Sparkles className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">{APP_TITLE}</h1>
           </div>
-          <nav className="flex gap-4">
-            <Link href="/prediction">
-              <Button variant="ghost">AI 예측</Button>
+          <nav className="flex gap-4 items-center">
+            <Link href="/reports">
+              <Button variant="ghost">리포트</Button>
             </Link>
-            <Link href="/trends">
-              <Button variant="ghost">트렌드</Button>
+            <Link href="/login">
+              <Button variant="ghost">로그인</Button>
             </Link>
-            <Link href="/newsletter">
-              <Button variant="outline">뉴스레터 구독</Button>
+            <Link href="/signup">
+              <Button variant="default">회원가입</Button>
             </Link>
           </nav>
         </div>
@@ -47,7 +47,13 @@ export default function Home() {
             매주 최신 트렌드를 받아보세요.
           </p>
           <div className="flex justify-center gap-4 pt-4">
-            <Link href="/prediction">
+            <Link href="/signup">
+              <Button size="lg" className="gap-2">
+                <Sparkles className="h-5 w-5" />
+                무료로 시작하기
+              </Button>
+            </Link>
+            <Link href="/reports">
               <Button size="lg" className="gap-2">
                 <TrendingUp className="h-5 w-5" />
                 지금 예측하기
@@ -61,6 +67,45 @@ export default function Home() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* 크리에이터 프로필 섹션 */}
+      <section className="container pb-16">
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-purple-500/5">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-3xl">🌟 5분 만에 만드는 나만의 크리에이터 프로필</CardTitle>
+            <CardDescription className="text-lg mt-2">
+              코딩 없이 전문적인 포트폴리오를 만들고, 500개 화장품 브랜드와 연결되세요
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-3 text-center">
+              <div className="p-4 rounded-lg bg-background/50">
+                <div className="text-3xl font-bold text-primary mb-2">5분</div>
+                <p className="text-sm text-muted-foreground">프로필 생성 시간</p>
+              </div>
+              <div className="p-4 rounded-lg bg-background/50">
+                <div className="text-3xl font-bold text-primary mb-2">500+</div>
+                <p className="text-sm text-muted-foreground">화장품 브랜드 네트워크</p>
+              </div>
+              <div className="p-4 rounded-lg bg-background/50">
+                <div className="text-3xl font-bold text-primary mb-2">30%</div>
+                <p className="text-sm text-muted-foreground">중개 수수료 (성사 시)</p>
+              </div>
+            </div>
+            <div className="text-center space-y-4">
+              <p className="text-muted-foreground">
+                ✅ 대표 영상 3-5개 ✅ 채널 통계 ✅ <strong className="text-foreground">협찬 단가 명시</strong> ✅ 기업 협찬 연결
+              </p>
+              <Link href="/signup">
+                <Button size="lg" className="gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  무료로 프로필 만들기
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Features */}
