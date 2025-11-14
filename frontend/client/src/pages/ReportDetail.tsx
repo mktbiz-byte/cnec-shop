@@ -6,6 +6,20 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, TrendingUp, Eye, ThumbsUp, MessageCircle, ArrowLeft, ExternalLink } from "lucide-react";
 import { Streamdown } from "streamdown";
 
+interface ScoreBreakdownItem {
+  score: number;
+  reason: string;
+}
+
+interface ScoreBreakdown {
+  content_quality: ScoreBreakdownItem;
+  hooking_power: ScoreBreakdownItem;
+  editing_quality: ScoreBreakdownItem;
+  trend_fit: ScoreBreakdownItem;
+  engagement: ScoreBreakdownItem;
+  viral_potential: ScoreBreakdownItem;
+}
+
 interface VideoReport {
   id: string;
   video_id: string;
@@ -19,6 +33,7 @@ interface VideoReport {
   thumbnail_url: string;
   analysis_report: string;
   success_score: number;
+  score_breakdown?: string | ScoreBreakdown;
   trending_keywords: string[];
   created_at: string;
 }
@@ -62,6 +77,29 @@ export default function ReportDetail() {
       hour: "2-digit",
       minute: "2-digit"
     });
+  };
+
+  const getScoreBreakdown = (): ScoreBreakdown | null => {
+    if (!report?.score_breakdown) return null;
+    try {
+      if (typeof report.score_breakdown === 'string') {
+        return JSON.parse(report.score_breakdown);
+      }
+      return report.score_breakdown as ScoreBreakdown;
+    } catch {
+      return null;
+    }
+  };
+
+  const scoreBreakdown = getScoreBreakdown();
+
+  const scoreLabels: Record<string, string> = {
+    content_quality: "콘텐츠 품질",
+    hooking_power: "후킹 파워",
+    editing_quality: "편집 완성도",
+    trend_fit: "트렌드 적합성",
+    engagement: "참여 유도",
+    viral_potential: "바이럴 가능성"
   };
 
   if (loading) {
@@ -188,6 +226,48 @@ export default function ReportDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 점수 세부 내역 */}
+        {scoreBreakdown && (
+          <Card className="mb-8 bg-white/5 border-white/10 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl text-white">📊 점수 세부 내역</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left py-3 px-4 text-gray-300 font-semibold">항목</th>
+                      <th className="text-center py-3 px-4 text-gray-300 font-semibold w-24">점수</th>
+                      <th className="text-left py-3 px-4 text-gray-300 font-semibold">이유</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(scoreBreakdown).map(([key, value]) => (
+                      <tr key={key} className="border-b border-white/5 hover:bg-white/5 transition">
+                        <td className="py-4 px-4 text-white font-medium">{scoreLabels[key] || key}</td>
+                        <td className="py-4 px-4 text-center">
+                          <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0">
+                            {value.score}
+                          </Badge>
+                        </td>
+                        <td className="py-4 px-4 text-gray-400 text-sm leading-relaxed">{value.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-6 p-4 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                <p className="text-sm text-gray-300">
+                  <strong className="text-purple-400">💡 점수 산정 방식:</strong> 각 항목은 독립적으로 평가되며, 
+                  콘텐츠 품질(30점), 후킹 파워(25점), 편집 완성도(20점), 트렌드 적합성(15점), 
+                  참여 유도(10점), 바이럴 가능성(10점)으로 구성됩니다.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* AI 분석 리포트 */}
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
