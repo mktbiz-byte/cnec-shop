@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Badge } from "@/components/ui/badge";
 import { Loader2, TrendingUp, Eye, ThumbsUp, MessageCircle, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
@@ -24,8 +23,7 @@ interface VideoReport {
 export default function Reports() {
   const [reports, setReports] = useState<VideoReport[]>([]);
   const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [videoUrl, setVideoUrl] = useState("");
+
 
   useEffect(() => {
     fetchReports();
@@ -46,30 +44,7 @@ export default function Reports() {
     }
   };
 
-  const generateReport = async () => {
-    if (!videoUrl.trim()) return;
 
-    setGenerating(true);
-    try {
-      const response = await fetch("https://cnecplus.onrender.com/api/reports/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ video_url: videoUrl }),
-      });
-
-      if (response.ok) {
-        setVideoUrl("");
-        fetchReports(); // 목록 새로고침
-      } else {
-        alert("리포트 생성에 실패했습니다.");
-      }
-    } catch (error) {
-      console.error("리포트 생성 실패:", error);
-      alert("리포트 생성 중 오류가 발생했습니다.");
-    } finally {
-      setGenerating(false);
-    }
-  };
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -101,42 +76,6 @@ export default function Reports() {
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        {/* 리포트 생성 섹션 */}
-        <Card className="mb-12 bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl text-white">새 영상 분석하기</CardTitle>
-            <CardDescription className="text-gray-400">
-              유튜브 영상 URL을 입력하면 AI가 자동으로 분석 리포트를 생성합니다
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Input
-                type="url"
-                placeholder="https://www.youtube.com/watch?v=..."
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-500"
-                disabled={generating}
-              />
-              <Button
-                onClick={generateReport}
-                disabled={generating || !videoUrl.trim()}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    분석 중...
-                  </>
-                ) : (
-                  "분석 시작"
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* 리포트 목록 */}
         <h2 className="text-3xl font-bold text-white mb-8">최근 분석 리포트</h2>
 
