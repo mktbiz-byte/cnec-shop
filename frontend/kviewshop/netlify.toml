@@ -9,24 +9,19 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
-# 환경 변수 (Netlify 대시보드에서 설정)
-# NEXT_PUBLIC_SUPABASE_URL
-# NEXT_PUBLIC_SUPABASE_ANON_KEY
-# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-# STRIPE_SECRET_KEY
+# 루트 경로 리다이렉트
+[[redirects]]
+  from = "/"
+  to = "/en/login"
+  status = 302
+  force = false
 
-# 리다이렉트 설정 (크리에이터 샵 URL 지원)
+# 크리에이터 샵 URL 지원
 [[redirects]]
   from = "/@*"
   to = "/en/@:splat"
   status = 302
-
-# SPA 폴백
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  conditions = {Role = ["admin"]}
+  force = false
 
 # 헤더 설정
 [[headers]]
@@ -42,8 +37,3 @@
   for = "/_next/static/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/images/*"
-  [headers.values]
-    Cache-Control = "public, max-age=86400"
