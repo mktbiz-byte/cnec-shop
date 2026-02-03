@@ -135,8 +135,8 @@ export default function CreatorDashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Manage your shop</CardDescription>
+          <CardTitle>빠른 작업</CardTitle>
+          <CardDescription>샵 관리</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           <Button variant="outline" className="justify-start h-12" asChild>
@@ -154,7 +154,7 @@ export default function CreatorDashboardPage() {
           <Button variant="outline" className="justify-start h-12 btn-gold" asChild>
             <Link href={`/${locale}/creator/settlements`}>
               <DollarSign className="mr-3 h-5 w-5" />
-              View Earnings
+              수익 보기
             </Link>
           </Button>
         </CardContent>

@@ -35,12 +35,12 @@ export default function CreatorProductsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-headline font-bold">{t('pickProducts')}</h1>
-        <p className="text-muted-foreground">Select products to display in your shop</p>
+        <p className="text-muted-foreground">내 샵에 표시할 상품을 선택하세요</p>
       </div>
 
       <Tabs defaultValue="browse" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="browse">Browse Products</TabsTrigger>
+          <TabsTrigger value="browse">상품 둘러보기</TabsTrigger>
           <TabsTrigger value="picked">{t('pickedProducts')} (0)</TabsTrigger>
         </TabsList>
 
@@ -50,7 +50,7 @@ export default function CreatorProductsPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder={`${tCommon('search')} products...`}
+                  placeholder="상품 검색..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
@@ -60,12 +60,12 @@ export default function CreatorProductsPage() {
           </Card>
 
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground">로딩 중...</div>
           ) : products.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-muted-foreground">No products available yet</p>
-              <p className="text-sm text-muted-foreground">Products will appear here when brands register them</p>
+              <p className="mt-4 text-muted-foreground">아직 상품이 없습니다</p>
+              <p className="text-sm text-muted-foreground">브랜드가 상품을 등록하면 여기에 표시됩니다</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -78,13 +78,13 @@ export default function CreatorProductsPage() {
           <Card>
             <CardHeader>
               <CardTitle>{t('pickedProducts')}</CardTitle>
-              <CardDescription>Products in your shop</CardDescription>
+              <CardDescription>내 샵에 있는 상품</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <p className="mt-4 text-muted-foreground">No products picked yet</p>
-                <p className="text-sm text-muted-foreground">Browse and pick products to add to your shop</p>
+                <p className="mt-4 text-muted-foreground">선택한 상품이 없습니다</p>
+                <p className="text-sm text-muted-foreground">상품을 둘러보고 내 샵에 추가하세요</p>
               </div>
             </CardContent>
           </Card>

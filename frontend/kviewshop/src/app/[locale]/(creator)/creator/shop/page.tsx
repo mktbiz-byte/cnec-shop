@@ -11,37 +11,37 @@ import { toast } from 'sonner';
 
 export default function CreatorShopPage() {
   const [settings, setSettings] = useState({
-    displayName: 'Sakura Beauty',
-    bio: 'K-Beauty enthusiast sharing my favorite products from Korea!',
+    displayName: '',
+    bio: '',
     themeColor: '#d4af37',
-    instagram: 'https://instagram.com/sakura_beauty',
+    instagram: '',
     youtube: '',
     tiktok: '',
   });
 
   const handleSave = () => {
-    toast.success('Shop settings saved!');
+    toast.success('설정이 저장되었습니다');
   };
 
   const themeColors = [
-    { name: 'Gold', value: '#d4af37' },
-    { name: 'Rose', value: '#e91e63' },
-    { name: 'Blue', value: '#2196f3' },
-    { name: 'Purple', value: '#9c27b0' },
-    { name: 'Green', value: '#4caf50' },
-    { name: 'Orange', value: '#ff9800' },
+    { name: '골드', value: '#d4af37' },
+    { name: '로즈', value: '#e91e63' },
+    { name: '블루', value: '#2196f3' },
+    { name: '퍼플', value: '#9c27b0' },
+    { name: '그린', value: '#4caf50' },
+    { name: '오렌지', value: '#ff9800' },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Customize Shop</h1>
-          <p className="text-muted-foreground">Personalize your shop appearance</p>
+          <h1 className="text-3xl font-headline font-bold">샵 꾸미기</h1>
+          <p className="text-muted-foreground">내 샵 외관을 커스터마이징합니다</p>
         </div>
         <Button variant="outline">
           <Eye className="mr-2 h-4 w-4" />
-          Preview Shop
+          미리보기
         </Button>
       </div>
 
@@ -50,21 +50,23 @@ export default function CreatorShopPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Profile
+              프로필
             </CardTitle>
-            <CardDescription>Your public profile information</CardDescription>
+            <CardDescription>공개 프로필 정보</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Display Name</Label>
+              <Label>표시 이름</Label>
               <Input
+                placeholder="샵에 표시될 이름"
                 value={settings.displayName}
                 onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <Label>Bio</Label>
+              <Label>소개</Label>
               <Textarea
+                placeholder="나를 소개하는 글을 작성해주세요"
                 value={settings.bio}
                 onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
                 rows={4}
@@ -77,9 +79,9 @@ export default function CreatorShopPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Palette className="h-5 w-5" />
-              Theme
+              테마
             </CardTitle>
-            <CardDescription>Choose your shop accent color</CardDescription>
+            <CardDescription>샵 강조 색상 선택</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3">
@@ -109,9 +111,9 @@ export default function CreatorShopPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LinkIcon className="h-5 w-5" />
-              Social Links
+              소셜 링크
             </CardTitle>
-            <CardDescription>Connect your social media accounts</CardDescription>
+            <CardDescription>소셜 미디어 계정 연결</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
@@ -146,7 +148,7 @@ export default function CreatorShopPage() {
 
       <div className="flex justify-end">
         <Button className="btn-gold" onClick={handleSave}>
-          Save Changes
+          저장하기
         </Button>
       </div>
     </div>
