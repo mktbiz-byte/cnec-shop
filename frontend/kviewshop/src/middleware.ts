@@ -24,9 +24,12 @@ export async function middleware(request: NextRequest) {
   // Update Supabase session
   const { supabaseResponse, user } = await updateSession(request);
 
-  // Protected routes - require authentication
+  // Login pages should be accessible without authentication
+  const isLoginPage = /^\/(en|ja|ko)\/(brand|creator)\/login/.test(pathname);
+
+  // Protected routes - require authentication (exclude login pages)
   const protectedPaths = ['/admin', '/brand', '/creator'];
-  const isProtectedRoute = protectedPaths.some((path) => {
+  const isProtectedRoute = !isLoginPage && protectedPaths.some((path) => {
     const localePattern = new RegExp(`^/(en|ja|ko)${path}`);
     return localePattern.test(pathname);
   });
@@ -40,8 +43,8 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Role-based access control
-  if (user) {
+  // Role-based access control (exclude login pages)
+  if (user && !isLoginPage) {
     const userMetadata = user.user_metadata;
     const userRole = userMetadata?.role;
 
