@@ -161,9 +161,9 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
-          <Link href={`/${locale}/@${creator.username}`}>
+          <Link href={`/${locale}/shop/${creator.username}`}>
             <span className="font-headline text-2xl font-bold text-gold-gradient">
-              KviewShop
+              CNEC
             </span>
           </Link>
 
@@ -262,7 +262,7 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
                     </div>
                     <Button className="w-full btn-gold" asChild>
                       <Link
-                        href={`/${locale}/@${creator.username}/checkout`}
+                        href={`/${locale}/shop/${creator.username}/checkout`}
                         onClick={() => setCartOpen(false)}
                       >
                         {t('checkout')}
@@ -344,7 +344,7 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
       {/* Footer */}
       <footer className="border-t border-border py-6">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>Powered by <span className="text-primary font-medium">KviewShop</span></p>
+          <p>Powered by <span className="text-primary font-medium">CNEC Commerce</span></p>
           <p className="mt-1">Premium K-Beauty, Curated by Creators</p>
         </div>
       </footer>

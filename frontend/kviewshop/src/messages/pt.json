@@ -71,7 +71,7 @@
     "myShop": "Minha loja",
     "settings": "Configuracoes",
     "profile": "Perfil",
-    "mocra": "Status MoCRA"
+    "support": "Suporte"
   },
   "shop": {
     "title": "Loja",
@@ -118,7 +118,22 @@
     "shippingAddress": "Endereco de entrega",
     "customerInfo": "Informacoes do cliente",
     "orderSummary": "Resumo do pedido",
-    "noOrders": "Nenhum pedido encontrado"
+    "noOrders": "Nenhum pedido encontrado",
+    "manageOrders": "Gerenciar pedidos",
+    "searchOrders": "Buscar pedidos",
+    "allOrders": "Todos os pedidos",
+    "totalOrders": "Total de pedidos",
+    "recentOrders": "Pedidos recentes",
+    "totalCount": "Contagem total",
+    "myOrdersDesc": "Acompanhe e gerencie todos os seus pedidos",
+    "brandRevenue": "Receita da marca",
+    "creatorRevenue": "Receita do criador",
+    "platformFee": "Taxa da plataforma",
+    "viaCreator": "Via criador",
+    "markShipped": "Marcar como enviado",
+    "markCompleted": "Marcar como concluido",
+    "myEarning": "Meus ganhos",
+    "orderTotal": "Total do pedido"
   },
   "creator": {
     "myShop": "Minha loja",
@@ -389,5 +404,19 @@
     "accountHolder": "Titular da conta",
     "accountHolderPlaceholder": "Nome do titular da conta",
     "accountNumber": "Numero da conta"
+  },
+  "support": {
+    "title": "Suporte",
+    "subtitle": "Como podemos ajudar?",
+    "newTicket": "Criar novo ticket",
+    "categories": {
+      "product_quality": "Qualidade do produto",
+      "shipping": "Envio",
+      "returns": "Devolucoes",
+      "payment_error": "Erro de pagamento",
+      "refund": "Reembolso",
+      "creator_inquiry": "Consulta do criador",
+      "platform_inquiry": "Consulta da plataforma"
+    }
   }
 }

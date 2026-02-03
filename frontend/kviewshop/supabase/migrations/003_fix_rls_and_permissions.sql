@@ -387,5 +387,47 @@ CREATE POLICY "Users can delete own profile images" ON storage.objects
 
 
 -- =============================================
+-- 12. SUPPORT_TICKETS TABLE
+-- =============================================
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+  category TEXT NOT NULL CHECK (category IN ('product_quality', 'shipping', 'returns', 'payment_error', 'refund', 'creator_inquiry', 'platform_inquiry')),
+  subject TEXT NOT NULL,
+  description TEXT NOT NULL,
+  handler TEXT NOT NULL CHECK (handler IN ('brand', 'cnec')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')),
+  order_id TEXT,
+  response TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+
+-- Brand admins can view and create tickets for their brand
+DROP POLICY IF EXISTS "Brand admins can view own support tickets" ON support_tickets;
+CREATE POLICY "Brand admins can view own support tickets" ON support_tickets
+  FOR SELECT USING (
+    brand_id IN (SELECT id FROM brands WHERE user_id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Brand admins can create support tickets" ON support_tickets;
+CREATE POLICY "Brand admins can create support tickets" ON support_tickets
+  FOR INSERT WITH CHECK (
+    brand_id IN (SELECT id FROM brands WHERE user_id = auth.uid())
+  );
+
+-- Super admin can manage all support tickets
+DROP POLICY IF EXISTS "Super admin can manage all support tickets" ON support_tickets;
+CREATE POLICY "Super admin can manage all support tickets" ON support_tickets
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'super_admin')
+  );
+
+
+-- =============================================
 -- DONE! Run this SQL in Supabase Dashboard > SQL Editor
 -- =============================================

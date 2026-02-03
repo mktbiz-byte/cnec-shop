@@ -14,7 +14,7 @@ import {
   Users,
   Store,
   Settings,
-  AlertTriangle,
+  Headphones,
   Menu,
   X,
 } from 'lucide-react';
@@ -54,7 +54,7 @@ export function Sidebar({ role, locale }: SidebarProps) {
           { title: t('dashboard'), href: `${baseUrl}/brand/dashboard`, icon: LayoutDashboard },
           { title: t('products'), href: `${baseUrl}/brand/products`, icon: Package },
           { title: t('orders'), href: `${baseUrl}/brand/orders`, icon: ShoppingCart },
-          { title: t('mocra'), href: `${baseUrl}/brand/mocra`, icon: AlertTriangle },
+          { title: t('support'), href: `${baseUrl}/brand/support`, icon: Headphones },
           { title: t('settlements'), href: `${baseUrl}/brand/settlements`, icon: DollarSign },
           { title: t('settings'), href: `${baseUrl}/brand/settings`, icon: Settings },
         ];

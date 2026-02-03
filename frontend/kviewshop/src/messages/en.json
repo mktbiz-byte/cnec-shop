@@ -71,7 +71,7 @@
     "myShop": "My Shop",
     "settings": "Settings",
     "profile": "Profile",
-    "mocra": "MoCRA Status"
+    "support": "Support"
   },
   "shop": {
     "title": "Shop",
@@ -118,7 +118,22 @@
     "shippingAddress": "Shipping Address",
     "customerInfo": "Customer Information",
     "orderSummary": "Order Summary",
-    "noOrders": "No orders found"
+    "noOrders": "No orders found",
+    "manageOrders": "Manage product orders and track shipments",
+    "searchOrders": "Search by order #, customer, or creator...",
+    "allOrders": "All Orders",
+    "totalOrders": "Total Orders",
+    "recentOrders": "Recent Orders",
+    "totalCount": "{count} orders total",
+    "myOrdersDesc": "Track orders placed through your shop",
+    "brandRevenue": "Brand Revenue",
+    "creatorRevenue": "Creator Revenue",
+    "platformFee": "Platform Fee",
+    "viaCreator": "Via Creator",
+    "markShipped": "Mark Shipped",
+    "markCompleted": "Mark Completed",
+    "myEarning": "My Earning",
+    "orderTotal": "Order Total"
   },
   "creator": {
     "myShop": "My Shop",
@@ -433,5 +448,38 @@
     "brandLineDescPlaceholder": "Brief description of the brand line",
     "noBrandLines": "No brand lines registered",
     "noBrandLinesDesc": "Add your brand lines to organize products by brand"
+  },
+  "support": {
+    "title": "Customer Support",
+    "subtitle": "Manage support tickets and track CS requests",
+    "newTicket": "New Ticket",
+    "newTicketDesc": "Create a new support request",
+    "category": "Category",
+    "selectCategory": "Select a category",
+    "subject": "Subject",
+    "subjectPlaceholder": "Brief summary of the issue",
+    "description": "Description",
+    "descriptionPlaceholder": "Describe the issue in detail...",
+    "orderId": "Order ID",
+    "orderIdPlaceholder": "Related order number (optional)",
+    "fillRequired": "Please fill in all required fields",
+    "ticketCreated": "Support ticket created",
+    "tickets": "Support Tickets",
+    "ticketsDesc": "{count} tickets",
+    "noTickets": "No support tickets yet",
+    "response": "Response",
+    "handledBy": "Handled by",
+    "brandTeam": "Brand Team",
+    "cnecResponsibility": "CNEC Handles",
+    "brandResponsibility": "Brand Handles",
+    "categories": {
+      "product_quality": "Product Quality / Defect",
+      "shipping": "Shipping Delay / Loss",
+      "returns": "Returns / Exchange",
+      "payment_error": "Payment Error",
+      "refund": "Refund Processing",
+      "creator_inquiry": "Creator Inquiry",
+      "platform_inquiry": "Platform Usage Inquiry"
+    }
   }
 }

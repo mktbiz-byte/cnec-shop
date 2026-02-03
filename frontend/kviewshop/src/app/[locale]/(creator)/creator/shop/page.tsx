@@ -283,7 +283,7 @@ export default function CreatorShopPage() {
           {username && (
             <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
               <a
-                href={`/${locale}/@${username}`}
+                href={`/${locale}/shop/${username}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -352,6 +352,40 @@ export default function CreatorShopPage() {
               ))}
             </div>
           </div>
+        </Card>
+      )}
+
+      {/* Shop URL Banner */}
+      {username && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground mb-1">{t('shopUrl')}</p>
+              <p className="text-sm font-mono truncate">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/shop/{username}
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const url = `${window.location.origin}/${locale}/shop/${username}`;
+                  navigator.clipboard.writeText(url);
+                  toast.success(t('linkCopied'));
+                }}
+              >
+                <LinkIcon className="mr-2 h-3 w-3" />
+                {t('copyLink')}
+              </Button>
+              <Button size="sm" asChild className="btn-gold">
+                <a href={`/${locale}/shop/${username}`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-3 w-3" />
+                  {t('viewLiveShop')}
+                </a>
+              </Button>
+            </div>
+          </CardContent>
         </Card>
       )}
 

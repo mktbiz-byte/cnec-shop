@@ -71,7 +71,7 @@
     "myShop": "Мой магазин",
     "settings": "Настройки",
     "profile": "Профиль",
-    "mocra": "Статус MoCRA"
+    "support": "Поддержка"
   },
   "shop": {
     "title": "Магазин",
@@ -118,7 +118,22 @@
     "shippingAddress": "Адрес доставки",
     "customerInfo": "Информация о клиенте",
     "orderSummary": "Сводка заказа",
-    "noOrders": "Заказы не найдены"
+    "noOrders": "Заказы не найдены",
+    "manageOrders": "Управление заказами",
+    "searchOrders": "Поиск заказов",
+    "allOrders": "Все заказы",
+    "totalOrders": "Всего заказов",
+    "recentOrders": "Последние заказы",
+    "totalCount": "Общее количество",
+    "myOrdersDesc": "Отслеживайте и управляйте всеми вашими заказами",
+    "brandRevenue": "Доход бренда",
+    "creatorRevenue": "Доход создателя",
+    "platformFee": "Комиссия платформы",
+    "viaCreator": "Через создателя",
+    "markShipped": "Отметить как отправленный",
+    "markCompleted": "Отметить как выполненный",
+    "myEarning": "Мой заработок",
+    "orderTotal": "Сумма заказа"
   },
   "creator": {
     "myShop": "Мой магазин",
@@ -389,5 +404,19 @@
     "accountHolder": "Владелец счета",
     "accountHolderPlaceholder": "Имя владельца счета",
     "accountNumber": "Номер счета"
+  },
+  "support": {
+    "title": "Поддержка",
+    "subtitle": "Как мы можем вам помочь?",
+    "newTicket": "Создать новый тикет",
+    "categories": {
+      "product_quality": "Качество товара",
+      "shipping": "Доставка",
+      "returns": "Возвраты",
+      "payment_error": "Ошибка оплаты",
+      "refund": "Возврат средств",
+      "creator_inquiry": "Запрос создателя",
+      "platform_inquiry": "Запрос платформы"
+    }
   }
 }

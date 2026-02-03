@@ -71,7 +71,7 @@
     "myShop": "Mein Shop",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "mocra": "MoCRA-Status"
+    "support": "Kundenservice"
   },
   "shop": {
     "title": "Shop",
@@ -118,7 +118,22 @@
     "shippingAddress": "Lieferadresse",
     "customerInfo": "Kundeninformationen",
     "orderSummary": "Bestellubersicht",
-    "noOrders": "Keine Bestellungen gefunden"
+    "noOrders": "Keine Bestellungen gefunden",
+    "manageOrders": "Bestellungen verwalten",
+    "searchOrders": "Bestellungen suchen",
+    "allOrders": "Alle Bestellungen",
+    "totalOrders": "Gesamtbestellungen",
+    "recentOrders": "Aktuelle Bestellungen",
+    "totalCount": "Gesamtanzahl",
+    "myOrdersDesc": "Verfolgen und verwalten Sie alle Ihre Bestellungen",
+    "brandRevenue": "Markeneinnahmen",
+    "creatorRevenue": "Creator-Einnahmen",
+    "platformFee": "Plattformgebuhr",
+    "viaCreator": "Uber Creator",
+    "markShipped": "Als versendet markieren",
+    "markCompleted": "Als abgeschlossen markieren",
+    "myEarning": "Mein Verdienst",
+    "orderTotal": "Bestellsumme"
   },
   "creator": {
     "myShop": "Mein Shop",
@@ -389,5 +404,19 @@
     "accountHolder": "Kontoinhaber",
     "accountHolderPlaceholder": "Name des Kontoinhabers",
     "accountNumber": "Kontonummer"
+  },
+  "support": {
+    "title": "Kundenservice",
+    "subtitle": "Wie konnen wir Ihnen helfen?",
+    "newTicket": "Neues Ticket erstellen",
+    "categories": {
+      "product_quality": "Produktqualitat",
+      "shipping": "Versand",
+      "returns": "Rucksendungen",
+      "payment_error": "Zahlungsfehler",
+      "refund": "Erstattung",
+      "creator_inquiry": "Creator-Anfrage",
+      "platform_inquiry": "Plattform-Anfrage"
+    }
   }
 }

@@ -71,7 +71,7 @@
     "myShop": "내 샵",
     "settings": "설정",
     "profile": "프로필",
-    "mocra": "MoCRA 현황"
+    "support": "고객지원"
   },
   "shop": {
     "title": "샵",
@@ -118,7 +118,22 @@
     "shippingAddress": "배송 주소",
     "customerInfo": "고객 정보",
     "orderSummary": "주문 요약",
-    "noOrders": "주문이 없습니다"
+    "noOrders": "주문이 없습니다",
+    "manageOrders": "상품 주문 관리 및 배송 추적",
+    "searchOrders": "주문번호, 고객명, 크리에이터로 검색...",
+    "allOrders": "전체 주문",
+    "totalOrders": "총 주문",
+    "recentOrders": "최근 주문",
+    "totalCount": "총 {count}건의 주문",
+    "myOrdersDesc": "내 샵을 통해 들어온 주문을 확인합니다",
+    "brandRevenue": "브랜드 수익",
+    "creatorRevenue": "크리에이터 수익",
+    "platformFee": "플랫폼 수수료",
+    "viaCreator": "크리에이터",
+    "markShipped": "발송 처리",
+    "markCompleted": "배송 완료",
+    "myEarning": "내 수익",
+    "orderTotal": "주문 금액"
   },
   "creator": {
     "myShop": "내 샵",
@@ -456,5 +471,38 @@
     "commissionSettings": "수수료 설정",
     "mocraSettings": "MoCRA 설정",
     "systemSettings": "시스템 설정"
+  },
+  "support": {
+    "title": "고객 지원",
+    "subtitle": "고객지원 티켓을 관리하고 CS 요청을 추적합니다",
+    "newTicket": "새 티켓",
+    "newTicketDesc": "새로운 고객지원 요청을 생성합니다",
+    "category": "카테고리",
+    "selectCategory": "카테고리를 선택하세요",
+    "subject": "제목",
+    "subjectPlaceholder": "문제에 대한 간단한 요약",
+    "description": "설명",
+    "descriptionPlaceholder": "문제를 자세히 설명해주세요...",
+    "orderId": "주문 번호",
+    "orderIdPlaceholder": "관련 주문 번호 (선택)",
+    "fillRequired": "필수 항목을 모두 입력해주세요",
+    "ticketCreated": "지원 티켓이 생성되었습니다",
+    "tickets": "지원 티켓",
+    "ticketsDesc": "{count}건의 티켓",
+    "noTickets": "아직 지원 티켓이 없습니다",
+    "response": "답변",
+    "handledBy": "담당",
+    "brandTeam": "브랜드 담당",
+    "cnecResponsibility": "CNEC 담당",
+    "brandResponsibility": "브랜드 담당",
+    "categories": {
+      "product_quality": "상품 품질 / 하자",
+      "shipping": "배송 지연 / 분실",
+      "returns": "반품 / 교환",
+      "payment_error": "결제 오류",
+      "refund": "환불 처리",
+      "creator_inquiry": "크리에이터 문의",
+      "platform_inquiry": "플랫폼 이용 문의"
+    }
   }
 }

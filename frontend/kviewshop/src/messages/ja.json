@@ -71,7 +71,7 @@
     "myShop": "マイショップ",
     "settings": "設定",
     "profile": "プロフィール",
-    "mocra": "MoCRAステータス"
+    "support": "サポート"
   },
   "shop": {
     "title": "ショップ",
@@ -118,7 +118,22 @@
     "shippingAddress": "配送先住所",
     "customerInfo": "お客様情報",
     "orderSummary": "注文概要",
-    "noOrders": "注文が見つかりません"
+    "noOrders": "注文が見つかりません",
+    "manageOrders": "商品注文の管理と配送の追跡",
+    "searchOrders": "注文番号、顧客名、クリエイターで検索...",
+    "allOrders": "すべての注文",
+    "totalOrders": "総注文数",
+    "recentOrders": "最近の注文",
+    "totalCount": "合計{count}件の注文",
+    "myOrdersDesc": "あなたのショップ経由の注文を確認します",
+    "brandRevenue": "ブランド収益",
+    "creatorRevenue": "クリエイター収益",
+    "platformFee": "プラットフォーム手数料",
+    "viaCreator": "クリエイター経由",
+    "markShipped": "発送済みにする",
+    "markCompleted": "完了にする",
+    "myEarning": "収益",
+    "orderTotal": "注文金額"
   },
   "creator": {
     "myShop": "マイショップ",
@@ -433,5 +448,38 @@
     "brandLineDescPlaceholder": "ブランドラインの簡単な説明",
     "noBrandLines": "登録されたブランドラインがありません",
     "noBrandLinesDesc": "ブランドラインを追加して商品をブランド別に分類しましょう"
+  },
+  "support": {
+    "title": "カスタマーサポート",
+    "subtitle": "サポートチケットの管理とCS要求の追跡",
+    "newTicket": "新しいチケット",
+    "newTicketDesc": "新しいサポート要求を作成します",
+    "category": "カテゴリー",
+    "selectCategory": "カテゴリーを選択してください",
+    "subject": "件名",
+    "subjectPlaceholder": "問題の概要",
+    "description": "説明",
+    "descriptionPlaceholder": "問題を詳しく説明してください...",
+    "orderId": "注文番号",
+    "orderIdPlaceholder": "関連する注文番号（任意）",
+    "fillRequired": "必須項目をすべて入力してください",
+    "ticketCreated": "サポートチケットが作成されました",
+    "tickets": "サポートチケット",
+    "ticketsDesc": "{count}件のチケット",
+    "noTickets": "サポートチケットはまだありません",
+    "response": "回答",
+    "handledBy": "担当",
+    "brandTeam": "ブランドチーム",
+    "cnecResponsibility": "CNEC担当",
+    "brandResponsibility": "ブランド担当",
+    "categories": {
+      "product_quality": "商品品質・不良",
+      "shipping": "配送遅延・紛失",
+      "returns": "返品・交換",
+      "payment_error": "決済エラー",
+      "refund": "返金処理",
+      "creator_inquiry": "クリエイター問い合わせ",
+      "platform_inquiry": "プラットフォーム利用問い合わせ"
+    }
   }
 }

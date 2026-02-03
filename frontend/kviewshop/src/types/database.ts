@@ -341,6 +341,25 @@ export interface SampleRequest {
   creator?: Creator;
 }
 
+// Support Ticket Types
+export type SupportTicketCategory = 'product_quality' | 'shipping' | 'returns' | 'payment_error' | 'refund' | 'creator_inquiry' | 'platform_inquiry';
+export type SupportTicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type SupportTicketHandler = 'brand' | 'cnec';
+
+export interface SupportTicket {
+  id: string;
+  brand_id: string;
+  category: SupportTicketCategory;
+  subject: string;
+  description: string;
+  handler: SupportTicketHandler;
+  status: SupportTicketStatus;
+  order_id?: string;
+  response?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // MoCRA Thresholds
 export const MOCRA_THRESHOLDS = {
   WARNING: 800000, // $800,000
