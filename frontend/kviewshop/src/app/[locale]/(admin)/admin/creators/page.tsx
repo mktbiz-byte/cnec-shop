@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,63 +14,39 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Search, MoreHorizontal, Eye, Ban, ExternalLink } from 'lucide-react';
-import { formatCurrency } from '@/lib/i18n/config';
+import { Search, Users } from 'lucide-react';
+import { getClient } from '@/lib/supabase/client';
 
-const mockCreators = [
-  {
-    id: '1',
-    username: 'sakura_beauty',
-    display_name: 'Sakura Beauty',
-    email: 'sakura@example.com',
-    country: 'JP',
-    total_revenue: 3250,
-    total_orders: 48,
-    products_picked: 15,
-    status: 'active',
-    created_at: '2026-01-10',
-  },
-  {
-    id: '2',
-    username: 'glow_with_me',
-    display_name: 'Glow With Me',
-    email: 'glow@example.com',
-    country: 'US',
-    total_revenue: 5420,
-    total_orders: 72,
-    products_picked: 22,
-    status: 'active',
-    created_at: '2026-01-12',
-  },
-  {
-    id: '3',
-    username: 'beauty_insider',
-    display_name: 'Beauty Insider',
-    email: 'insider@example.com',
-    country: 'JP',
-    total_revenue: 1850,
-    total_orders: 28,
-    products_picked: 8,
-    status: 'suspended',
-    created_at: '2026-01-25',
-  },
-];
+interface Creator {
+  id: string;
+  username: string;
+  display_name: string;
+  country: string;
+  created_at: string;
+}
 
 export default function AdminCreatorsPage() {
   const t = useTranslations('admin');
   const [search, setSearch] = useState('');
-  const [creators] = useState(mockCreators);
+  const [creators, setCreators] = useState<Creator[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCreators() {
+      const supabase = getClient();
+      const { data } = await supabase
+        .from('creators')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setCreators(data || []);
+      setLoading(false);
+    }
+    fetchCreators();
+  }, []);
 
   const filteredCreators = creators.filter(c =>
-    c.username.toLowerCase().includes(search.toLowerCase()) ||
-    c.display_name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
+    c.username?.toLowerCase().includes(search.toLowerCase()) ||
+    c.display_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -99,69 +75,40 @@ export default function AdminCreatorsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Creator</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Orders</TableHead>
-                <TableHead>Revenue</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredCreators.map((creator) => (
-                <TableRow key={creator.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{creator.display_name}</p>
-                      <p className="text-sm text-muted-foreground">@{creator.username}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{creator.country}</Badge>
-                  </TableCell>
-                  <TableCell>{creator.products_picked}</TableCell>
-                  <TableCell>{creator.total_orders}</TableCell>
-                  <TableCell className="font-medium text-primary">
-                    {formatCurrency(creator.total_revenue, 'USD')}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={creator.status === 'active' ? 'default' : 'destructive'}>
-                      {creator.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{creator.created_at}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Visit Shop
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          <Ban className="mr-2 h-4 w-4" />
-                          Suspend
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : filteredCreators.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-muted-foreground">No creators registered yet</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Creator</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Joined</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCreators.map((creator) => (
+                  <TableRow key={creator.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{creator.display_name || creator.username}</p>
+                        <p className="text-sm text-muted-foreground">@{creator.username}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{creator.country}</Badge>
+                    </TableCell>
+                    <TableCell>{new Date(creator.created_at).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,28 +1,10 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { DollarSign, Clock, CheckCircle } from 'lucide-react';
+import { DollarSign, Clock, CheckCircle, Receipt } from 'lucide-react';
 import { formatCurrency } from '@/lib/i18n/config';
 
-const mockSettlements = [
-  { id: '1', period: '2026-01', amount: 4250, status: 'pending', created_at: '2026-02-01' },
-  { id: '2', period: '2025-12', amount: 3800, status: 'completed', paid_at: '2026-01-05' },
-  { id: '3', period: '2025-11', amount: 4100, status: 'completed', paid_at: '2025-12-05' },
-];
-
 export default function BrandSettlementsPage() {
-  const pendingAmount = mockSettlements.filter(s => s.status === 'pending').reduce((sum, s) => sum + s.amount, 0);
-
   return (
     <div className="space-y-6">
       <div>
@@ -37,7 +19,7 @@ export default function BrandSettlementsPage() {
             <Clock className="h-4 w-4 text-warning" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning">{formatCurrency(pendingAmount, 'USD')}</div>
+            <div className="text-2xl font-bold text-warning">{formatCurrency(0, 'USD')}</div>
           </CardContent>
         </Card>
         <Card>
@@ -46,7 +28,7 @@ export default function BrandSettlementsPage() {
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(12150, 'USD')}</div>
+            <div className="text-2xl font-bold">{formatCurrency(0, 'USD')}</div>
           </CardContent>
         </Card>
         <Card>
@@ -55,7 +37,7 @@ export default function BrandSettlementsPage() {
             <CheckCircle className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">{formatCurrency(7900, 'USD')}</div>
+            <div className="text-2xl font-bold text-success">{formatCurrency(0, 'USD')}</div>
           </CardContent>
         </Card>
       </div>
@@ -66,30 +48,10 @@ export default function BrandSettlementsPage() {
           <CardDescription>Monthly settlement records</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockSettlements.map((s) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.period}</TableCell>
-                  <TableCell className="font-bold">{formatCurrency(s.amount, 'USD')}</TableCell>
-                  <TableCell>
-                    <Badge variant={s.status === 'completed' ? 'default' : 'secondary'}>
-                      {s.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{s.paid_at || s.created_at}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="text-center py-12">
+            <Receipt className="mx-auto h-12 w-12 text-muted-foreground/50" />
+            <p className="mt-4 text-muted-foreground">No settlements yet</p>
+          </div>
         </CardContent>
       </Card>
     </div>

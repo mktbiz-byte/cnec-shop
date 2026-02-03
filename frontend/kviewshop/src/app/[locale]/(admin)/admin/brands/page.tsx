@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,63 +14,47 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Search, MoreHorizontal, Check, X, Eye } from 'lucide-react';
+import { Search, Building2, Check, X } from 'lucide-react';
+import { getClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
-const mockBrands = [
-  {
-    id: '1',
-    company_name: 'Beauty Lab Korea',
-    email: 'contact@beautylab.kr',
-    business_number: '123-45-67890',
-    approved: true,
-    products_count: 24,
-    created_at: '2026-01-15',
-  },
-  {
-    id: '2',
-    company_name: 'Glow Essence',
-    email: 'info@glowessence.com',
-    business_number: '234-56-78901',
-    approved: true,
-    products_count: 18,
-    created_at: '2026-01-20',
-  },
-  {
-    id: '3',
-    company_name: 'K-Skin Pro',
-    email: 'hello@kskinpro.co.kr',
-    business_number: '345-67-89012',
-    approved: false,
-    products_count: 0,
-    created_at: '2026-02-01',
-  },
-];
+interface Brand {
+  id: string;
+  company_name: string;
+  business_number: string;
+  approved: boolean;
+  created_at: string;
+}
 
 export default function AdminBrandsPage() {
   const t = useTranslations('admin');
   const [search, setSearch] = useState('');
-  const [brands, setBrands] = useState(mockBrands);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleApprove = (id: string) => {
-    setBrands(prev => prev.map(b => b.id === id ? { ...b, approved: true } : b));
-    toast.success('Brand approved successfully');
-  };
+  useEffect(() => {
+    fetchBrands();
+  }, []);
 
-  const handleReject = (id: string) => {
-    setBrands(prev => prev.filter(b => b.id !== id));
-    toast.success('Brand rejected');
+  async function fetchBrands() {
+    const supabase = getClient();
+    const { data } = await supabase
+      .from('brands')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setBrands(data || []);
+    setLoading(false);
+  }
+
+  const handleApprove = async (id: string) => {
+    const supabase = getClient();
+    await supabase.from('brands').update({ approved: true }).eq('id', id);
+    toast.success('Brand approved');
+    fetchBrands();
   };
 
   const filteredBrands = brands.filter(b =>
-    b.company_name.toLowerCase().includes(search.toLowerCase()) ||
-    b.email.toLowerCase().includes(search.toLowerCase())
+    b.company_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -99,62 +83,48 @@ export default function AdminBrandsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Business Number</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Registered</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredBrands.map((brand) => (
-                <TableRow key={brand.id}>
-                  <TableCell className="font-medium">{brand.company_name}</TableCell>
-                  <TableCell>{brand.email}</TableCell>
-                  <TableCell>{brand.business_number}</TableCell>
-                  <TableCell>{brand.products_count}</TableCell>
-                  <TableCell>
-                    <Badge variant={brand.approved ? 'default' : 'secondary'}>
-                      {brand.approved ? 'Approved' : 'Pending'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{brand.created_at}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        {!brand.approved && (
-                          <>
-                            <DropdownMenuItem onClick={() => handleApprove(brand.id)}>
-                              <Check className="mr-2 h-4 w-4" />
-                              Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleReject(brand.id)} className="text-destructive">
-                              <X className="mr-2 h-4 w-4" />
-                              Reject
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : filteredBrands.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-muted-foreground">No brands registered yet</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company Name</TableHead>
+                  <TableHead>Business Number</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Registered</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredBrands.map((brand) => (
+                  <TableRow key={brand.id}>
+                    <TableCell className="font-medium">{brand.company_name}</TableCell>
+                    <TableCell>{brand.business_number || '-'}</TableCell>
+                    <TableCell>
+                      <Badge variant={brand.approved ? 'default' : 'secondary'}>
+                        {brand.approved ? 'Approved' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(brand.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right">
+                      {!brand.approved && (
+                        <Button size="sm" onClick={() => handleApprove(brand.id)}>
+                          <Check className="mr-2 h-4 w-4" />
+                          Approve
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
