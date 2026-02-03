@@ -35,6 +35,36 @@ ALTER TABLE creators ADD COLUMN IF NOT EXISTS notification_settings JSONB DEFAUL
 
 
 -- =============================================
+-- 1b. BRANDS TABLE - Add bank verification columns
+-- =============================================
+
+ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_code TEXT;
+ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_verified BOOLEAN DEFAULT false;
+ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_verified_at TIMESTAMPTZ;
+
+-- Update commission rate constraint to 15-60%
+ALTER TABLE brands DROP CONSTRAINT IF EXISTS brands_creator_commission_rate_check;
+ALTER TABLE brands ADD CONSTRAINT brands_creator_commission_rate_check
+  CHECK (creator_commission_rate >= 15 AND creator_commission_rate <= 60);
+
+ALTER TABLE brands DROP CONSTRAINT IF EXISTS brands_tier1_commission_rate_check;
+ALTER TABLE brands ADD CONSTRAINT brands_tier1_commission_rate_check
+  CHECK (tier1_commission_rate IS NULL OR (tier1_commission_rate >= 15 AND tier1_commission_rate <= 60));
+
+ALTER TABLE brands DROP CONSTRAINT IF EXISTS brands_tier2_commission_rate_check;
+ALTER TABLE brands ADD CONSTRAINT brands_tier2_commission_rate_check
+  CHECK (tier2_commission_rate IS NULL OR (tier2_commission_rate >= 15 AND tier2_commission_rate <= 60));
+
+ALTER TABLE brands DROP CONSTRAINT IF EXISTS brands_tier3_commission_rate_check;
+ALTER TABLE brands ADD CONSTRAINT brands_tier3_commission_rate_check
+  CHECK (tier3_commission_rate IS NULL OR (tier3_commission_rate >= 15 AND tier3_commission_rate <= 60));
+
+ALTER TABLE brands DROP CONSTRAINT IF EXISTS brands_tier4_commission_rate_check;
+ALTER TABLE brands ADD CONSTRAINT brands_tier4_commission_rate_check
+  CHECK (tier4_commission_rate IS NULL OR (tier4_commission_rate >= 15 AND tier4_commission_rate <= 60));
+
+
+-- =============================================
 -- 2. USERS TABLE - Fix RLS Policies
 -- =============================================
 -- Users need to be able to read their own data and super_admin reads all
