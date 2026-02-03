@@ -422,7 +422,17 @@
     "bankNamePlaceholder": "은행명",
     "accountHolder": "예금주",
     "accountHolderPlaceholder": "예금주명",
-    "accountNumber": "계좌번호"
+    "accountNumber": "계좌번호",
+    "brandLinesTab": "브랜드 라인",
+    "brandLinesTitle": "브랜드 라인",
+    "brandLinesDesc": "하나의 법인에서 운영하는 여러 브랜드를 관리합니다. 각 브랜드별로 로고와 상품을 분류할 수 있습니다.",
+    "addBrandLine": "브랜드 추가",
+    "brandLineName": "브랜드명",
+    "brandLineNamePlaceholder": "예: 라네즈, 설화수",
+    "brandLineDescription": "브랜드 설명",
+    "brandLineDescPlaceholder": "브랜드 라인에 대한 간단한 설명",
+    "noBrandLines": "등록된 브랜드 라인이 없습니다",
+    "noBrandLinesDesc": "브랜드 라인을 추가하여 상품을 브랜드별로 분류하세요"
   },
   "admin": {
     "title": "통합 관리자",

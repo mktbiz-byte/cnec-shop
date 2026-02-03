@@ -75,7 +75,7 @@ export function Sidebar({ role, locale }: SidebarProps) {
   const navItems = getNavItems();
 
   const navContent = (
-    <nav className="flex flex-col gap-2 p-4">
+    <nav className="flex flex-col gap-1 px-3 py-4">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         return (
@@ -84,14 +84,14 @@ export function Sidebar({ role, locale }: SidebarProps) {
             href={item.href}
             onClick={() => setMobileOpen(false)}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              'flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-colors',
               isActive
-                ? 'bg-sidebar-accent text-primary'
+                ? 'bg-primary/10 text-primary'
                 : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
             )}
           >
             <item.icon
-              className={cn('h-5 w-5', isActive ? 'text-primary' : '')}
+              className={cn('h-4 w-4 shrink-0', isActive ? 'text-primary' : '')}
             />
             {item.title}
           </Link>
@@ -102,19 +102,19 @@ export function Sidebar({ role, locale }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile hamburger button */}
+      {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed bottom-4 right-4 z-50 lg:hidden bg-primary text-primary-foreground p-3 rounded-full shadow-lg"
+        className="fixed bottom-4 right-4 z-50 lg:hidden bg-foreground text-background p-3 rounded-full shadow-lg transition-transform active:scale-95"
         aria-label="Toggle menu"
       >
-        {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -122,7 +122,7 @@ export function Sidebar({ role, locale }: SidebarProps) {
       {/* Mobile sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 border-r border-border bg-sidebar transition-transform duration-300 lg:hidden',
+          'fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-60 border-r border-border bg-sidebar transition-transform duration-200 ease-out lg:hidden',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -130,7 +130,7 @@ export function Sidebar({ role, locale }: SidebarProps) {
       </aside>
 
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 border-r border-border bg-sidebar hidden lg:block">
+      <aside className="fixed left-0 top-14 z-40 h-[calc(100vh-3.5rem)] w-60 border-r border-border bg-sidebar hidden lg:block">
         {navContent}
       </aside>
     </>

@@ -422,6 +422,16 @@
     "bankNamePlaceholder": "銀行名",
     "accountHolder": "口座名義人",
     "accountHolderPlaceholder": "口座名義人名",
-    "accountNumber": "口座番号"
+    "accountNumber": "口座番号",
+    "brandLinesTab": "ブランドライン",
+    "brandLinesTitle": "ブランドライン",
+    "brandLinesDesc": "1つの法人で運営する複数のブランドを管理します。各ブランドごとにロゴと商品を分類できます。",
+    "addBrandLine": "ブランド追加",
+    "brandLineName": "ブランド名",
+    "brandLineNamePlaceholder": "例: LANEIGE, Sulwhasoo",
+    "brandLineDescription": "ブランド説明",
+    "brandLineDescPlaceholder": "ブランドラインの簡単な説明",
+    "noBrandLines": "登録されたブランドラインがありません",
+    "noBrandLinesDesc": "ブランドラインを追加して商品をブランド別に分類しましょう"
   }
 }

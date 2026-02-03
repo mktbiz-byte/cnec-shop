@@ -3,8 +3,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* KviewShop Design System */
-/* Elegant and Perfect - Hermès의 우아함과 Bloomberg Terminal의 정밀함 */
+/* CNEC Design System */
+/* Premium Minimalist — Black & White + 2 Point Colors */
 
 @theme inline {
   --color-background: var(--background);
@@ -54,94 +54,94 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* KviewShop is dark-first design */
+/* Dark-first: Creator & Public pages */
 :root {
-  --radius: 0.625rem;
-  /* Deep Charcoal Background */
-  --background: #1a1a1a;
-  /* Soft White Text */
-  --foreground: #e8e8e8;
-  /* Layered Charcoal Card */
-  --card: #2a2a2a;
-  --card-foreground: #e8e8e8;
-  --popover: #2a2a2a;
-  --popover-foreground: #e8e8e8;
-  /* Refined Gold Primary */
-  --primary: #d4af37;
-  --primary-foreground: #1a1a1a;
-  /* Muted Bronze Secondary */
-  --secondary: #8b7355;
-  --secondary-foreground: #e8e8e8;
-  --muted: #3a3a3a;
-  --muted-foreground: #a0a0a0;
-  /* Bronze Accent */
-  --accent: #8b7355;
-  --accent-foreground: #e8e8e8;
-  --destructive: #dc2626;
-  --border: #3a3a3a;
-  --input: #3a3a3a;
-  --ring: #d4af37;
-  /* Custom colors */
-  --gold: #d4af37;
-  --gold-foreground: #1a1a1a;
-  --bronze: #8b7355;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  /* Chart colors */
-  --chart-1: #d4af37;
-  --chart-2: #8b7355;
-  --chart-3: #22c55e;
-  --chart-4: #f59e0b;
-  --chart-5: #dc2626;
+  --radius: 0.5rem;
+  /* True Black Base */
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  /* Elevated Surface */
+  --card: #18181B;
+  --card-foreground: #FAFAFA;
+  --popover: #18181B;
+  --popover-foreground: #FAFAFA;
+  /* Point Color 1: Deep Blue */
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  /* Neutral Secondary */
+  --secondary: #27272A;
+  --secondary-foreground: #FAFAFA;
+  /* Muted Zinc */
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA;
+  /* Point Color 2: Rose */
+  --accent: #F43F5E;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #2563EB;
+  /* Legacy compat */
+  --gold: #2563EB;
+  --gold-foreground: #FFFFFF;
+  --bronze: #F43F5E;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  /* Charts */
+  --chart-1: #2563EB;
+  --chart-2: #F43F5E;
+  --chart-3: #22C55E;
+  --chart-4: #F59E0B;
+  --chart-5: #8B5CF6;
   /* Sidebar */
-  --sidebar: #1a1a1a;
-  --sidebar-foreground: #e8e8e8;
-  --sidebar-primary: #d4af37;
-  --sidebar-primary-foreground: #1a1a1a;
-  --sidebar-accent: #2a2a2a;
-  --sidebar-accent-foreground: #e8e8e8;
-  --sidebar-border: #3a3a3a;
-  --sidebar-ring: #d4af37;
+  --sidebar: #09090B;
+  --sidebar-foreground: #A1A1AA;
+  --sidebar-primary: #2563EB;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #18181B;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #27272A;
+  --sidebar-ring: #2563EB;
 }
 
-/* Light mode (for admin pages) */
+/* Light mode: Brand & Admin pages */
 .light {
-  --background: #fafafa;
-  --foreground: #1a1a1a;
-  --card: #ffffff;
-  --card-foreground: #1a1a1a;
-  --popover: #ffffff;
-  --popover-foreground: #1a1a1a;
-  --primary: #d4af37;
-  --primary-foreground: #1a1a1a;
-  --secondary: #8b7355;
-  --secondary-foreground: #ffffff;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #1a1a1a;
-  --destructive: #dc2626;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #d4af37;
-  --gold: #d4af37;
-  --gold-foreground: #1a1a1a;
-  --bronze: #8b7355;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --chart-1: #d4af37;
-  --chart-2: #8b7355;
-  --chart-3: #22c55e;
-  --chart-4: #f59e0b;
-  --chart-5: #dc2626;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #d4af37;
-  --sidebar-primary-foreground: #1a1a1a;
-  --sidebar-accent: #f4f4f5;
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e4e4e7;
-  --sidebar-ring: #d4af37;
+  --background: #FAFAFA;
+  --foreground: #09090B;
+  --card: #FFFFFF;
+  --card-foreground: #09090B;
+  --popover: #FFFFFF;
+  --popover-foreground: #09090B;
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F4F5;
+  --secondary-foreground: #09090B;
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A;
+  --accent: #F43F5E;
+  --accent-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #2563EB;
+  --gold: #2563EB;
+  --gold-foreground: #FFFFFF;
+  --bronze: #F43F5E;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --chart-1: #2563EB;
+  --chart-2: #F43F5E;
+  --chart-3: #22C55E;
+  --chart-4: #F59E0B;
+  --chart-5: #8B5CF6;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #71717A;
+  --sidebar-primary: #2563EB;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F4F4F5;
+  --sidebar-accent-foreground: #09090B;
+  --sidebar-border: #E4E4E7;
+  --sidebar-ring: #2563EB;
 }
 
 @layer base {
@@ -150,101 +150,109 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Montserrat', var(--font-geist-sans), sans-serif;
+    font-family: 'Inter', 'Montserrat', var(--font-geist-sans), sans-serif;
+    letter-spacing: -0.011em;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-    @apply tracking-tight;
+    font-family: 'Inter', 'Montserrat', var(--font-geist-sans), sans-serif;
+    @apply tracking-tight font-semibold;
   }
 }
 
 /* Typography */
 .font-headline {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', 'Montserrat', var(--font-geist-sans), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 
 .font-body {
-  font-family: 'Montserrat', var(--font-geist-sans), sans-serif;
+  font-family: 'Inter', 'Montserrat', var(--font-geist-sans), sans-serif;
 }
 
-/* Gold gradient text */
+/* Logo gradient - blue to rose */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #d4af37 0%, #f5e6a3 50%, #d4af37 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #7C3AED 50%, #F43F5E 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Card hover effect */
+/* Card hover — subtle lift */
 .card-hover {
-  @apply transition-all duration-300;
+  @apply transition-all duration-200 ease-out;
 }
 
 .card-hover:hover {
-  @apply shadow-lg shadow-gold/10 -translate-y-0.5;
-  border-color: var(--gold);
+  @apply shadow-md -translate-y-0.5;
+  border-color: var(--primary);
 }
 
-/* MoCRA Traffic Light Status */
+/* MoCRA Traffic Light */
 .mocra-green {
-  @apply bg-success/20 text-success border-success/30;
+  @apply bg-success/10 text-success border-success/20;
 }
 
 .mocra-yellow {
-  @apply bg-warning/20 text-warning border-warning/30;
+  @apply bg-warning/10 text-warning border-warning/20;
 }
 
 .mocra-red {
-  @apply bg-destructive/20 text-destructive border-destructive/30;
+  @apply bg-destructive/10 text-destructive border-destructive/20;
 }
 
-/* Custom scrollbar */
+/* Minimal scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--muted);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gold);
+  background: var(--muted-foreground);
 }
 
-/* Animations */
+/* Shimmer animation */
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 .animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--muted) 0%,
-    var(--card) 50%,
-    var(--muted) 100%
-  );
+  background: linear-gradient(90deg, var(--muted) 0%, var(--card) 50%, var(--muted) 100%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
 
-/* Button gold gradient */
+/* Primary CTA button */
 .btn-gold {
-  background: linear-gradient(135deg, #d4af37 0%, #c9a227 100%);
-  @apply text-background font-semibold transition-all duration-300;
+  @apply bg-primary text-primary-foreground font-medium transition-all duration-200;
 }
 
 .btn-gold:hover {
-  background: linear-gradient(135deg, #e5c048 0%, #d4af37 100%);
-  @apply shadow-lg shadow-gold/30;
+  @apply bg-primary/90 shadow-md;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
+}
+
+/* Accent badge/highlight */
+.badge-accent {
+  @apply bg-accent/10 text-accent border-accent/20;
+}
+
+/* Stat card number styling */
+.stat-value {
+  @apply text-2xl font-bold tracking-tight;
+}
+
+/* Table row hover */
+.table-row-hover:hover {
+  @apply bg-muted/50;
 }

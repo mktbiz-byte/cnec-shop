@@ -422,6 +422,16 @@
     "bankNamePlaceholder": "Bank name",
     "accountHolder": "Account Holder",
     "accountHolderPlaceholder": "Account holder name",
-    "accountNumber": "Account Number"
+    "accountNumber": "Account Number",
+    "brandLinesTab": "Brand Lines",
+    "brandLinesTitle": "Brand Lines",
+    "brandLinesDesc": "Manage multiple brand lines under your company. Each brand line can have its own logo and product catalog.",
+    "addBrandLine": "Add Brand",
+    "brandLineName": "Brand Name",
+    "brandLineNamePlaceholder": "e.g. LANEIGE, Sulwhasoo",
+    "brandLineDescription": "Description",
+    "brandLineDescPlaceholder": "Brief description of the brand line",
+    "noBrandLines": "No brand lines registered",
+    "noBrandLinesDesc": "Add your brand lines to organize products by brand"
   }
 }

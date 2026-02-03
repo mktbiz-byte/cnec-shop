@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser } from '@/lib/hooks/use-user';
-import { Globe, LogOut, Settings, User, Menu } from 'lucide-react';
+import { Globe, LogOut, Settings, User } from 'lucide-react';
 import { locales, localeNames, type Locale } from '@/lib/i18n/config';
 
 interface HeaderProps {
@@ -32,28 +32,31 @@ export function Header({ locale }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href={`/${locale}`} className="flex items-center space-x-2">
-          <span className="font-headline text-2xl font-bold text-gold-gradient">
-            KviewShop
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <div className="flex h-14 items-center justify-between px-6">
+        <Link href={`/${locale}`} className="flex items-center gap-2">
+          <span className="font-headline text-xl text-gold-gradient">
+            CNEC
+          </span>
+          <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+            Commerce
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           {/* Language Switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Globe className="h-5 w-5" />
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Globe className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="min-w-[140px]">
               {locales.map((l) => (
                 <DropdownMenuItem key={l} asChild>
                   <Link
                     href={switchLocale(l)}
-                    className={locale === l ? 'bg-accent' : ''}
+                    className={locale === l ? 'bg-accent/10 text-accent' : ''}
                   >
                     {localeNames[l]}
                   </Link>
@@ -70,19 +73,19 @@ export function Header({ locale }: HeaderProps) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="relative h-10 w-10 rounded-full"
+                      className="relative h-8 w-8 rounded-full p-0"
                     >
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-8 w-8">
                         <AvatarImage src={user.avatar_url} alt={user.name} />
-                        <AvatarFallback className="bg-primary text-primary-foreground">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                           {user.name?.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-52">
                     <div className="flex items-center gap-2 p-2">
-                      <div className="flex flex-col space-y-1">
+                      <div className="flex flex-col">
                         <p className="text-sm font-medium">{user.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {user.email}
@@ -111,10 +114,10 @@ export function Header({ locale }: HeaderProps) {
                 </DropdownMenu>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" asChild>
+                  <Button variant="ghost" size="sm" asChild>
                     <Link href={`/${locale}/login`}>{t('auth.login')}</Link>
                   </Button>
-                  <Button asChild className="btn-gold">
+                  <Button size="sm" asChild className="btn-gold">
                     <Link href={`/${locale}/signup`}>{t('auth.signup')}</Link>
                   </Button>
                 </div>

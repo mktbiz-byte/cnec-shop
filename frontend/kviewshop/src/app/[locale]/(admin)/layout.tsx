@@ -16,7 +16,7 @@ export default async function AdminLayout({
       <Header locale={locale as Locale} />
       <div className="flex">
         <Sidebar role="super_admin" locale={locale as Locale} />
-        <main className="w-full lg:ml-64 flex-1 p-4 sm:p-6">{children}</main>
+        <main className="w-full lg:ml-60 flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

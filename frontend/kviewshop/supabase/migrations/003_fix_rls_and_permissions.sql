@@ -38,6 +38,9 @@ ALTER TABLE creators ADD COLUMN IF NOT EXISTS notification_settings JSONB DEFAUL
 -- 1b. BRANDS TABLE - Add bank verification columns
 -- =============================================
 
+-- Brand lines (sub-brands) - JSONB array of { id, name, logo_url, description }
+ALTER TABLE brands ADD COLUMN IF NOT EXISTS brand_lines JSONB DEFAULT '[]'::jsonb;
+
 ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_code TEXT;
 ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_verified BOOLEAN DEFAULT false;
 ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_verified_at TIMESTAMPTZ;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Percent, Building2, CreditCard, Info, Globe, ShieldCheck, Upload, X, Check, FileText } from 'lucide-react';
+import { Settings, Percent, Building2, CreditCard, Info, Globe, ShieldCheck, Upload, X, Check, FileText, Plus, Trash2, ImageIcon, Loader2, Tags } from 'lucide-react';
+import Image from 'next/image';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
 import { useTranslations } from 'next-intl';
@@ -24,6 +25,13 @@ interface Certification {
   expiryDate: string;
   fileUrl: string;
   status: 'pending' | 'approved' | 'rejected';
+}
+
+interface BrandLine {
+  id: string;
+  name: string;
+  logo_url: string;
+  description: string;
 }
 
 export default function BrandSettingsPage() {
@@ -64,6 +72,69 @@ export default function BrandSettingsPage() {
     fileUrl: '',
   });
   const [showAddCert, setShowAddCert] = useState(false);
+
+  // Brand lines state
+  const [brandLines, setBrandLines] = useState<BrandLine[]>([]);
+  const [newBrandLine, setNewBrandLine] = useState({ name: '', description: '' });
+  const [showAddBrandLine, setShowAddBrandLine] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAddBrandLine = () => {
+    if (!newBrandLine.name.trim()) return;
+    const line: BrandLine = {
+      id: Date.now().toString(),
+      name: newBrandLine.name,
+      logo_url: '',
+      description: newBrandLine.description,
+    };
+    setBrandLines(prev => [...prev, line]);
+    setNewBrandLine({ name: '', description: '' });
+    setShowAddBrandLine(false);
+  };
+
+  const handleRemoveBrandLine = (id: string) => {
+    setBrandLines(prev => prev.filter(bl => bl.id !== id));
+  };
+
+  const handleLogoUpload = async (brandLineId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be under 2MB');
+      return;
+    }
+
+    setUploadingLogo(brandLineId);
+    try {
+      const supabase = getClient();
+      const ext = file.name.split('.').pop();
+      const path = `brand-logos/${brandLineId}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(path);
+
+      setBrandLines(prev => prev.map(bl =>
+        bl.id === brandLineId ? { ...bl, logo_url: publicUrl } : bl
+      ));
+    } catch (err) {
+      console.error('Logo upload error:', err);
+      toast.error('Failed to upload logo');
+    } finally {
+      setUploadingLogo(null);
+    }
+  };
 
   const isRegionFullySelected = (regionId: string) => {
     const codes = getRegionCountryCodes(regionId);
@@ -142,6 +213,13 @@ export default function BrandSettingsPage() {
           .eq('user_id', user.id);
       }
 
+      if (section === 'brand_lines' || !section) {
+        await supabase
+          .from('brands')
+          .update({ brand_lines: brandLines })
+          .eq('user_id', user.id);
+      }
+
       if (section === 'general' || section === 'commission' || section === 'settlement' || !section) {
         await supabase
           .from('brands')
@@ -208,6 +286,7 @@ export default function BrandSettingsPage() {
           }));
           setShippingCountries(data.shipping_countries || []);
           setCertifications(data.certifications || []);
+          setBrandLines(data.brand_lines || []);
         }
       } catch (error) {
         console.error('Failed to load settings:', error);
@@ -237,6 +316,7 @@ export default function BrandSettingsPage() {
       <Tabs defaultValue="general">
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="general">{t('generalTab')}</TabsTrigger>
+          <TabsTrigger value="brand_lines">{t('brandLinesTab')}</TabsTrigger>
           <TabsTrigger value="shipping">{t('shippingTab')}</TabsTrigger>
           <TabsTrigger value="certifications">{t('certificationsTab')}</TabsTrigger>
           <TabsTrigger value="commission">{t('commissionTab')}</TabsTrigger>
@@ -290,6 +370,128 @@ export default function BrandSettingsPage() {
                 </div>
               </div>
               <Button onClick={() => handleSave('general')} disabled={loading} className="btn-gold">
+                {loading ? tc('loading') : tc('save')}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Brand Lines Tab */}
+        <TabsContent value="brand_lines" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Tags className="h-5 w-5" />
+                    {t('brandLinesTitle')}
+                  </CardTitle>
+                  <CardDescription>{t('brandLinesDesc')}</CardDescription>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setShowAddBrandLine(true)}
+                  className="btn-gold"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t('addBrandLine')}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Add Brand Line Form */}
+              {showAddBrandLine && (
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t('brandLineName')} *</Label>
+                      <Input
+                        placeholder={t('brandLineNamePlaceholder')}
+                        value={newBrandLine.name}
+                        onChange={(e) => setNewBrandLine({ ...newBrandLine, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">{t('brandLineDescription')}</Label>
+                      <Input
+                        placeholder={t('brandLineDescPlaceholder')}
+                        value={newBrandLine.description}
+                        onChange={(e) => setNewBrandLine({ ...newBrandLine, description: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddBrandLine} className="btn-gold">
+                      {tc('add')}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowAddBrandLine(false)}>
+                      {tc('cancel')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Brand Lines List */}
+              {brandLines.length === 0 && !showAddBrandLine ? (
+                <div className="text-center py-8">
+                  <Tags className="mx-auto h-10 w-10 text-muted-foreground/40" />
+                  <p className="mt-3 text-sm text-muted-foreground">{t('noBrandLines')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('noBrandLinesDesc')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {brandLines.map((line) => (
+                    <div key={line.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                      {/* Logo */}
+                      <div className="relative group shrink-0">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          id={`logo-${line.id}`}
+                          onChange={(e) => handleLogoUpload(line.id, e)}
+                        />
+                        <label
+                          htmlFor={`logo-${line.id}`}
+                          className="block w-14 h-14 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 cursor-pointer overflow-hidden transition-colors"
+                        >
+                          {uploadingLogo === line.id ? (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            </div>
+                          ) : line.logo_url ? (
+                            <Image src={line.logo_url} alt={line.name} width={56} height={56} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                              <ImageIcon className="h-5 w-5 text-muted-foreground/40" />
+                            </div>
+                          )}
+                        </label>
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{line.name}</p>
+                        {line.description && (
+                          <p className="text-xs text-muted-foreground truncate">{line.description}</p>
+                        )}
+                      </div>
+
+                      {/* Delete */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveBrandLine(line.id)}
+                        className="text-destructive hover:text-destructive shrink-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Button onClick={() => handleSave('brand_lines')} disabled={loading} className="btn-gold">
                 {loading ? tc('loading') : tc('save')}
               </Button>
             </CardContent>
