@@ -183,14 +183,24 @@
   "admin": {
     "title": "통합 관리자",
     "brandManagement": "브랜드 관리",
+    "brandManagementDesc": "등록된 브랜드를 관리하고 승인합니다",
     "creatorManagement": "크리에이터 관리",
+    "creatorManagementDesc": "등록된 크리에이터를 관리합니다",
     "settlementManagement": "정산 관리",
+    "settlementManagementDesc": "크리에이터와 브랜드의 정산을 처리합니다",
+    "allBrands": "전체 브랜드",
+    "allCreators": "전체 크리에이터",
     "pendingApprovals": "승인 대기",
     "approvedBrands": "승인된 브랜드",
     "totalTransaction": "총 거래액",
     "platformRevenue": "플랫폼 수익",
     "approveBrand": "브랜드 승인",
     "rejectBrand": "브랜드 거절",
-    "viewDetails": "상세 보기"
+    "viewDetails": "상세 보기",
+    "settings": "설정",
+    "generalSettings": "일반 설정",
+    "commissionSettings": "수수료 설정",
+    "mocraSettings": "MoCRA 설정",
+    "systemSettings": "시스템 설정"
   }
 }
