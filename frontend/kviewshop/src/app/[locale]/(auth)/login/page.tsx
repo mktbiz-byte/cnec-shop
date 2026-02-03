@@ -43,7 +43,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const supabase = getClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
@@ -53,23 +53,32 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect based on user role
-      const { data: userData } = await supabase
-        .from('users')
-        .select('role')
-        .eq('email', data.email)
-        .single() as { data: { role: string } | null };
+      // Get role from auth user metadata first, fallback to users table
+      let role = authData.user?.user_metadata?.role;
+
+      if (!role) {
+        // Try to get from users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', authData.user?.id)
+          .single();
+        role = userData?.role;
+      }
 
       if (returnUrl) {
         router.push(returnUrl);
-      } else if (userData?.role) {
+      } else if (role) {
         const dashboardPath =
-          userData.role === 'super_admin'
+          role === 'super_admin'
             ? '/admin/dashboard'
-            : userData.role === 'brand_admin'
+            : role === 'brand_admin'
             ? '/brand/dashboard'
             : '/creator/dashboard';
         router.push(`/${locale}${dashboardPath}`);
+      } else {
+        // Default to creator dashboard if no role found
+        router.push(`/${locale}/creator/dashboard`);
       }
       router.refresh();
     } catch (error) {
@@ -110,12 +119,6 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">{t('password')}</Label>
-                <Link
-                  href={`/${locale}/forgot-password`}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {t('forgotPassword')}
-                </Link>
               </div>
               <Input
                 id="password"
