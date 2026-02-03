@@ -38,6 +38,7 @@ interface CreatorShopProps {
     profileImage?: string;
     bio?: string;
     themeColor: string;
+    backgroundColor?: string;
     country: Country;
     socialLinks?: SocialLinks;
   };
@@ -155,7 +156,7 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: creator.themeColor || '#1a1a1a' }}
+      style={{ backgroundColor: creator.backgroundColor || '#1a1a1a' }}
     >
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur">

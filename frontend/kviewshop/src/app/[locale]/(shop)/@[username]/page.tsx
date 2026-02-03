@@ -93,6 +93,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
         profileImage: creator.profile_image,
         bio: locale === 'ja' ? creator.bio_jp : locale === 'en' ? creator.bio_en : creator.bio,
         themeColor: creator.theme_color,
+        backgroundColor: creator.background_color || '#1a1a1a',
         country: creator.country,
         socialLinks: creator.social_links,
       }}

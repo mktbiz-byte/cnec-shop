@@ -1,26 +1,28 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShoppingCart } from 'lucide-react';
 
 export default function CreatorOrdersPage() {
+  const t = useTranslations('order');
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-headline font-bold">내 주문</h1>
-        <p className="text-muted-foreground">내 샵의 주문을 추적합니다</p>
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('orderSummary')}</h1>
+        <p className="text-sm text-muted-foreground">{t('noOrders')}</p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>주문 내역</CardTitle>
-          <CardDescription>총 0건의 주문</CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">{t('orderSummary')}</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">{t('noOrders')}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
-            <p className="mt-4 text-muted-foreground">주문이 없습니다</p>
-            <p className="text-sm text-muted-foreground">고객이 구매하면 여기에 표시됩니다</p>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <div className="text-center py-8 sm:py-12">
+            <ShoppingCart className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground/50" />
+            <p className="mt-4 text-muted-foreground text-sm sm:text-base">{t('noOrders')}</p>
           </div>
         </CardContent>
       </Card>

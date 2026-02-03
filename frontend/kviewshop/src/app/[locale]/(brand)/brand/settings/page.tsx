@@ -182,7 +182,7 @@ export default function BrandSettingsPage() {
           .from('brands')
           .select('*')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (data) {
           setSettings(prev => ({

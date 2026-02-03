@@ -31,7 +31,6 @@ export default function CreatorDashboardPage() {
   useEffect(() => {
     let cancelled = false;
 
-    // Safety timeout - show page after 3 seconds no matter what
     const safetyTimeout = setTimeout(() => {
       if (!cancelled) setLoading(false);
     }, 3000);
@@ -45,7 +44,7 @@ export default function CreatorDashboardPage() {
             .from('creators')
             .select('username')
             .eq('user_id', session.user.id)
-            .single();
+            .maybeSingle();
           if (data && !cancelled) setUsername(data.username);
         }
       } catch (error) {
@@ -73,105 +72,107 @@ export default function CreatorDashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-headline font-bold">{t('welcome')}</h1>
-        <p className="text-muted-foreground">{t('overview')}</p>
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('welcome')}</h1>
+        <p className="text-sm text-muted-foreground">{t('overview')}</p>
       </div>
 
       {/* Shop URL Banner */}
       {username && (
         <Card className="border-primary/50 bg-primary/5">
-          <CardContent className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-3">
-              <Store className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">{tCreator('shopUrl')}</p>
-                <p className="font-mono text-primary">{shopUrl}</p>
+          <CardContent className="p-4 sm:py-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <Store className="h-6 w-6 sm:h-8 sm:w-8 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">{tCreator('shopUrl')}</p>
+                  <p className="font-mono text-xs sm:text-sm text-primary truncate">{shopUrl}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copyShopUrl}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                <span className="ml-2">{tCreator('copyLink')}</span>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a href={`/${locale}/@${username}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                  <span className="ml-2">{tCreator('shopPreview')}</span>
-                </a>
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={copyShopUrl} className="flex-1 sm:flex-none text-xs">
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  <span className="ml-1">{tCreator('copyLink')}</span>
+                </Button>
+                <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none text-xs">
+                  <a href={`/${locale}/@${username}`} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                    <span className="ml-1 hidden sm:inline">{tCreator('shopPreview')}</span>
+                    <span className="ml-1 sm:hidden">Live</span>
+                  </a>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{tCreator('totalEarnings')}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-6 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">{tCreator('totalEarnings')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{formatCurrency(0, 'USD')}</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-primary">{formatCurrency(0, 'USD')}</div>
           </CardContent>
         </Card>
 
         <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalOrders')}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-6 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">{t('totalOrders')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-2xl font-bold">0</div>
           </CardContent>
         </Card>
 
         <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{tCreator('pickedProducts')}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-6 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">{tCreator('pickedProducts')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-2xl font-bold">0</div>
           </CardContent>
         </Card>
 
         <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{tCreator('pendingEarnings')}</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-6 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">{tCreator('pendingEarnings')}</CardTitle>
             <DollarSign className="h-4 w-4 text-warning" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">{formatCurrency(0, 'USD')}</div>
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-2xl font-bold text-warning">{formatCurrency(0, 'USD')}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <Card>
-        <CardHeader>
-          <CardTitle>빠른 작업</CardTitle>
-          <CardDescription>샵 관리</CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">{t('overview')}</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
-          <Button variant="outline" className="justify-start h-12" asChild>
+        <CardContent className="p-4 sm:p-6 pt-0 grid gap-3 grid-cols-1 sm:grid-cols-3">
+          <Button variant="outline" className="justify-start h-12 text-sm" asChild>
             <Link href={`/${locale}/creator/products`}>
               <Package className="mr-3 h-5 w-5 text-primary" />
               {tCreator('pickProducts')}
             </Link>
           </Button>
-          <Button variant="outline" className="justify-start h-12" asChild>
+          <Button variant="outline" className="justify-start h-12 text-sm" asChild>
             <Link href={`/${locale}/creator/shop`}>
               <Store className="mr-3 h-5 w-5 text-primary" />
               {tCreator('customizeShop')}
             </Link>
           </Button>
-          <Button variant="outline" className="justify-start h-12 btn-gold" asChild>
+          <Button variant="outline" className="justify-start h-12 text-sm btn-gold" asChild>
             <Link href={`/${locale}/creator/settlements`}>
               <DollarSign className="mr-3 h-5 w-5" />
-              수익 보기
+              {tCreator('earnings')}
             </Link>
           </Button>
         </CardContent>

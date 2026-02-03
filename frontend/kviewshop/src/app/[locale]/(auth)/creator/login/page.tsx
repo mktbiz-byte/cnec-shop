@@ -71,7 +71,7 @@ export default function CreatorLoginPage() {
           .from('users')
           .select('role')
           .eq('id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (userData?.role) {
           role = userData.role;
@@ -87,7 +87,7 @@ export default function CreatorLoginPage() {
           .from('creators')
           .select('id')
           .eq('user_id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (creatorData) {
           role = 'creator';

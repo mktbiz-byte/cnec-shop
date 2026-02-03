@@ -85,10 +85,14 @@ export function useUser() {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (userError) {
         console.error('Error fetching user record:', userError);
+        setLoading(false);
+        return;
+      }
+      if (!userData) {
         setLoading(false);
         return;
       }
@@ -100,15 +104,15 @@ export function useUser() {
           .from('brands')
           .select('*')
           .eq('user_id', userId)
-          .single();
-        if (!brandError) setBrand(brandData);
+          .maybeSingle();
+        if (!brandError && brandData) setBrand(brandData);
       } else if (userData.role === 'creator') {
         const { data: creatorData, error: creatorError } = await supabase
           .from('creators')
           .select('*')
           .eq('user_id', userId)
-          .single();
-        if (!creatorError) setCreator(creatorData);
+          .maybeSingle();
+        if (!creatorError && creatorData) setCreator(creatorData);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

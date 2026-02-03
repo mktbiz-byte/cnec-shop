@@ -125,7 +125,7 @@ export default function CreatorProductsPage() {
             .from('creators')
             .select('id, picked_products')
             .eq('user_id', session.user.id)
-            .single();
+            .maybeSingle();
           if (creatorData) {
             setCreatorId(creatorData.id);
             if (creatorData.picked_products) {
