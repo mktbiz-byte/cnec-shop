@@ -223,10 +223,16 @@
     "activeBrands": "アクティブブランド",
     "recentOrders": "最近の注文",
     "topProducts": "人気商品",
+    "topProductsDesc": "今月の売上上位商品",
     "topCreators": "トップクリエイター",
+    "topCreatorsDesc": "今月の売上上位クリエイター",
     "salesByCountry": "国別売上",
+    "salesByCountryDesc": "年初来の市場別売上",
     "japan": "日本",
-    "usa": "アメリカ"
+    "usa": "アメリカ",
+    "noData": "データがありません",
+    "sold": "販売",
+    "itemsSold": "件販売"
   },
   "footer": {
     "copyright": "2026 KviewShop. All rights reserved.",

@@ -223,10 +223,16 @@
     "activeBrands": "Active Brands",
     "recentOrders": "Recent Orders",
     "topProducts": "Top Products",
+    "topProductsDesc": "Best performing products this month",
     "topCreators": "Top Creators",
+    "topCreatorsDesc": "Best performing creators this month",
     "salesByCountry": "Sales by Country",
+    "salesByCountryDesc": "Year-to-date revenue by market",
     "japan": "Japan",
-    "usa": "United States"
+    "usa": "United States",
+    "noData": "No data yet",
+    "sold": "sold",
+    "itemsSold": "items sold"
   },
   "footer": {
     "copyright": "2026 KviewShop. All rights reserved.",

@@ -223,10 +223,16 @@
     "activeBrands": "활성 브랜드",
     "recentOrders": "최근 주문",
     "topProducts": "인기 상품",
+    "topProductsDesc": "이번 달 최고 실적 상품",
     "topCreators": "상위 크리에이터",
+    "topCreatorsDesc": "이번 달 최고 실적 크리에이터",
     "salesByCountry": "국가별 매출",
+    "salesByCountryDesc": "올해 시장별 매출",
     "japan": "일본",
-    "usa": "미국"
+    "usa": "미국",
+    "noData": "아직 데이터가 없습니다",
+    "sold": "판매",
+    "itemsSold": "건 판매"
   },
   "footer": {
     "copyright": "2026 케이뷰샵. All rights reserved.",
