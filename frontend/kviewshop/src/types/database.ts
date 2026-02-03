@@ -1,8 +1,8 @@
 // Database Types for KviewShop
 
 export type UserRole = 'super_admin' | 'brand_admin' | 'creator';
-export type Country = 'US' | 'JP';
-export type Currency = 'USD' | 'JPY';
+export type Country = string;
+export type Currency = string;
 export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'completed' | 'cancelled' | 'refunded';
 export type MoCRAStatus = 'green' | 'yellow' | 'red';
 export type SettlementStatus = 'pending' | 'completed';
@@ -50,6 +50,11 @@ export interface Database {
         Insert: Omit<Settlement, 'id' | 'created_at'>;
         Update: Partial<Omit<Settlement, 'id'>>;
       };
+      sample_requests: {
+        Row: SampleRequest;
+        Insert: Omit<SampleRequest, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<SampleRequest, 'id'>>;
+      };
     };
   };
 }
@@ -67,26 +72,53 @@ export interface User {
 }
 
 // Brand Types
+export interface BrandCertification {
+  id: string;
+  type: string;
+  name: string;
+  issueDate: string;
+  expiryDate: string;
+  fileUrl: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 export interface Brand {
   id: string;
   user_id: string;
   company_name: string;
   company_name_en?: string;
   company_name_jp?: string;
+  brand_name?: string;
   business_number?: string;
   logo_url?: string;
   description?: string;
   description_en?: string;
   description_jp?: string;
-  monthly_fee: number; // 월 구독료 (KRW)
-  creator_commission_rate: number; // 크리에이터 수수료율 (20-30%)
+  monthly_fee: number;
+  creator_commission_rate: number;
   mocra_status: MoCRAStatus;
-  us_sales_ytd: number; // 연간 미국 매출
-  jp_sales_ytd: number; // 연간 일본 매출
+  us_sales_ytd: number;
+  jp_sales_ytd: number;
   approved: boolean;
   approved_at?: string;
   contact_email?: string;
   contact_phone?: string;
+  // Shipping countries (ISO codes)
+  shipping_countries?: string[];
+  // Product safety certifications
+  certifications?: BrandCertification[];
+  // Tiered commission
+  enable_tiered_commission?: boolean;
+  tier1_rate?: number;
+  tier2_rate?: number;
+  tier3_rate?: number;
+  tier4_rate?: number;
+  // Settlement
+  settlement_cycle?: string;
+  minimum_payout?: number;
+  bank_name?: string;
+  account_number?: string;
+  account_holder?: string;
   created_at: string;
   updated_at: string;
 }
@@ -102,8 +134,12 @@ export interface Creator {
   bio_en?: string;
   bio_jp?: string;
   theme_color: string;
-  country: Country;
+  country?: Country;
   social_links?: SocialLinks;
+  instagram?: string;
+  youtube?: string;
+  tiktok?: string;
+  picked_products?: string[];
   total_revenue: number;
   total_orders: number;
   created_at: string;
@@ -122,14 +158,17 @@ export interface Product {
   id: string;
   brand_id: string;
   sku?: string;
+  name?: string;
   name_ko: string;
   name_en: string;
   name_jp?: string;
+  price?: number;
   price_usd: number;
   price_jpy: number;
   original_price_usd?: number;
   original_price_jpy?: number;
   stock: number;
+  description?: string;
   description_ko?: string;
   description_en?: string;
   description_jp?: string;
@@ -279,6 +318,27 @@ export interface CreatorStat {
   creator_name: string;
   total_sold: number;
   revenue: number;
+}
+
+// Sample Request Types
+export type SampleRequestStatus = 'pending' | 'approved' | 'shipped' | 'received' | 'rejected';
+
+export interface SampleRequest {
+  id: string;
+  creator_id: string;
+  brand_id: string;
+  product_ids: string[];
+  status: SampleRequestStatus;
+  shipping_address?: ShippingAddress;
+  message?: string;
+  admin_note?: string;
+  tracking_number?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  products?: Product[];
+  brand?: Brand;
+  creator?: Creator;
 }
 
 // MoCRA Thresholds

@@ -29,10 +29,11 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session if expired - required for Server Components
+  // Use getSession() instead of getUser() to avoid network calls that can hang
+  // getSession() reads from cookies (fast), getUser() calls Supabase API (can timeout)
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  return { supabaseResponse, user };
+  return { supabaseResponse, user: session?.user ?? null };
 }

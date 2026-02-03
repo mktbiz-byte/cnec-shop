@@ -1,39 +1,51 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import type { User, Brand, Creator } from '@/types/database';
 
 export function useUser() {
   const { user, brand, creator, isLoading, setUser, setBrand, setCreator, setLoading } =
     useAuthStore();
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
+  const fetchingRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const supabase = getClient();
+    let cancelled = false;
 
-    // Get initial session
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    const initSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await fetchUserData(session.user.id);
-      } else {
-        setLoading(false);
+        if (cancelled) return;
+
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          await fetchUserData(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        if (!cancelled) setLoading(false);
       }
+      initializedRef.current = true;
     };
 
-    getSession();
+    initSession();
 
-    // Listen for auth changes
+    // Listen for auth changes - skip initial event if we already handled it
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
+      if (!initializedRef.current) return;
+
       if (session?.user) {
         setSupabaseUser(session.user);
         await fetchUserData(session.user.id);
@@ -46,43 +58,62 @@ export function useUser() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Safety timeout - ensure loading is false after 5 seconds no matter what
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(safetyTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserData = async (userId: string) => {
+    // Prevent concurrent fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     const supabase = getClient();
     setLoading(true);
 
     try {
-      // Fetch user data
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('Error fetching user record:', userError);
+        setLoading(false);
+        return;
+      }
       setUser(userData);
 
       // Fetch role-specific data
       if (userData.role === 'brand_admin') {
-        const { data: brandData } = await supabase
+        const { data: brandData, error: brandError } = await supabase
           .from('brands')
           .select('*')
           .eq('user_id', userId)
           .single();
-        setBrand(brandData);
+        if (!brandError) setBrand(brandData);
       } else if (userData.role === 'creator') {
-        const { data: creatorData } = await supabase
+        const { data: creatorData, error: creatorError } = await supabase
           .from('creators')
           .select('*')
           .eq('user_id', userId)
           .single();
-        setCreator(creatorData);
+        if (!creatorError) setCreator(creatorData);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
+      fetchingRef.current = false;
       setLoading(false);
     }
   };

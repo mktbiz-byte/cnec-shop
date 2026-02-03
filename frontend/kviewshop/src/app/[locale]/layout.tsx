@@ -1,7 +1,7 @@
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { locales, type Locale } from '@/lib/i18n/config';
+import { locales, isRTL, type Locale } from '@/lib/i18n/config';
 import { Providers } from '@/components/providers';
 
 interface LocaleLayoutProps {
@@ -25,7 +25,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    <html lang={locale} dir={isRTL(locale as Locale) ? 'rtl' : 'ltr'}>
       <body>
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>

@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, Sparkles, Building2 } from 'lucide-react';
+import { Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const loginSchema = z.object({
@@ -23,7 +23,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+export default function CreatorLoginPage() {
   const t = useTranslations('auth');
   const router = useRouter();
   const params = useParams();
@@ -65,7 +65,7 @@ export default function LoginPage() {
       // Get role from auth user metadata first
       let role = authData.user?.user_metadata?.role;
 
-      // If no role in metadata, check DB for user role
+      // If no role in metadata, check DB
       if (!role && authData.user) {
         const { data: userData } = await supabase
           .from('users')
@@ -75,14 +75,13 @@ export default function LoginPage() {
 
         if (userData?.role) {
           role = userData.role;
-          // Update user metadata with role for future logins
           await supabase.auth.updateUser({
             data: { role: userData.role }
           });
         }
       }
 
-      // If still no role, check if user is a creator or brand
+      // If still no role, check creators table
       if (!role && authData.user) {
         const { data: creatorData } = await supabase
           .from('creators')
@@ -93,34 +92,18 @@ export default function LoginPage() {
         if (creatorData) {
           role = 'creator';
           await supabase.auth.updateUser({ data: { role: 'creator' } });
-        } else {
-          const { data: brandData } = await supabase
-            .from('brands')
-            .select('id')
-            .eq('user_id', authData.user.id)
-            .single();
-
-          if (brandData) {
-            role = 'brand_admin';
-            await supabase.auth.updateUser({ data: { role: 'brand_admin' } });
-          }
         }
       }
 
-      if (returnUrl) {
-        router.push(returnUrl);
-      } else {
-        // Route based on role, default to home if no role set
-        const dashboardPath =
-          role === 'super_admin'
-            ? '/admin/dashboard'
-            : role === 'brand_admin'
-            ? '/brand/dashboard'
-            : role === 'creator'
-            ? '/creator/dashboard'
-            : '/'; // Default to home if no role set
-        router.push(`/${locale}${dashboardPath}`);
+      // Verify user is a creator
+      if (role !== 'creator') {
+        setLoginError(t('notCreatorAccount'));
+        await supabase.auth.signOut();
+        return;
       }
+
+      const destination = returnUrl || `/${locale}/creator/dashboard`;
+      router.push(destination);
     } catch (error) {
       setLoginError(t('loginError'));
     } finally {
@@ -137,8 +120,13 @@ export default function LoginPage() {
               KviewShop
             </span>
           </Link>
-          <CardTitle className="text-2xl font-headline">{t('loginTitle')}</CardTitle>
-          <CardDescription>{t('loginSubtitle')}</CardDescription>
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-headline">{t('creatorLoginTitle')}</CardTitle>
+          <CardDescription>{t('creatorLoginSubtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -193,42 +181,23 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 space-y-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  {t('or')}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Link
-                href={`/${locale}/creator/login`}
-                className="flex items-center justify-center gap-2 rounded-lg border border-border p-3 text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <Sparkles className="h-4 w-4 text-primary" />
-                {t('creatorLogin')}
-              </Link>
-              <Link
-                href={`/${locale}/brand/login`}
-                className="flex items-center justify-center gap-2 rounded-lg border border-border p-3 text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <Building2 className="h-4 w-4 text-primary" />
-                {t('brandLogin')}
-              </Link>
-            </div>
-
-            <div className="text-center text-sm">
+          <div className="mt-6 text-center text-sm space-y-2">
+            <div>
               <span className="text-muted-foreground">{t('noAccount')} </span>
               <Link
                 href={`/${locale}/signup`}
                 className="text-primary hover:underline"
               >
-                {t('signup')}
+                {t('creatorSignup')}
+              </Link>
+            </div>
+            <div>
+              <span className="text-muted-foreground">{t('notCreator')} </span>
+              <Link
+                href={`/${locale}/brand/login`}
+                className="text-primary hover:underline"
+              >
+                {t('brandLogin')}
               </Link>
             </div>
           </div>
