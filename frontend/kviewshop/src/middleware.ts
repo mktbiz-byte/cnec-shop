@@ -1,13 +1,20 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { locales, defaultLocale } from '@/lib/i18n/config';
+import { locales, defaultLocale, localePattern } from '@/lib/i18n/config';
 
 const intlMiddleware = createMiddleware({
   locales,
   defaultLocale,
   localePrefix: 'always',
 });
+
+// Build regex patterns dynamically from config
+const LP = localePattern; // e.g. "en|ja|ko|es|it|ru|ar|zh|fr|pt|de"
+const loginPageRegex = new RegExp(`^/(${LP})/(brand|creator)/login`);
+const adminRouteRegex = new RegExp(`^/(${LP})/admin`);
+const brandRouteRegex = new RegExp(`^/(${LP})/brand`);
+const creatorRouteRegex = new RegExp(`^/(${LP})/creator`);
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -25,13 +32,13 @@ export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
 
   // Login pages should be accessible without authentication
-  const isLoginPage = /^\/(en|ja|ko)\/(brand|creator)\/login/.test(pathname);
+  const isLoginPage = loginPageRegex.test(pathname);
 
   // Protected routes - require authentication (exclude login pages)
   const protectedPaths = ['/admin', '/brand', '/creator'];
   const isProtectedRoute = !isLoginPage && protectedPaths.some((path) => {
-    const localePattern = new RegExp(`^/(en|ja|ko)${path}`);
-    return localePattern.test(pathname);
+    const pattern = new RegExp(`^/(${LP})${path}`);
+    return pattern.test(pathname);
   });
 
   if (isProtectedRoute && !user) {
@@ -49,19 +56,19 @@ export async function middleware(request: NextRequest) {
     const userRole = userMetadata?.role;
 
     // Admin routes - only super_admin
-    if (pathname.match(/^\/(en|ja|ko)\/admin/) && userRole !== 'super_admin') {
+    if (adminRouteRegex.test(pathname) && userRole !== 'super_admin') {
       const locale = pathname.split('/')[1] || defaultLocale;
       return NextResponse.redirect(new URL(`/${locale}`, request.url));
     }
 
     // Brand routes - only brand_admin
-    if (pathname.match(/^\/(en|ja|ko)\/brand/) && userRole !== 'brand_admin') {
+    if (brandRouteRegex.test(pathname) && userRole !== 'brand_admin') {
       const locale = pathname.split('/')[1] || defaultLocale;
       return NextResponse.redirect(new URL(`/${locale}`, request.url));
     }
 
     // Creator routes - only creator
-    if (pathname.match(/^\/(en|ja|ko)\/creator/) && userRole !== 'creator') {
+    if (creatorRouteRegex.test(pathname) && userRole !== 'creator') {
       const locale = pathname.split('/')[1] || defaultLocale;
       return NextResponse.redirect(new URL(`/${locale}`, request.url));
     }

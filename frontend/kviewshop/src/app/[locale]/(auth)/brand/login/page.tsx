@@ -103,24 +103,20 @@ export default function BrandLoginPage() {
       }
 
       // Check if brand is approved
-      const { data: brandData } = await supabase
+      const { data: approvalData } = await supabase
         .from('brands')
         .select('approved')
         .eq('user_id', authData.user.id)
         .single();
 
-      if (brandData && !brandData.approved) {
+      if (approvalData && !approvalData.approved) {
         setLoginError(t('brandPendingApproval'));
         await supabase.auth.signOut();
         return;
       }
 
-      if (returnUrl) {
-        router.push(returnUrl);
-      } else {
-        router.push(`/${locale}/brand/dashboard`);
-      }
-      router.refresh();
+      const destination = returnUrl || `/${locale}/brand/dashboard`;
+      router.push(destination);
     } catch (error) {
       setLoginError(t('loginError'));
     } finally {

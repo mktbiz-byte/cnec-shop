@@ -121,7 +121,6 @@ export default function LoginPage() {
             : '/'; // Default to home if no role set
         router.push(`/${locale}${dashboardPath}`);
       }
-      router.refresh();
     } catch (error) {
       setLoginError(t('loginError'));
     } finally {

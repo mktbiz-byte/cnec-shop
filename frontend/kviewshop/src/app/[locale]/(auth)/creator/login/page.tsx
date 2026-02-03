@@ -102,12 +102,8 @@ export default function CreatorLoginPage() {
         return;
       }
 
-      if (returnUrl) {
-        router.push(returnUrl);
-      } else {
-        router.push(`/${locale}/creator/dashboard`);
-      }
-      router.refresh();
+      const destination = returnUrl || `/${locale}/creator/dashboard`;
+      router.push(destination);
     } catch (error) {
       setLoginError(t('loginError'));
     } finally {
