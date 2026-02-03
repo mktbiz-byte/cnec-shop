@@ -44,7 +44,21 @@
     "emailRequired": "Email is required",
     "passwordRequired": "Password is required",
     "passwordMismatch": "Passwords do not match",
-    "passwordMinLength": "Password must be at least 8 characters"
+    "passwordMinLength": "Password must be at least 8 characters",
+    "creatorLoginTitle": "Creator Login",
+    "creatorLoginSubtitle": "Sign in to your creator dashboard",
+    "brandLoginTitle": "Business Login",
+    "brandLoginSubtitle": "Sign in to your business dashboard",
+    "creatorLogin": "Creator Login",
+    "brandLogin": "Business Login",
+    "notCreator": "Not a creator?",
+    "notBrand": "Not a business?",
+    "notCreatorAccount": "This is not a creator account",
+    "notBrandAccount": "This is not a business account",
+    "brandPendingApproval": "Your business registration is pending approval. You can login after admin approval.",
+    "emailNotConfirmed": "Email not confirmed. Please check your email.",
+    "loginError": "An error occurred during login. Please try again.",
+    "or": "or"
   },
   "nav": {
     "home": "Home",

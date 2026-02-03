@@ -44,7 +44,21 @@
     "emailRequired": "メールアドレスは必須です",
     "passwordRequired": "パスワードは必須です",
     "passwordMismatch": "パスワードが一致しません",
-    "passwordMinLength": "パスワードは8文字以上必要です"
+    "passwordMinLength": "パスワードは8文字以上必要です",
+    "creatorLoginTitle": "クリエイターログイン",
+    "creatorLoginSubtitle": "クリエイターダッシュボードにアクセス",
+    "brandLoginTitle": "企業ログイン",
+    "brandLoginSubtitle": "企業ダッシュボードにアクセス",
+    "creatorLogin": "クリエイターログイン",
+    "brandLogin": "企業ログイン",
+    "notCreator": "クリエイターではないですか？",
+    "notBrand": "企業ではないですか？",
+    "notCreatorAccount": "クリエイターアカウントではありません",
+    "notBrandAccount": "企業アカウントではありません",
+    "brandPendingApproval": "企業登録は承認待ちです。管理者の承認後にログインできます。",
+    "emailNotConfirmed": "メールアドレスが確認されていません。メールをご確認ください。",
+    "loginError": "ログイン中にエラーが発生しました。もう一度お試しください。",
+    "or": "または"
   },
   "nav": {
     "home": "ホーム",
