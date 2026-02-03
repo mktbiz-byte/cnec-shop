@@ -1,2 +1,0 @@
-// Placeholder server file
-export {};
