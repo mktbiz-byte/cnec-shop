@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,13 +22,11 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage({
-  params,
-}: {
-  params: { locale: string };
-}) {
+export default function LoginPage() {
   const t = useTranslations('auth');
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl');
   const [isLoading, setIsLoading] = useState(false);
@@ -71,7 +69,7 @@ export default function LoginPage({
             : userData.role === 'brand_admin'
             ? '/brand/dashboard'
             : '/creator/dashboard';
-        router.push(`/${params.locale}${dashboardPath}`);
+        router.push(`/${locale}${dashboardPath}`);
       }
       router.refresh();
     } catch (error) {
@@ -85,7 +83,7 @@ export default function LoginPage({
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md border-border/50">
         <CardHeader className="text-center">
-          <Link href={`/${params.locale}`} className="mb-4 inline-block">
+          <Link href={`/${locale}`} className="mb-4 inline-block">
             <span className="font-headline text-3xl font-bold text-gold-gradient">
               KviewShop
             </span>
@@ -113,7 +111,7 @@ export default function LoginPage({
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">{t('password')}</Label>
                 <Link
-                  href={`/${params.locale}/forgot-password`}
+                  href={`/${locale}/forgot-password`}
                   className="text-sm text-primary hover:underline"
                 >
                   {t('forgotPassword')}
@@ -149,7 +147,7 @@ export default function LoginPage({
           <div className="mt-6 text-center text-sm">
             <span className="text-muted-foreground">{t('noAccount')} </span>
             <Link
-              href={`/${params.locale}/signup`}
+              href={`/${locale}/signup`}
               className="text-primary hover:underline"
             >
               {t('signup')}

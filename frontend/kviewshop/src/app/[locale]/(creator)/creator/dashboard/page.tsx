@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,14 +35,12 @@ const mockRecentOrders = [
   { id: '3', orderNumber: 'KV-2026-003', product: 'Vitamin C Toner', amount: 38, date: '2026-02-01', status: 'paid' },
 ];
 
-export default function CreatorDashboardPage({
-  params,
-}: {
-  params: { locale: string };
-}) {
+export default function CreatorDashboardPage() {
   const t = useTranslations('dashboard');
   const tCreator = useTranslations('creator');
   const tOrder = useTranslations('order');
+  const params = useParams();
+  const locale = params.locale as string;
   const [copied, setCopied] = useState(false);
 
   const shopUrl = `https://kviewshop.com/@${mockCreatorStats.username}`;
@@ -93,7 +92,7 @@ export default function CreatorDashboardPage({
               <span className="ml-2">{tCreator('copyLink')}</span>
             </Button>
             <Button variant="outline" size="sm" asChild>
-              <a href={`/${params.locale}/@${mockCreatorStats.username}`} target="_blank" rel="noopener noreferrer">
+              <a href={`/${locale}/@${mockCreatorStats.username}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
                 <span className="ml-2">{tCreator('shopPreview')}</span>
               </a>
@@ -173,19 +172,19 @@ export default function CreatorDashboardPage({
           </CardHeader>
           <CardContent className="grid gap-3">
             <Button variant="outline" className="justify-start h-12" asChild>
-              <Link href={`/${params.locale}/creator/products`}>
+              <Link href={`/${locale}/creator/products`}>
                 <Package className="mr-3 h-5 w-5 text-primary" />
                 {tCreator('pickProducts')}
               </Link>
             </Button>
             <Button variant="outline" className="justify-start h-12" asChild>
-              <Link href={`/${params.locale}/creator/shop`}>
+              <Link href={`/${locale}/creator/shop`}>
                 <Store className="mr-3 h-5 w-5 text-primary" />
                 {tCreator('customizeShop')}
               </Link>
             </Button>
             <Button variant="outline" className="justify-start h-12 btn-gold" asChild>
-              <Link href={`/${params.locale}/creator/settlements`}>
+              <Link href={`/${locale}/creator/settlements`}>
                 <DollarSign className="mr-3 h-5 w-5" />
                 Request Withdrawal
               </Link>

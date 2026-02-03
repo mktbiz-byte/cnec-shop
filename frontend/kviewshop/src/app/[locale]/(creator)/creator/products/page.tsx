@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -194,13 +195,11 @@ function PickedProductItem({
   );
 }
 
-export default function CreatorProductsPage({
-  params,
-}: {
-  params: { locale: string };
-}) {
+export default function CreatorProductsPage() {
   const t = useTranslations('creator');
   const tCommon = useTranslations('common');
+  const params = useParams();
+  const locale = params.locale as string;
   const [search, setSearch] = useState('');
   const [products, setProducts] = useState(mockAvailableProducts);
 
@@ -272,7 +271,7 @@ export default function CreatorProductsPage({
                 product={product}
                 onPick={handlePick}
                 onUnpick={handleUnpick}
-                locale={params.locale}
+                locale={locale}
               />
             ))}
           </div>
@@ -312,7 +311,7 @@ export default function CreatorProductsPage({
                         product={product}
                         onUnpick={handleUnpick}
                         onToggleFeatured={handleToggleFeatured}
-                        locale={params.locale}
+                        locale={locale}
                       />
                     ))}
                   </div>

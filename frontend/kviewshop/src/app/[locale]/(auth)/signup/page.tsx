@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -61,15 +61,13 @@ const signupSchema = z
 
 type SignupForm = z.infer<typeof signupSchema>;
 
-export default function SignupPage({
-  params,
-}: {
-  params: { locale: string };
-}) {
+export default function SignupPage() {
   const t = useTranslations('auth');
   const tBrand = useTranslations('brand');
   const tCreator = useTranslations('creator');
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string;
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -141,7 +139,7 @@ export default function SignupPage({
         }
 
         toast.success('Brand registration submitted. Awaiting approval.');
-        router.push(`/${params.locale}/login`);
+        router.push(`/${locale}/login`);
       } else if (data.role === 'creator' && data.username) {
         const { error: creatorError } = await supabase.from('creators').insert({
           user_id: authData.user.id,
@@ -155,7 +153,7 @@ export default function SignupPage({
         }
 
         toast.success('Account created successfully!');
-        router.push(`/${params.locale}/creator/dashboard`);
+        router.push(`/${locale}/creator/dashboard`);
       }
 
       router.refresh();
@@ -170,7 +168,7 @@ export default function SignupPage({
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg border-border/50">
         <CardHeader className="text-center">
-          <Link href={`/${params.locale}`} className="mb-4 inline-block">
+          <Link href={`/${locale}`} className="mb-4 inline-block">
             <span className="font-headline text-3xl font-bold text-gold-gradient">
               KviewShop
             </span>
@@ -368,7 +366,7 @@ export default function SignupPage({
           <div className="mt-6 text-center text-sm">
             <span className="text-muted-foreground">{t('hasAccount')} </span>
             <Link
-              href={`/${params.locale}/login`}
+              href={`/${locale}/login`}
               className="text-primary hover:underline"
             >
               {t('login')}
