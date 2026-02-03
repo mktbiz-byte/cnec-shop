@@ -221,7 +221,25 @@
     "hideDetails": "Masquer les details",
     "shippingCountries": "Pays de livraison",
     "certifications": "Certifications",
-    "noShippingInfo": "Aucune information de livraison ou de certification disponible"
+    "noShippingInfo": "Aucune information de livraison ou de certification disponible",
+    "sampleBox": "Boite d'echantillons",
+    "sampleBoxTitle": "Demander une boite d'echantillons",
+    "sampleBoxDesc": "Demandez une boite d'echantillons pour essayer les produits avant de vendre. Les marques expedieront apres approbation.",
+    "selectSampleProducts": "Selectionnez les produits a essayer",
+    "sampleMessage": "Message (facultatif)",
+    "sampleMessagePlaceholder": "Saisissez un message pour la marque (adresse de livraison, informations sur le canal, etc.)",
+    "submitSampleRequest": "Demander une boite d'echantillons ({count} produits)",
+    "sampleRequestSent": "Demande de boite d'echantillons envoyee",
+    "sampleRequestError": "Echec de l'envoi de la demande",
+    "sampleRequestHistory": "Historique des demandes",
+    "sampleProducts": "produits",
+    "sampleStatus": {
+      "pending": "En attente",
+      "approved": "Approuve",
+      "shipped": "Expedie",
+      "received": "Recu",
+      "rejected": "Rejete"
+    }
   },
   "brandSettings": {
     "title": "Parametres de la marque",

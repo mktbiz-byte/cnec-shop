@@ -221,7 +221,25 @@
     "hideDetails": "Ocultar detalhes",
     "shippingCountries": "Paises de envio",
     "certifications": "Certificacoes",
-    "noShippingInfo": "Nenhuma informacao de envio ou certificacao disponivel"
+    "noShippingInfo": "Nenhuma informacao de envio ou certificacao disponivel",
+    "sampleBox": "Caixa de amostras",
+    "sampleBoxTitle": "Solicitar caixa de amostras",
+    "sampleBoxDesc": "Solicite uma caixa de amostras para experimentar produtos antes de vender. As marcas enviarao apos a aprovacao.",
+    "selectSampleProducts": "Selecionar produtos para experimentar",
+    "sampleMessage": "Mensagem (opcional)",
+    "sampleMessagePlaceholder": "Insira uma mensagem para a marca (endereco de entrega, informacoes do canal, etc.)",
+    "submitSampleRequest": "Solicitar caixa de amostras ({count} produtos)",
+    "sampleRequestSent": "Solicitacao de caixa de amostras enviada",
+    "sampleRequestError": "Falha ao enviar solicitacao",
+    "sampleRequestHistory": "Historico de solicitacoes",
+    "sampleProducts": "produtos",
+    "sampleStatus": {
+      "pending": "Pendente",
+      "approved": "Aprovado",
+      "shipped": "Enviado",
+      "received": "Recebido",
+      "rejected": "Rejeitado"
+    }
   },
   "brandSettings": {
     "title": "Configuracoes da marca",

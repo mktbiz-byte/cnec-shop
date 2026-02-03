@@ -221,7 +221,25 @@
     "hideDetails": "상세 숨기기",
     "shippingCountries": "배송 가능 국가",
     "certifications": "인증 현황",
-    "noShippingInfo": "배송 및 인증 정보가 없습니다"
+    "noShippingInfo": "배송 및 인증 정보가 없습니다",
+    "sampleBox": "체험 박스",
+    "sampleBoxTitle": "체험 박스 신청",
+    "sampleBoxDesc": "상품을 미리 체험해볼 수 있는 샘플 박스를 요청하세요. 브랜드가 승인 후 배송해드립니다.",
+    "selectSampleProducts": "체험할 상품 선택",
+    "sampleMessage": "메시지 (선택)",
+    "sampleMessagePlaceholder": "브랜드에게 전달할 메시지를 입력하세요 (배송 주소, 채널 정보 등)",
+    "submitSampleRequest": "{count}개 상품 체험 박스 신청",
+    "sampleRequestSent": "체험 박스 신청이 완료되었습니다",
+    "sampleRequestError": "신청에 실패했습니다",
+    "sampleRequestHistory": "신청 내역",
+    "sampleProducts": "개 상품",
+    "sampleStatus": {
+      "pending": "대기 중",
+      "approved": "승인됨",
+      "shipped": "배송 중",
+      "received": "수령 완료",
+      "rejected": "거절됨"
+    }
   },
   "brandSettings": {
     "title": "브랜드 설정",

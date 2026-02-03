@@ -13,27 +13,36 @@ export function useUser() {
 
   useEffect(() => {
     const supabase = getClient();
+    let cancelled = false;
 
-    // Get initial session
-    const getSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    // Get initial session (getSession reads from local storage, fast & reliable)
+    const initSession = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (session?.user) {
-        setSupabaseUser(session.user);
-        await fetchUserData(session.user.id);
-      } else {
-        setLoading(false);
+        if (cancelled) return;
+
+        if (session?.user) {
+          setSupabaseUser(session.user);
+          await fetchUserData(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    getSession();
+    initSession();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
       if (session?.user) {
         setSupabaseUser(session.user);
         await fetchUserData(session.user.id);
@@ -46,7 +55,10 @@ export function useUser() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserData = async (userId: string) => {
@@ -61,24 +73,30 @@ export function useUser() {
         .eq('id', userId)
         .single();
 
-      if (userError) throw userError;
+      if (userError) {
+        console.error('Error fetching user record:', userError);
+        // User might not have a record in users table yet (signed up via auth only)
+        // Use metadata from auth as fallback
+        setLoading(false);
+        return;
+      }
       setUser(userData);
 
       // Fetch role-specific data
       if (userData.role === 'brand_admin') {
-        const { data: brandData } = await supabase
+        const { data: brandData, error: brandError } = await supabase
           .from('brands')
           .select('*')
           .eq('user_id', userId)
           .single();
-        setBrand(brandData);
+        if (!brandError) setBrand(brandData);
       } else if (userData.role === 'creator') {
-        const { data: creatorData } = await supabase
+        const { data: creatorData, error: creatorError } = await supabase
           .from('creators')
           .select('*')
           .eq('user_id', userId)
           .single();
-        setCreator(creatorData);
+        if (!creatorError) setCreator(creatorData);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

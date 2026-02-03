@@ -221,7 +221,25 @@
     "hideDetails": "Ocultar detalles",
     "shippingCountries": "Paises de envio",
     "certifications": "Certificaciones",
-    "noShippingInfo": "No hay informacion de envio o certificacion disponible"
+    "noShippingInfo": "No hay informacion de envio o certificacion disponible",
+    "sampleBox": "Caja de muestras",
+    "sampleBoxTitle": "Solicitar caja de muestras",
+    "sampleBoxDesc": "Solicita una caja de muestras para probar productos antes de vender. Las marcas enviaran despues de la aprobacion.",
+    "selectSampleProducts": "Seleccionar productos para probar",
+    "sampleMessage": "Mensaje (opcional)",
+    "sampleMessagePlaceholder": "Ingresa un mensaje para la marca (direccion de envio, informacion del canal, etc.)",
+    "submitSampleRequest": "Solicitar caja de muestras ({count} productos)",
+    "sampleRequestSent": "Solicitud de caja de muestras enviada",
+    "sampleRequestError": "Error al enviar la solicitud",
+    "sampleRequestHistory": "Historial de solicitudes",
+    "sampleProducts": "productos",
+    "sampleStatus": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "shipped": "Enviado",
+      "received": "Recibido",
+      "rejected": "Rechazado"
+    }
   },
   "brandSettings": {
     "title": "Configuracion de marca",

@@ -221,7 +221,25 @@
     "hideDetails": "Hide details",
     "shippingCountries": "Shipping countries",
     "certifications": "Certifications",
-    "noShippingInfo": "No shipping or certification info available"
+    "noShippingInfo": "No shipping or certification info available",
+    "sampleBox": "Sample Box",
+    "sampleBoxTitle": "Request Sample Box",
+    "sampleBoxDesc": "Request a sample box to try products before selling. Brands will ship after approval.",
+    "selectSampleProducts": "Select products to try",
+    "sampleMessage": "Message (optional)",
+    "sampleMessagePlaceholder": "Enter a message for the brand (shipping address, channel info, etc.)",
+    "submitSampleRequest": "Request sample box ({count} products)",
+    "sampleRequestSent": "Sample box request submitted",
+    "sampleRequestError": "Failed to submit request",
+    "sampleRequestHistory": "Request History",
+    "sampleProducts": "products",
+    "sampleStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "shipped": "Shipped",
+      "received": "Received",
+      "rejected": "Rejected"
+    }
   },
   "brandSettings": {
     "title": "Brand Settings",

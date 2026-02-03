@@ -44,45 +44,59 @@ export default function CreatorShopPage() {
   ];
 
   useEffect(() => {
-    loadCreatorData();
-  }, []);
+    let cancelled = false;
 
-  const loadCreatorData = async () => {
-    try {
-      const supabase = getClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+    const loadCreatorData = async () => {
+      try {
+        const supabase = getClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user || cancelled) {
+          setIsLoading(false);
+          return;
+        }
 
-      const { data: creator } = await supabase
-        .from('creators')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+        const { data: creator } = await supabase
+          .from('creators')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
 
-      if (creator) {
-        setUsername(creator.username);
-        setSettings({
-          displayName: creator.display_name || '',
-          bio: creator.bio || '',
-          themeColor: creator.theme_color || '#d4af37',
-          instagram: creator.instagram || '',
-          youtube: creator.youtube || '',
-          tiktok: creator.tiktok || '',
-        });
+        if (cancelled) return;
+
+        if (creator) {
+          setUsername(creator.username || '');
+          setSettings({
+            displayName: creator.display_name || '',
+            bio: creator.bio || '',
+            themeColor: creator.theme_color || '#d4af37',
+            instagram: creator.instagram || '',
+            youtube: creator.youtube || '',
+            tiktok: creator.tiktok || '',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load creator data:', error);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Failed to load creator data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    loadCreatorData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const supabase = getClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const user = session.user;
 
       const { error } = await supabase
         .from('creators')

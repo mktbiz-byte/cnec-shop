@@ -221,7 +221,25 @@
     "hideDetails": "隐藏详情",
     "shippingCountries": "配送国家",
     "certifications": "认证",
-    "noShippingInfo": "暂无配送或认证信息"
+    "noShippingInfo": "暂无配送或认证信息",
+    "sampleBox": "样品盒",
+    "sampleBoxTitle": "申请样品盒",
+    "sampleBoxDesc": "申请样品盒以在销售前试用产品。品牌将在审批通过后发货。",
+    "selectSampleProducts": "选择要试用的产品",
+    "sampleMessage": "留言（可选）",
+    "sampleMessagePlaceholder": "输入给品牌的留言（收货地址、渠道信息等）",
+    "submitSampleRequest": "申请样品盒（{count} 件产品）",
+    "sampleRequestSent": "样品盒申请已提交",
+    "sampleRequestError": "提交申请失败",
+    "sampleRequestHistory": "申请记录",
+    "sampleProducts": "件产品",
+    "sampleStatus": {
+      "pending": "待处理",
+      "approved": "已通过",
+      "shipped": "已发货",
+      "received": "已收到",
+      "rejected": "已拒绝"
+    }
   },
   "brandSettings": {
     "title": "品牌设置",

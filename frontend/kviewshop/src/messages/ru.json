@@ -221,7 +221,25 @@
     "hideDetails": "Скрыть подробности",
     "shippingCountries": "Страны доставки",
     "certifications": "Сертификаты",
-    "noShippingInfo": "Информация о доставке или сертификации недоступна"
+    "noShippingInfo": "Информация о доставке или сертификации недоступна",
+    "sampleBox": "Пробная коробка",
+    "sampleBoxTitle": "Запросить пробную коробку",
+    "sampleBoxDesc": "Запросите пробную коробку, чтобы попробовать товары перед продажей. Бренды отправят после одобрения.",
+    "selectSampleProducts": "Выберите товары для пробы",
+    "sampleMessage": "Сообщение (необязательно)",
+    "sampleMessagePlaceholder": "Введите сообщение для бренда (адрес доставки, информация о канале и т.д.)",
+    "submitSampleRequest": "Запросить пробную коробку ({count} товаров)",
+    "sampleRequestSent": "Запрос пробной коробки отправлен",
+    "sampleRequestError": "Не удалось отправить запрос",
+    "sampleRequestHistory": "История запросов",
+    "sampleProducts": "товаров",
+    "sampleStatus": {
+      "pending": "В ожидании",
+      "approved": "Одобрено",
+      "shipped": "Отправлено",
+      "received": "Получено",
+      "rejected": "Отклонено"
+    }
   },
   "brandSettings": {
     "title": "Настройки бренда",

@@ -221,7 +221,25 @@
     "hideDetails": "Details ausblenden",
     "shippingCountries": "Versandlander",
     "certifications": "Zertifizierungen",
-    "noShippingInfo": "Keine Versand- oder Zertifizierungsinformationen verfugbar"
+    "noShippingInfo": "Keine Versand- oder Zertifizierungsinformationen verfugbar",
+    "sampleBox": "Musterbox",
+    "sampleBoxTitle": "Musterbox anfordern",
+    "sampleBoxDesc": "Fordern Sie eine Musterbox an, um Produkte vor dem Verkauf zu testen. Marken versenden nach Genehmigung.",
+    "selectSampleProducts": "Produkte zum Testen auswahlen",
+    "sampleMessage": "Nachricht (optional)",
+    "sampleMessagePlaceholder": "Geben Sie eine Nachricht fur die Marke ein (Lieferadresse, Kanalinformationen usw.)",
+    "submitSampleRequest": "Musterbox anfordern ({count} Produkte)",
+    "sampleRequestSent": "Musterbox-Anfrage gesendet",
+    "sampleRequestError": "Anfrage konnte nicht gesendet werden",
+    "sampleRequestHistory": "Anfragenverlauf",
+    "sampleProducts": "Produkte",
+    "sampleStatus": {
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "shipped": "Versendet",
+      "received": "Erhalten",
+      "rejected": "Abgelehnt"
+    }
   },
   "brandSettings": {
     "title": "Markeneinstellungen",

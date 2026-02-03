@@ -221,7 +221,25 @@
     "hideDetails": "Nascondi dettagli",
     "shippingCountries": "Paesi di spedizione",
     "certifications": "Certificazioni",
-    "noShippingInfo": "Nessuna informazione su spedizione o certificazione disponibile"
+    "noShippingInfo": "Nessuna informazione su spedizione o certificazione disponibile",
+    "sampleBox": "Scatola campioni",
+    "sampleBoxTitle": "Richiedi scatola campioni",
+    "sampleBoxDesc": "Richiedi una scatola campioni per provare i prodotti prima di vendere. I brand spediranno dopo l'approvazione.",
+    "selectSampleProducts": "Seleziona prodotti da provare",
+    "sampleMessage": "Messaggio (opzionale)",
+    "sampleMessagePlaceholder": "Inserisci un messaggio per il brand (indirizzo di spedizione, informazioni sul canale, ecc.)",
+    "submitSampleRequest": "Richiedi scatola campioni ({count} prodotti)",
+    "sampleRequestSent": "Richiesta scatola campioni inviata",
+    "sampleRequestError": "Invio richiesta non riuscito",
+    "sampleRequestHistory": "Storico richieste",
+    "sampleProducts": "prodotti",
+    "sampleStatus": {
+      "pending": "In attesa",
+      "approved": "Approvato",
+      "shipped": "Spedito",
+      "received": "Ricevuto",
+      "rejected": "Rifiutato"
+    }
   },
   "brandSettings": {
     "title": "Impostazioni del brand",

@@ -8,7 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Package, Globe, ShieldCheck, Check, Plus, Minus, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Package, Globe, ShieldCheck, Check, Plus, Minus, ChevronDown, ChevronUp, X, Gift, Truck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
 import { SHIPPING_REGIONS, CERTIFICATION_TYPES } from '@/lib/shipping-countries';
@@ -39,6 +42,17 @@ interface Brand {
   }[];
 }
 
+interface SampleRequest {
+  id: string;
+  creator_id: string;
+  brand_id: string;
+  product_ids: string[];
+  status: string;
+  message?: string;
+  tracking_number?: string;
+  created_at: string;
+}
+
 export default function CreatorProductsPage() {
   const t = useTranslations('creatorProducts');
   const tb = useTranslations('brandSettings');
@@ -53,6 +67,13 @@ export default function CreatorProductsPage() {
   const [pickedProductIds, setPickedProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+
+  // Sample box request state
+  const [sampleSelectedIds, setSampleSelectedIds] = useState<string[]>([]);
+  const [sampleMessage, setSampleMessage] = useState('');
+  const [sampleRequests, setSampleRequests] = useState<SampleRequest[]>([]);
+  const [submittingSample, setSubmittingSample] = useState(false);
+  const [creatorId, setCreatorId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -87,16 +108,28 @@ export default function CreatorProductsPage() {
         }
       }
 
-      // Fetch creator's picked products
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      // Fetch creator's picked products and sample requests
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
         const { data: creatorData } = await supabase
           .from('creators')
-          .select('picked_products')
-          .eq('user_id', user.id)
+          .select('id, picked_products')
+          .eq('user_id', session.user.id)
           .single();
-        if (creatorData?.picked_products) {
-          setPickedProductIds(creatorData.picked_products);
+        if (creatorData) {
+          setCreatorId(creatorData.id);
+          if (creatorData.picked_products) {
+            setPickedProductIds(creatorData.picked_products);
+          }
+          // Fetch sample requests
+          const { data: requestsData } = await supabase
+            .from('sample_requests')
+            .select('*')
+            .eq('creator_id', creatorData.id)
+            .order('created_at', { ascending: false });
+          if (requestsData) {
+            setSampleRequests(requestsData);
+          }
         }
       }
 
@@ -122,8 +155,9 @@ export default function CreatorProductsPage() {
 
   const handlePickProduct = async (productId: string) => {
     const supabase = getClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const user = session.user;
 
     const newPicked = [...pickedProductIds, productId];
     setPickedProductIds(newPicked);
@@ -138,8 +172,9 @@ export default function CreatorProductsPage() {
 
   const handleUnpickProduct = async (productId: string) => {
     const supabase = getClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const user = session.user;
 
     const newPicked = pickedProductIds.filter(id => id !== productId);
     setPickedProductIds(newPicked);
@@ -154,6 +189,75 @@ export default function CreatorProductsPage() {
 
   const getBrand = (product: Product): Brand | null => {
     return brands[product.brand_id] || null;
+  };
+
+  const toggleSampleProduct = (productId: string) => {
+    setSampleSelectedIds(prev =>
+      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+  };
+
+  const handleSubmitSampleRequest = async () => {
+    if (sampleSelectedIds.length === 0 || !creatorId) return;
+    setSubmittingSample(true);
+
+    try {
+      const supabase = getClient();
+      // Group by brand
+      const brandGroups: Record<string, string[]> = {};
+      for (const pid of sampleSelectedIds) {
+        const product = products.find(p => p.id === pid);
+        if (product) {
+          const brandId = product.brand_id;
+          if (!brandGroups[brandId]) brandGroups[brandId] = [];
+          brandGroups[brandId].push(pid);
+        }
+      }
+
+      // Create one request per brand
+      for (const [brandId, productIds] of Object.entries(brandGroups)) {
+        const { data, error } = await supabase
+          .from('sample_requests')
+          .insert({
+            creator_id: creatorId,
+            brand_id: brandId,
+            product_ids: productIds,
+            message: sampleMessage || null,
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setSampleRequests(prev => [data, ...prev]);
+        }
+      }
+
+      toast.success(t('sampleRequestSent'));
+      setSampleSelectedIds([]);
+      setSampleMessage('');
+    } catch (error) {
+      console.error('Sample request error:', error);
+      toast.error(t('sampleRequestError'));
+    } finally {
+      setSubmittingSample(false);
+    }
+  };
+
+  const getSampleStatusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
+      approved: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
+      shipped: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
+      received: 'bg-green-500/10 text-green-600 border-green-500/30',
+      rejected: 'bg-red-500/10 text-red-600 border-red-500/30',
+    };
+    return (
+      <Badge className={styles[status] || ''}>
+        {t(`sampleStatus.${status}`)}
+      </Badge>
+    );
   };
 
   const getShippingRegionSummary = (countries: string[]) => {
@@ -370,9 +474,13 @@ export default function CreatorProductsPage() {
       </div>
 
       <Tabs defaultValue="browse" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="browse">{t('browseProducts')}</TabsTrigger>
           <TabsTrigger value="picked">{tCreator('pickedProducts')} ({pickedProductIds.length})</TabsTrigger>
+          <TabsTrigger value="sample">
+            <Gift className="h-4 w-4 mr-1" />
+            {t('sampleBox')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="browse" className="space-y-4">
@@ -428,6 +536,114 @@ export default function CreatorProductsPage() {
                 renderProductCard(product, true)
               )}
             </div>
+          )}
+        </TabsContent>
+
+        {/* Sample Box Tab */}
+        <TabsContent value="sample" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gift className="h-5 w-5" />
+                {t('sampleBoxTitle')}
+              </CardTitle>
+              <CardDescription>{t('sampleBoxDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Product selection for sample */}
+              <div>
+                <Label className="mb-3 block">{t('selectSampleProducts')}</Label>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {products.map(product => (
+                    <div
+                      key={product.id}
+                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
+                        sampleSelectedIds.includes(product.id)
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:border-primary/50'
+                      }`}
+                      onClick={() => toggleSampleProduct(product.id)}
+                    >
+                      <Checkbox
+                        checked={sampleSelectedIds.includes(product.id)}
+                        onCheckedChange={() => toggleSampleProduct(product.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">${product.price?.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {products.length === 0 && (
+                  <p className="text-sm text-muted-foreground">{t('noProducts')}</p>
+                )}
+              </div>
+
+              {/* Message */}
+              <div className="space-y-2">
+                <Label>{t('sampleMessage')}</Label>
+                <Textarea
+                  placeholder={t('sampleMessagePlaceholder')}
+                  value={sampleMessage}
+                  onChange={(e) => setSampleMessage(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              {/* Submit */}
+              <Button
+                className="btn-gold w-full sm:w-auto"
+                disabled={sampleSelectedIds.length === 0 || submittingSample}
+                onClick={handleSubmitSampleRequest}
+              >
+                {submittingSample ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{tc('loading')}</>
+                ) : (
+                  <><Gift className="h-4 w-4 mr-2" />{t('submitSampleRequest', { count: sampleSelectedIds.length })}</>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Previous Requests */}
+          {sampleRequests.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{t('sampleRequestHistory')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {sampleRequests.map(req => (
+                    <div key={req.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">
+                            {req.product_ids.length} {t('sampleProducts')}
+                          </p>
+                          {getSampleStatusBadge(req.status)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(req.created_at).toLocaleDateString(locale)}
+                        </p>
+                        {req.tracking_number && (
+                          <p className="text-xs mt-1 flex items-center gap-1">
+                            <Truck className="h-3 w-3" />
+                            {req.tracking_number}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right text-xs text-muted-foreground">
+                        {req.product_ids.map(pid => {
+                          const p = products.find(pr => pr.id === pid);
+                          return p ? <div key={pid} className="truncate max-w-[150px]">{p.name}</div> : null;
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>

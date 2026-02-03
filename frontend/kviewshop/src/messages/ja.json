@@ -221,7 +221,25 @@
     "hideDetails": "詳細を隠す",
     "shippingCountries": "配送可能国",
     "certifications": "認証状況",
-    "noShippingInfo": "配送・認証情報がありません"
+    "noShippingInfo": "配送・認証情報がありません",
+    "sampleBox": "体験ボックス",
+    "sampleBoxTitle": "体験ボックスリクエスト",
+    "sampleBoxDesc": "販売前に商品を試すための体験ボックスをリクエストしてください。ブランドの承認後に発送されます。",
+    "selectSampleProducts": "体験する商品を選択",
+    "sampleMessage": "メッセージ（任意）",
+    "sampleMessagePlaceholder": "ブランドに伝えるメッセージを入力してください（配送先住所、チャンネル情報など）",
+    "submitSampleRequest": "体験ボックスをリクエスト（{count}商品）",
+    "sampleRequestSent": "体験ボックスのリクエストが送信されました",
+    "sampleRequestError": "リクエストの送信に失敗しました",
+    "sampleRequestHistory": "リクエスト履歴",
+    "sampleProducts": "商品",
+    "sampleStatus": {
+      "pending": "保留中",
+      "approved": "承認済み",
+      "shipped": "発送済み",
+      "received": "受取済み",
+      "rejected": "却下"
+    }
   },
   "brandSettings": {
     "title": "ブランド設定",

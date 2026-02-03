@@ -221,7 +221,25 @@
     "hideDetails": "إخفاء التفاصيل",
     "shippingCountries": "دول الشحن",
     "certifications": "الشهادات",
-    "noShippingInfo": "لا تتوفر معلومات عن الشحن أو الشهادات"
+    "noShippingInfo": "لا تتوفر معلومات عن الشحن أو الشهادات",
+    "sampleBox": "صندوق العينات",
+    "sampleBoxTitle": "طلب صندوق عينات",
+    "sampleBoxDesc": "اطلب صندوق عينات لتجربة المنتجات قبل البيع. ستقوم العلامات التجارية بالشحن بعد الموافقة.",
+    "selectSampleProducts": "اختر المنتجات للتجربة",
+    "sampleMessage": "رسالة (اختياري)",
+    "sampleMessagePlaceholder": "أدخل رسالة للعلامة التجارية (عنوان الشحن، معلومات القناة، إلخ.)",
+    "submitSampleRequest": "طلب صندوق عينات ({count} منتجات)",
+    "sampleRequestSent": "تم إرسال طلب صندوق العينات",
+    "sampleRequestError": "فشل في إرسال الطلب",
+    "sampleRequestHistory": "سجل الطلبات",
+    "sampleProducts": "منتجات",
+    "sampleStatus": {
+      "pending": "قيد الانتظار",
+      "approved": "موافق عليه",
+      "shipped": "تم الشحن",
+      "received": "تم الاستلام",
+      "rejected": "مرفوض"
+    }
   },
   "brandSettings": {
     "title": "إعدادات العلامة التجارية",
