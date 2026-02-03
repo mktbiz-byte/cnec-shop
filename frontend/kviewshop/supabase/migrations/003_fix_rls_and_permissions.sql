@@ -42,6 +42,12 @@ ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_code TEXT;
 ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_verified BOOLEAN DEFAULT false;
 ALTER TABLE brands ADD COLUMN IF NOT EXISTS bank_verified_at TIMESTAMPTZ;
 
+-- =============================================
+-- 1c. SAMPLE_REQUESTS TABLE - Add shipping address column
+-- =============================================
+
+ALTER TABLE sample_requests ADD COLUMN IF NOT EXISTS shipping_address JSONB;
+
 -- Update commission rate constraint to 15-60%
 ALTER TABLE brands DROP CONSTRAINT IF EXISTS brands_creator_commission_rate_check;
 ALTER TABLE brands ADD CONSTRAINT brands_creator_commission_rate_check

@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Search, Package, Globe, ShieldCheck, Check, Plus, Minus, ChevronDown, ChevronUp, X, Gift, Truck, Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Package, Globe, ShieldCheck, Check, Plus, Minus, ChevronDown, ChevronUp, X, Gift, Truck, Loader2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
 import { SHIPPING_REGIONS, CERTIFICATION_TYPES } from '@/lib/shipping-countries';
@@ -74,6 +75,18 @@ export default function CreatorProductsPage() {
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[]>([]);
   const [submittingSample, setSubmittingSample] = useState(false);
   const [creatorId, setCreatorId] = useState<string | null>(null);
+
+  // Shipping address state
+  const [shippingAddress, setShippingAddress] = useState({
+    recipientName: '',
+    phone: '',
+    country: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    postalCode: '',
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -220,6 +233,13 @@ export default function CreatorProductsPage() {
 
   const handleSubmitSampleRequest = async () => {
     if (sampleSelectedIds.length === 0 || !creatorId) return;
+
+    // Validate required shipping address fields
+    if (!shippingAddress.recipientName || !shippingAddress.country || !shippingAddress.addressLine1 || !shippingAddress.city || !shippingAddress.postalCode) {
+      toast.error(t('shippingAddressRequired'));
+      return;
+    }
+
     setSubmittingSample(true);
 
     try {
@@ -244,6 +264,7 @@ export default function CreatorProductsPage() {
             brand_id: brandId,
             product_ids: productIds,
             message: sampleMessage || null,
+            shipping_address: shippingAddress,
             status: 'pending',
           })
           .select()
@@ -599,6 +620,99 @@ export default function CreatorProductsPage() {
                 {products.length === 0 && (
                   <p className="text-sm text-muted-foreground">{t('noProducts')}</p>
                 )}
+              </div>
+
+              {/* Shipping Address */}
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-semibold">{t('shippingAddress')}</Label>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('recipientName')} *</Label>
+                    <Input
+                      placeholder={t('recipientNamePlaceholder')}
+                      value={shippingAddress.recipientName}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, recipientName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('phoneNumber')}</Label>
+                    <Input
+                      placeholder="+1 234 567 8900"
+                      value={shippingAddress.phone}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, phone: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('countryRegion')} *</Label>
+                  <Select
+                    value={shippingAddress.country}
+                    onValueChange={(value) => setShippingAddress({ ...shippingAddress, country: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('selectCountry')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SHIPPING_REGIONS.flatMap(region =>
+                        region.countries.map(country => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {tb(`countries.${country.nameKey}`)}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('addressLine1')} *</Label>
+                  <Input
+                    placeholder={t('addressLine1Placeholder')}
+                    value={shippingAddress.addressLine1}
+                    onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine1: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">{t('addressLine2')}</Label>
+                  <Input
+                    placeholder={t('addressLine2Placeholder')}
+                    value={shippingAddress.addressLine2}
+                    onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine2: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('city')} *</Label>
+                    <Input
+                      placeholder={t('cityPlaceholder')}
+                      value={shippingAddress.city}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('stateProvince')}</Label>
+                    <Input
+                      placeholder={t('stateProvincePlaceholder')}
+                      value={shippingAddress.state}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">{t('postalCode')} *</Label>
+                    <Input
+                      placeholder={t('postalCodePlaceholder')}
+                      value={shippingAddress.postalCode}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, postalCode: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Message */}

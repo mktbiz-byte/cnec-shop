@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Palette, User, Link as LinkIcon, Eye, EyeOff, Save, Loader2, ExternalLink, Paintbrush } from 'lucide-react';
+import { Palette, User, Link as LinkIcon, Eye, EyeOff, Save, Loader2, ExternalLink, Paintbrush, Camera, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
 
@@ -21,7 +22,10 @@ export default function CreatorShopPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
   const [username, setUsername] = useState('');
+  const [profileImage, setProfileImage] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [settings, setSettings] = useState({
     displayName: '',
     bio: '',
@@ -82,6 +86,7 @@ export default function CreatorShopPage() {
 
         if (creator) {
           setUsername(creator.username || '');
+          setProfileImage(creator.profile_image || '');
           setSettings({
             displayName: creator.display_name || '',
             bio: creator.bio || '',
@@ -108,6 +113,102 @@ export default function CreatorShopPage() {
       clearTimeout(safetyTimeout);
     };
   }, []);
+
+  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('이미지 파일만 업로드 가능합니다');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('파일 크기는 5MB 이하여야 합니다');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const supabase = getClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `creators/${session.user.id}/profile.${fileExt}`;
+
+      // Upload to profiles bucket
+      const { data, error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        // If profiles bucket doesn't exist, try products bucket
+        const { data: fallbackData, error: fallbackError } = await supabase.storage
+          .from('products')
+          .upload(`profiles/${session.user.id}/profile.${fileExt}`, file, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (fallbackError) {
+          console.error('Upload error:', fallbackError);
+          toast.error('업로드에 실패했습니다');
+          return;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from('products')
+          .getPublicUrl(`profiles/${session.user.id}/profile.${fileExt}`);
+
+        const imageUrl = urlData.publicUrl;
+        setProfileImage(imageUrl);
+
+        await supabase
+          .from('creators')
+          .update({ profile_image: imageUrl })
+          .eq('user_id', session.user.id);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from('profiles')
+          .getPublicUrl(fileName);
+
+        const imageUrl = urlData.publicUrl;
+        setProfileImage(imageUrl);
+
+        await supabase
+          .from('creators')
+          .update({ profile_image: imageUrl })
+          .eq('user_id', session.user.id);
+      }
+
+      toast.success(t('settingsSaved'));
+    } catch (error) {
+      console.error('Profile upload error:', error);
+      toast.error(tCommon('error'));
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveProfileImage = async () => {
+    const supabase = getClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    setProfileImage('');
+    await supabase
+      .from('creators')
+      .update({ profile_image: null })
+      .eq('user_id', session.user.id);
+
+    toast.success(t('settingsSaved'));
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -205,12 +306,18 @@ export default function CreatorShopPage() {
               color: isLightBg(settings.backgroundColor) ? '#1a1a1a' : '#e8e8e8',
             }}
           >
-            <div
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center text-white text-xl sm:text-2xl font-bold"
-              style={{ backgroundColor: settings.themeColor }}
-            >
-              {settings.displayName?.charAt(0)?.toUpperCase() || username?.charAt(0)?.toUpperCase() || '?'}
-            </div>
+            {profileImage ? (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 sm:mb-4 overflow-hidden border-2" style={{ borderColor: settings.themeColor }}>
+                <Image src={profileImage} alt="Profile" width={80} height={80} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center text-white text-xl sm:text-2xl font-bold"
+                style={{ backgroundColor: settings.themeColor }}
+              >
+                {settings.displayName?.charAt(0)?.toUpperCase() || username?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+            )}
             <h2 className="text-xl sm:text-2xl font-bold">
               {settings.displayName || username || 'Creator'}
             </h2>
@@ -259,6 +366,50 @@ export default function CreatorShopPage() {
             <CardDescription className="text-xs sm:text-sm">{t('profileSectionDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            {/* Profile Image Upload */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative group">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleProfileImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-all relative"
+                >
+                  {isUploading ? (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : profileImage ? (
+                    <Image src={profileImage} alt="Profile" width={96} height={96} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                      <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
+                    <Camera className="h-5 w-5 text-white" />
+                  </div>
+                </button>
+                {profileImage && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveProfileImage}
+                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/80 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{t('profileImage')}</p>
+            </div>
+
             <div className="space-y-2">
               <Label>{t('displayName')}</Label>
               <Input
