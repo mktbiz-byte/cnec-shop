@@ -407,16 +407,23 @@
   },
   "support": {
     "title": "Поддержка",
-    "subtitle": "Как мы можем вам помочь?",
-    "newTicket": "Создать новый тикет",
-    "categories": {
-      "product_quality": "Качество товара",
-      "shipping": "Доставка",
-      "returns": "Возвраты",
-      "payment_error": "Ошибка оплаты",
-      "refund": "Возврат средств",
-      "creator_inquiry": "Запрос создателя",
-      "platform_inquiry": "Запрос платформы"
-    }
+    "subtitle": "Получайте и отвечайте на запросы клиентов",
+    "waiting": "Ожидание",
+    "resolvedLabel": "Решено",
+    "inquiries": "Запросы",
+    "inquiriesDesc": "Запросы клиентов и создателей для вашего бренда",
+    "noInquiries": "Запросов пока нет",
+    "noInquiriesDesc": "Запросы клиентов будут отображаться здесь",
+    "productInquiry": "Запрос о товаре",
+    "csInquiry": "CS запрос",
+    "relatedOrder": "Связанный заказ",
+    "yourReply": "Ваш ответ",
+    "replyPlaceholder": "Напишите ваш ответ...",
+    "sendReply": "Отправить ответ",
+    "replied": "Ответ успешно отправлен",
+    "brandResponsibility": "Ответственность бренда",
+    "brandResponsibilityDesc": "Качество товара, доставка, возвраты и обмен",
+    "cnecResponsibility": "Ответственность CNEC",
+    "cnecResponsibilityDesc": "Ошибки оплаты, возврат средств, запросы платформы"
   }
 }

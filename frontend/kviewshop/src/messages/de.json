@@ -407,16 +407,23 @@
   },
   "support": {
     "title": "Kundenservice",
-    "subtitle": "Wie konnen wir Ihnen helfen?",
-    "newTicket": "Neues Ticket erstellen",
-    "categories": {
-      "product_quality": "Produktqualitat",
-      "shipping": "Versand",
-      "returns": "Rucksendungen",
-      "payment_error": "Zahlungsfehler",
-      "refund": "Erstattung",
-      "creator_inquiry": "Creator-Anfrage",
-      "platform_inquiry": "Plattform-Anfrage"
-    }
+    "subtitle": "Kundenanfragen empfangen und beantworten",
+    "waiting": "Wartend",
+    "resolvedLabel": "Gelost",
+    "inquiries": "Anfragen",
+    "inquiriesDesc": "Kunden- und Creator-Anfragen fur Ihre Marke",
+    "noInquiries": "Noch keine Anfragen",
+    "noInquiriesDesc": "Kundenanfragen werden hier angezeigt",
+    "productInquiry": "Produktanfrage",
+    "csInquiry": "CS-Anfrage",
+    "relatedOrder": "Zugehorige Bestellung",
+    "yourReply": "Ihre Antwort",
+    "replyPlaceholder": "Schreiben Sie Ihre Antwort...",
+    "sendReply": "Antwort senden",
+    "replied": "Antwort erfolgreich gesendet",
+    "brandResponsibility": "Marke zustandig",
+    "brandResponsibilityDesc": "Produktqualitat, Versand, Rucksendungen und Umtausch",
+    "cnecResponsibility": "CNEC zustandig",
+    "cnecResponsibilityDesc": "Zahlungsfehler, Erstattungen, Plattform-Anfragen"
   }
 }

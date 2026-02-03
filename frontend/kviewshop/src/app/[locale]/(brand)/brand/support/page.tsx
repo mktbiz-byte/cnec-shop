@@ -4,38 +4,26 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Headphones,
-  Plus,
   Package,
-  Truck,
-  RotateCcw,
-  AlertCircle,
   MessageSquare,
   Loader2,
   Clock,
   CheckCircle2,
-  XCircle,
   ChevronDown,
   ChevronUp,
+  Send,
+  Inbox,
+  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
 
-type TicketCategory = 'product_quality' | 'shipping' | 'returns' | 'payment_error' | 'refund' | 'creator_inquiry' | 'platform_inquiry';
-type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
-type TicketHandler = 'brand' | 'cnec';
+type TicketCategory = 'product' | 'cs';
+type TicketStatus = 'open' | 'resolved';
 
 interface SupportTicket {
   id: string;
@@ -43,34 +31,12 @@ interface SupportTicket {
   subject: string;
   description: string;
   status: TicketStatus;
-  handler: TicketHandler;
+  from_name: string;
+  from_email: string;
   order_id?: string;
   created_at: string;
   updated_at: string;
   response?: string;
-}
-
-const CATEGORY_CONFIG: Record<TicketCategory, { icon: typeof Package; handler: TicketHandler }> = {
-  product_quality: { icon: Package, handler: 'brand' },
-  shipping: { icon: Truck, handler: 'brand' },
-  returns: { icon: RotateCcw, handler: 'brand' },
-  payment_error: { icon: AlertCircle, handler: 'cnec' },
-  refund: { icon: AlertCircle, handler: 'cnec' },
-  creator_inquiry: { icon: MessageSquare, handler: 'cnec' },
-  platform_inquiry: { icon: Headphones, handler: 'cnec' },
-};
-
-function getStatusBadge(status: TicketStatus) {
-  switch (status) {
-    case 'open':
-      return <Badge variant="outline" className="text-blue-500 border-blue-500/30"><Clock className="mr-1 h-3 w-3" />Open</Badge>;
-    case 'in_progress':
-      return <Badge variant="outline" className="text-warning border-warning/30"><Loader2 className="mr-1 h-3 w-3" />In Progress</Badge>;
-    case 'resolved':
-      return <Badge variant="outline" className="text-success border-success/30"><CheckCircle2 className="mr-1 h-3 w-3" />Resolved</Badge>;
-    case 'closed':
-      return <Badge variant="secondary"><XCircle className="mr-1 h-3 w-3" />Closed</Badge>;
-  }
 }
 
 export default function BrandSupportPage() {
@@ -79,17 +45,10 @@ export default function BrandSupportPage() {
 
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [filter, setFilter] = useState<'all' | TicketHandler>('all');
+  const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
   const [expandedTicket, setExpandedTicket] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  const [newTicket, setNewTicket] = useState({
-    category: '' as TicketCategory | '',
-    subject: '',
-    description: '',
-    orderId: '',
-  });
+  const [replyText, setReplyText] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTickets() {
@@ -123,64 +82,40 @@ export default function BrandSupportPage() {
     loadTickets();
   }, []);
 
-  const handleCreateTicket = async () => {
-    if (!newTicket.category || !newTicket.subject || !newTicket.description) {
-      toast.error(t('fillRequired'));
-      return;
-    }
+  const handleReply = async (ticketId: string) => {
+    const text = replyText[ticketId]?.trim();
+    if (!text) return;
 
-    setSubmitting(true);
+    setSubmitting(ticketId);
     try {
       const supabase = getClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      const { data: brand } = await supabase
-        .from('brands')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (!brand) return;
-
-      const handler = CATEGORY_CONFIG[newTicket.category as TicketCategory].handler;
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('support_tickets')
-        .insert({
-          brand_id: brand.id,
-          category: newTicket.category,
-          subject: newTicket.subject,
-          description: newTicket.description,
-          handler,
-          order_id: newTicket.orderId || null,
-          status: 'open',
-        })
-        .select()
-        .maybeSingle();
+        .update({ response: text, status: 'resolved', updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
 
       if (error) {
         toast.error(tCommon('error'));
-        console.error('Create ticket error:', error);
-      } else if (data) {
-        setTickets([data, ...tickets]);
-        setNewTicket({ category: '', subject: '', description: '', orderId: '' });
-        setShowCreateForm(false);
-        toast.success(t('ticketCreated'));
+      } else {
+        setTickets(tickets.map(t =>
+          t.id === ticketId ? { ...t, response: text, status: 'resolved' as TicketStatus } : t
+        ));
+        setReplyText({ ...replyText, [ticketId]: '' });
+        toast.success(t('replied'));
       }
-    } catch (error) {
+    } catch {
       toast.error(tCommon('error'));
     } finally {
-      setSubmitting(false);
+      setSubmitting(null);
     }
   };
 
   const filteredTickets = filter === 'all'
     ? tickets
-    : tickets.filter(t => t.handler === filter);
+    : tickets.filter(tk => tk.status === filter);
 
-  const brandCategories: TicketCategory[] = ['product_quality', 'shipping', 'returns'];
-  const cnecCategories: TicketCategory[] = ['payment_error', 'refund', 'creator_inquiry', 'platform_inquiry'];
+  const openCount = tickets.filter(tk => tk.status === 'open').length;
+  const resolvedCount = tickets.filter(tk => tk.status === 'resolved').length;
 
   if (loading) {
     return (
@@ -192,145 +127,77 @@ export default function BrandSupportPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
-        <Button
-          className="btn-gold"
-          onClick={() => setShowCreateForm(!showCreateForm)}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t('newTicket')}
-        </Button>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
-      {/* CS Responsibility Matrix */}
+      {/* Stats */}
+      <div className="grid gap-4 grid-cols-3">
+        <Card className="card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">{tCommon('all')}</p>
+                <p className="text-2xl font-bold">{tickets.length}</p>
+              </div>
+              <Inbox className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">{t('waiting')}</p>
+                <p className="text-2xl font-bold">{openCount}</p>
+              </div>
+              <Clock className="h-5 w-5 text-warning" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">{t('resolvedLabel')}</p>
+                <p className="text-2xl font-bold">{resolvedCount}</p>
+              </div>
+              <CheckCircle2 className="h-5 w-5 text-success" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* CS Responsibility Guide */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              {t('brandResponsibility')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {brandCategories.map(cat => {
-              const Icon = CATEGORY_CONFIG[cat].icon;
-              return (
-                <div key={cat} className="flex items-center gap-2 text-sm">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{t(`categories.${cat}`)}</span>
-                </div>
-              );
-            })}
+        <Card className="bg-primary/5 border-primary/10">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Package className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">{t('brandResponsibility')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('brandResponsibilityDesc')}</p>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Headphones className="h-4 w-4 text-accent" />
-              {t('cnecResponsibility')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {cnecCategories.map(cat => {
-              const Icon = CATEGORY_CONFIG[cat].icon;
-              return (
-                <div key={cat} className="flex items-center gap-2 text-sm">
-                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>{t(`categories.${cat}`)}</span>
-                </div>
-              );
-            })}
+        <Card className="bg-accent/5 border-accent/10">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Headphones className="h-5 w-5 text-accent mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium">{t('cnecResponsibility')}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('cnecResponsibilityDesc')}</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Create Ticket Form */}
-      {showCreateForm && (
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle>{t('newTicket')}</CardTitle>
-            <CardDescription>{t('newTicketDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>{t('category')}</Label>
-                <Select
-                  value={newTicket.category}
-                  onValueChange={(v) => setNewTicket({ ...newTicket, category: v as TicketCategory })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('selectCategory')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="product_quality">{t('categories.product_quality')}</SelectItem>
-                    <SelectItem value="shipping">{t('categories.shipping')}</SelectItem>
-                    <SelectItem value="returns">{t('categories.returns')}</SelectItem>
-                    <SelectItem value="payment_error">{t('categories.payment_error')}</SelectItem>
-                    <SelectItem value="refund">{t('categories.refund')}</SelectItem>
-                    <SelectItem value="creator_inquiry">{t('categories.creator_inquiry')}</SelectItem>
-                    <SelectItem value="platform_inquiry">{t('categories.platform_inquiry')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>{t('orderId')}</Label>
-                <Input
-                  placeholder={t('orderIdPlaceholder')}
-                  value={newTicket.orderId}
-                  onChange={(e) => setNewTicket({ ...newTicket, orderId: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>{t('subject')}</Label>
-              <Input
-                placeholder={t('subjectPlaceholder')}
-                value={newTicket.subject}
-                onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('description')}</Label>
-              <Textarea
-                placeholder={t('descriptionPlaceholder')}
-                value={newTicket.description}
-                onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-                rows={4}
-              />
-            </div>
-            {newTicket.category && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                <AlertCircle className="h-3.5 w-3.5" />
-                {t('handledBy')}: <Badge variant="outline" className="text-xs">
-                  {CATEGORY_CONFIG[newTicket.category as TicketCategory]?.handler === 'brand' ? t('brandTeam') : 'CNEC'}
-                </Badge>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                {tCommon('cancel')}
-              </Button>
-              <Button className="btn-gold" onClick={handleCreateTicket} disabled={submitting}>
-                {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {tCommon('submit')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filter & Ticket List */}
+      {/* Inquiry List */}
       <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle>{t('tickets')}</CardTitle>
-              <CardDescription>{t('ticketsDesc', { count: filteredTickets.length })}</CardDescription>
+              <CardTitle>{t('inquiries')}</CardTitle>
+              <CardDescription>{t('inquiriesDesc')}</CardDescription>
             </div>
             <div className="flex gap-2">
               <Button
@@ -338,21 +205,21 @@ export default function BrandSupportPage() {
                 size="sm"
                 onClick={() => setFilter('all')}
               >
-                {tCommon('all')}
+                {tCommon('all')} ({tickets.length})
               </Button>
               <Button
-                variant={filter === 'brand' ? 'default' : 'outline'}
+                variant={filter === 'open' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter('brand')}
+                onClick={() => setFilter('open')}
               >
-                {t('brandTeam')}
+                {t('waiting')} ({openCount})
               </Button>
               <Button
-                variant={filter === 'cnec' ? 'default' : 'outline'}
+                variant={filter === 'resolved' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setFilter('cnec')}
+                onClick={() => setFilter('resolved')}
               >
-                CNEC
+                {t('resolvedLabel')} ({resolvedCount})
               </Button>
             </div>
           </div>
@@ -361,33 +228,41 @@ export default function BrandSupportPage() {
           {filteredTickets.length === 0 ? (
             <div className="text-center py-12">
               <Headphones className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-muted-foreground">{t('noTickets')}</p>
+              <p className="mt-4 text-muted-foreground">{t('noInquiries')}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('noInquiriesDesc')}</p>
             </div>
           ) : (
             <div className="space-y-3">
               {filteredTickets.map((ticket) => {
-                const catConfig = CATEGORY_CONFIG[ticket.category];
-                const Icon = catConfig?.icon || MessageSquare;
                 const isExpanded = expandedTicket === ticket.id;
+                const isProduct = ticket.category === 'product';
 
                 return (
                   <div
                     key={ticket.id}
-                    className="border rounded-lg p-4 hover:bg-muted/30 transition-colors"
+                    className={`border rounded-lg overflow-hidden ${ticket.status === 'open' ? 'border-warning/30' : ''}`}
                   >
                     <button
-                      className="w-full text-left"
+                      className="w-full text-left p-4 hover:bg-muted/30 transition-colors"
                       onClick={() => setExpandedTicket(isExpanded ? null : ticket.id)}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 min-w-0">
-                          <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                          {isProduct ? (
+                            <Package className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                          ) : (
+                            <MessageSquare className="h-4 w-4 mt-0.5 text-accent shrink-0" />
+                          )}
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">{ticket.subject}</p>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <Badge variant="outline" className="text-[10px]">
-                                {t(`categories.${ticket.category}`)}
+                                {isProduct ? t('productInquiry') : t('csInquiry')}
                               </Badge>
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <User className="h-2.5 w-2.5" />
+                                {ticket.from_name || 'Customer'}
+                              </span>
                               <span className="text-[10px] text-muted-foreground">
                                 {new Date(ticket.created_at).toLocaleDateString()}
                               </span>
@@ -395,28 +270,71 @@ export default function BrandSupportPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          {getStatusBadge(ticket.status)}
+                          {ticket.status === 'open' ? (
+                            <Badge variant="outline" className="text-warning border-warning/30">
+                              <Clock className="mr-1 h-3 w-3" />{t('waiting')}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-success border-success/30">
+                              <CheckCircle2 className="mr-1 h-3 w-3" />{t('resolvedLabel')}
+                            </Badge>
+                          )}
                           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                         </div>
                       </div>
                     </button>
+
                     {isExpanded && (
-                      <div className="mt-3 pt-3 border-t space-y-3">
-                        <p className="text-sm text-muted-foreground">{ticket.description}</p>
-                        {ticket.order_id && (
-                          <p className="text-xs text-muted-foreground">
-                            {t('orderId')}: <span className="font-mono">{ticket.order_id}</span>
-                          </p>
-                        )}
-                        {ticket.response && (
-                          <div className="bg-muted/50 p-3 rounded-lg">
-                            <p className="text-xs font-medium mb-1">{t('response')}</p>
+                      <div className="p-4 pt-0 border-t space-y-4">
+                        {/* Inquiry content */}
+                        <div className="bg-muted/30 p-3 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-xs font-medium">{ticket.from_name || 'Customer'}</span>
+                            {ticket.from_email && (
+                              <span className="text-xs text-muted-foreground">{ticket.from_email}</span>
+                            )}
+                          </div>
+                          <p className="text-sm">{ticket.description}</p>
+                          {ticket.order_id && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {t('relatedOrder')}: <span className="font-mono">#{ticket.order_id}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Response */}
+                        {ticket.response ? (
+                          <div className="bg-primary/5 p-3 rounded-lg border border-primary/10">
+                            <p className="text-xs font-medium text-primary mb-1">{t('yourReply')}</p>
                             <p className="text-sm">{ticket.response}</p>
                           </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <Textarea
+                              placeholder={t('replyPlaceholder')}
+                              value={replyText[ticket.id] || ''}
+                              onChange={(e) => setReplyText({ ...replyText, [ticket.id]: e.target.value })}
+                              rows={3}
+                              className="text-sm"
+                            />
+                            <div className="flex justify-end">
+                              <Button
+                                size="sm"
+                                className="btn-gold"
+                                onClick={() => handleReply(ticket.id)}
+                                disabled={submitting === ticket.id || !replyText[ticket.id]?.trim()}
+                              >
+                                {submitting === ticket.id ? (
+                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Send className="mr-2 h-3 w-3" />
+                                )}
+                                {t('sendReply')}
+                              </Button>
+                            </div>
+                          </div>
                         )}
-                        <p className="text-[10px] text-muted-foreground">
-                          {t('handledBy')}: {ticket.handler === 'brand' ? t('brandTeam') : 'CNEC'}
-                        </p>
                       </div>
                     )}
                   </div>

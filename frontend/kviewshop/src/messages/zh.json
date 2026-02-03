@@ -407,16 +407,23 @@
   },
   "support": {
     "title": "客服支持",
-    "subtitle": "我们能为您做什么？",
-    "newTicket": "创建新工单",
-    "categories": {
-      "product_quality": "产品质量",
-      "shipping": "物流配送",
-      "returns": "退货",
-      "payment_error": "支付错误",
-      "refund": "退款",
-      "creator_inquiry": "创作者咨询",
-      "platform_inquiry": "平台咨询"
-    }
+    "subtitle": "接收和回复客户咨询",
+    "waiting": "待处理",
+    "resolvedLabel": "已解决",
+    "inquiries": "咨询列表",
+    "inquiriesDesc": "品牌收到的客户和创作者咨询",
+    "noInquiries": "暂无咨询",
+    "noInquiriesDesc": "客户咨询将显示在此处",
+    "productInquiry": "产品咨询",
+    "csInquiry": "客服咨询",
+    "relatedOrder": "相关订单",
+    "yourReply": "您的回复",
+    "replyPlaceholder": "输入您的回复...",
+    "sendReply": "发送回复",
+    "replied": "回复发送成功",
+    "brandResponsibility": "品牌负责",
+    "brandResponsibilityDesc": "产品质量、物流配送、退货退换",
+    "cnecResponsibility": "CNEC负责",
+    "cnecResponsibilityDesc": "支付错误、退款、平台咨询"
   }
 }

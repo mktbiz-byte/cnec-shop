@@ -407,16 +407,23 @@
   },
   "support": {
     "title": "Supporto",
-    "subtitle": "Come possiamo aiutarti?",
-    "newTicket": "Crea nuovo ticket",
-    "categories": {
-      "product_quality": "Qualita del prodotto",
-      "shipping": "Spedizione",
-      "returns": "Resi",
-      "payment_error": "Errore di pagamento",
-      "refund": "Rimborso",
-      "creator_inquiry": "Richiesta creatore",
-      "platform_inquiry": "Richiesta piattaforma"
-    }
+    "subtitle": "Ricevi e rispondi alle richieste dei clienti",
+    "waiting": "In attesa",
+    "resolvedLabel": "Risolto",
+    "inquiries": "Richieste",
+    "inquiriesDesc": "Richieste di clienti e creator per il tuo brand",
+    "noInquiries": "Nessuna richiesta ancora",
+    "noInquiriesDesc": "Le richieste dei clienti appariranno qui",
+    "productInquiry": "Richiesta prodotto",
+    "csInquiry": "Richiesta CS",
+    "relatedOrder": "Ordine correlato",
+    "yourReply": "La tua risposta",
+    "replyPlaceholder": "Scrivi la tua risposta...",
+    "sendReply": "Invia risposta",
+    "replied": "Risposta inviata con successo",
+    "brandResponsibility": "Gestito dal brand",
+    "brandResponsibilityDesc": "Qualita prodotto, spedizione, resi e cambi",
+    "cnecResponsibility": "Gestito da CNEC",
+    "cnecResponsibilityDesc": "Errori di pagamento, rimborsi, richieste piattaforma"
   }
 }

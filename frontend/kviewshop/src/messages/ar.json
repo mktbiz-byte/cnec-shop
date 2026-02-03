@@ -407,16 +407,23 @@
   },
   "support": {
     "title": "الدعم",
-    "subtitle": "كيف يمكننا مساعدتك؟",
-    "newTicket": "إنشاء تذكرة جديدة",
-    "categories": {
-      "product_quality": "جودة المنتج",
-      "shipping": "الشحن",
-      "returns": "المرتجعات",
-      "payment_error": "خطأ في الدفع",
-      "refund": "استرداد",
-      "creator_inquiry": "استفسار صانع المحتوى",
-      "platform_inquiry": "استفسار المنصة"
-    }
+    "subtitle": "استقبال والرد على استفسارات العملاء",
+    "waiting": "قيد الانتظار",
+    "resolvedLabel": "تم الحل",
+    "inquiries": "الاستفسارات",
+    "inquiriesDesc": "استفسارات العملاء وصناع المحتوى لعلامتك التجارية",
+    "noInquiries": "لا توجد استفسارات بعد",
+    "noInquiriesDesc": "ستظهر استفسارات العملاء هنا",
+    "productInquiry": "استفسار عن المنتج",
+    "csInquiry": "استفسار خدمة العملاء",
+    "relatedOrder": "الطلب المرتبط",
+    "yourReply": "ردك",
+    "replyPlaceholder": "اكتب ردك...",
+    "sendReply": "إرسال الرد",
+    "replied": "تم إرسال الرد بنجاح",
+    "brandResponsibility": "مسؤولية العلامة التجارية",
+    "brandResponsibilityDesc": "جودة المنتج، الشحن، المرتجعات والاستبدال",
+    "cnecResponsibility": "مسؤولية CNEC",
+    "cnecResponsibilityDesc": "أخطاء الدفع، الاسترداد، استفسارات المنصة"
   }
 }

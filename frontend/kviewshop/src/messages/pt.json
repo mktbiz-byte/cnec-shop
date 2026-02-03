@@ -407,16 +407,23 @@
   },
   "support": {
     "title": "Suporte",
-    "subtitle": "Como podemos ajudar?",
-    "newTicket": "Criar novo ticket",
-    "categories": {
-      "product_quality": "Qualidade do produto",
-      "shipping": "Envio",
-      "returns": "Devolucoes",
-      "payment_error": "Erro de pagamento",
-      "refund": "Reembolso",
-      "creator_inquiry": "Consulta do criador",
-      "platform_inquiry": "Consulta da plataforma"
-    }
+    "subtitle": "Receber e responder consultas de clientes",
+    "waiting": "Aguardando",
+    "resolvedLabel": "Resolvido",
+    "inquiries": "Consultas",
+    "inquiriesDesc": "Consultas de clientes e criadores para sua marca",
+    "noInquiries": "Nenhuma consulta ainda",
+    "noInquiriesDesc": "As consultas dos clientes aparecerao aqui",
+    "productInquiry": "Consulta de produto",
+    "csInquiry": "Consulta CS",
+    "relatedOrder": "Pedido relacionado",
+    "yourReply": "Sua resposta",
+    "replyPlaceholder": "Escreva sua resposta...",
+    "sendReply": "Enviar resposta",
+    "replied": "Resposta enviada com sucesso",
+    "brandResponsibility": "Responsabilidade da marca",
+    "brandResponsibilityDesc": "Qualidade do produto, envio, devolucoes e trocas",
+    "cnecResponsibility": "Responsabilidade CNEC",
+    "cnecResponsibilityDesc": "Erros de pagamento, reembolsos, consultas da plataforma"
   }
 }

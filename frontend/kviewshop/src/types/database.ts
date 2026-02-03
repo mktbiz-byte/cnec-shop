@@ -342,9 +342,8 @@ export interface SampleRequest {
 }
 
 // Support Ticket Types
-export type SupportTicketCategory = 'product_quality' | 'shipping' | 'returns' | 'payment_error' | 'refund' | 'creator_inquiry' | 'platform_inquiry';
-export type SupportTicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
-export type SupportTicketHandler = 'brand' | 'cnec';
+export type SupportTicketCategory = 'product' | 'cs';
+export type SupportTicketStatus = 'open' | 'resolved';
 
 export interface SupportTicket {
   id: string;
@@ -352,8 +351,9 @@ export interface SupportTicket {
   category: SupportTicketCategory;
   subject: string;
   description: string;
-  handler: SupportTicketHandler;
   status: SupportTicketStatus;
+  from_name: string;
+  from_email?: string;
   order_id?: string;
   response?: string;
   created_at: string;
