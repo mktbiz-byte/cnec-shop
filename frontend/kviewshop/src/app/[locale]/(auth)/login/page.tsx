@@ -53,32 +53,22 @@ export default function LoginPage() {
         return;
       }
 
-      // Get role from auth user metadata first, fallback to users table
-      let role = authData.user?.user_metadata?.role;
-
-      if (!role) {
-        // Try to get from users table
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', authData.user?.id)
-          .single();
-        role = userData?.role;
-      }
+      // Get role from auth user metadata only (no DB lookup needed)
+      const role = authData.user?.user_metadata?.role;
 
       if (returnUrl) {
         router.push(returnUrl);
-      } else if (role) {
+      } else {
+        // Route based on role, default to admin for super_admin users
         const dashboardPath =
           role === 'super_admin'
             ? '/admin/dashboard'
             : role === 'brand_admin'
             ? '/brand/dashboard'
-            : '/creator/dashboard';
+            : role === 'creator'
+            ? '/creator/dashboard'
+            : '/admin/dashboard'; // Default to admin if no role set
         router.push(`/${locale}${dashboardPath}`);
-      } else {
-        // Default to creator dashboard if no role found
-        router.push(`/${locale}/creator/dashboard`);
       }
       router.refresh();
     } catch (error) {
