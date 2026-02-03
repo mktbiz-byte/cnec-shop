@@ -1,21 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import type { User, Brand, Creator } from '@/types/database';
 
 export function useUser() {
   const { user, brand, creator, isLoading, setUser, setBrand, setCreator, setLoading } =
     useAuthStore();
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
+  const fetchingRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     const supabase = getClient();
     let cancelled = false;
 
-    // Get initial session (getSession reads from local storage, fast & reliable)
     const initSession = async () => {
       try {
         const {
@@ -34,15 +34,18 @@ export function useUser() {
         console.error('Error getting session:', error);
         if (!cancelled) setLoading(false);
       }
+      initializedRef.current = true;
     };
 
     initSession();
 
-    // Listen for auth changes
+    // Listen for auth changes - skip initial event if we already handled it
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
+      if (!initializedRef.current) return;
+
       if (session?.user) {
         setSupabaseUser(session.user);
         await fetchUserData(session.user.id);
@@ -55,18 +58,29 @@ export function useUser() {
       }
     });
 
+    // Safety timeout - ensure loading is false after 5 seconds no matter what
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }, 5000);
+
     return () => {
       cancelled = true;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
 
   const fetchUserData = async (userId: string) => {
+    // Prevent concurrent fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+
     const supabase = getClient();
     setLoading(true);
 
     try {
-      // Fetch user data
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -75,8 +89,6 @@ export function useUser() {
 
       if (userError) {
         console.error('Error fetching user record:', userError);
-        // User might not have a record in users table yet (signed up via auth only)
-        // Use metadata from auth as fallback
         setLoading(false);
         return;
       }
@@ -101,6 +113,7 @@ export function useUser() {
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
+      fetchingRef.current = false;
       setLoading(false);
     }
   };

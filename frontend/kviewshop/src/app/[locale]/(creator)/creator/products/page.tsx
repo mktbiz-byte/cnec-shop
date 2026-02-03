@@ -76,68 +76,89 @@ export default function CreatorProductsPage() {
   const [creatorId, setCreatorId] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Safety timeout - show page after 3 seconds no matter what
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 3000);
+
     async function fetchData() {
-      const supabase = getClient();
+      try {
+        const supabase = getClient();
 
-      // Fetch products
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_active', true);
+        // Fetch products
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('*')
+          .eq('is_active', true);
 
-      // Fetch brands with shipping/cert info
-      const { data: brandsData } = await supabase
-        .from('brands')
-        .select('id, user_id, brand_name, shipping_countries, certifications');
+        // Fetch brands with shipping/cert info
+        const { data: brandsData } = await supabase
+          .from('brands')
+          .select('id, user_id, brand_name, shipping_countries, certifications');
 
-      // Build brand lookup
-      const brandMap: Record<string, Brand> = {};
-      if (brandsData) {
-        for (const brand of brandsData) {
-          brandMap[brand.id] = {
-            ...brand,
-            shipping_countries: brand.shipping_countries || [],
-            certifications: brand.certifications || [],
-          };
-          // Also index by user_id for product lookups
-          brandMap[brand.user_id] = {
-            ...brand,
-            shipping_countries: brand.shipping_countries || [],
-            certifications: brand.certifications || [],
-          };
-        }
-      }
+        if (cancelled) return;
 
-      // Fetch creator's picked products and sample requests
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: creatorData } = await supabase
-          .from('creators')
-          .select('id, picked_products')
-          .eq('user_id', session.user.id)
-          .single();
-        if (creatorData) {
-          setCreatorId(creatorData.id);
-          if (creatorData.picked_products) {
-            setPickedProductIds(creatorData.picked_products);
-          }
-          // Fetch sample requests
-          const { data: requestsData } = await supabase
-            .from('sample_requests')
-            .select('*')
-            .eq('creator_id', creatorData.id)
-            .order('created_at', { ascending: false });
-          if (requestsData) {
-            setSampleRequests(requestsData);
+        // Build brand lookup
+        const brandMap: Record<string, Brand> = {};
+        if (brandsData) {
+          for (const brand of brandsData) {
+            brandMap[brand.id] = {
+              ...brand,
+              shipping_countries: brand.shipping_countries || [],
+              certifications: brand.certifications || [],
+            };
+            // Also index by user_id for product lookups
+            brandMap[brand.user_id] = {
+              ...brand,
+              shipping_countries: brand.shipping_countries || [],
+              certifications: brand.certifications || [],
+            };
           }
         }
-      }
 
-      setProducts(productsData || []);
-      setBrands(brandMap);
-      setLoading(false);
+        // Fetch creator's picked products and sample requests
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && !cancelled) {
+          const { data: creatorData } = await supabase
+            .from('creators')
+            .select('id, picked_products')
+            .eq('user_id', session.user.id)
+            .single();
+          if (creatorData) {
+            setCreatorId(creatorData.id);
+            if (creatorData.picked_products) {
+              setPickedProductIds(creatorData.picked_products);
+            }
+            // Fetch sample requests
+            const { data: requestsData } = await supabase
+              .from('sample_requests')
+              .select('*')
+              .eq('creator_id', creatorData.id)
+              .order('created_at', { ascending: false });
+            if (requestsData) {
+              setSampleRequests(requestsData);
+            }
+          }
+        }
+
+        if (!cancelled) {
+          setProducts(productsData || []);
+          setBrands(brandMap);
+        }
+      } catch (error) {
+        console.error('Failed to load products:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
     fetchData();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const filteredProducts = useMemo(() => {

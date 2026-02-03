@@ -29,20 +29,37 @@ export default function CreatorDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
+    // Safety timeout - show page after 3 seconds no matter what
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 3000);
+
     async function fetchCreator() {
-      const supabase = getClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('creators')
-          .select('username')
-          .eq('user_id', user.id)
-          .single();
-        if (data) setUsername(data.username);
+      try {
+        const supabase = getClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && !cancelled) {
+          const { data } = await supabase
+            .from('creators')
+            .select('username')
+            .eq('user_id', session.user.id)
+            .single();
+          if (data && !cancelled) setUsername(data.username);
+        }
+      } catch (error) {
+        console.error('Failed to load creator data:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     }
     fetchCreator();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(safetyTimeout);
+    };
   }, []);
 
   const shopUrl = username ? `https://cnecshop.netlify.app/@${username}` : '';

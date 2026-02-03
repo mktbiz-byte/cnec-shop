@@ -46,6 +46,11 @@ export default function CreatorShopPage() {
   useEffect(() => {
     let cancelled = false;
 
+    // Safety timeout - show page after 3 seconds no matter what
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) setIsLoading(false);
+    }, 3000);
+
     const loadCreatorData = async () => {
       try {
         const supabase = getClient();
@@ -87,6 +92,7 @@ export default function CreatorShopPage() {
 
     return () => {
       cancelled = true;
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
