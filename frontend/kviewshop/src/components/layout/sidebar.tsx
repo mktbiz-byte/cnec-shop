@@ -15,6 +15,7 @@ import {
   BarChart3,
   Settings,
   AlertTriangle,
+  Mail,
 } from 'lucide-react';
 import type { UserRole } from '@/types/database';
 import type { Locale } from '@/lib/i18n/config';
@@ -43,6 +44,7 @@ export function Sidebar({ role, locale }: SidebarProps) {
           { title: t('dashboard'), href: `${baseUrl}/admin/dashboard`, icon: LayoutDashboard },
           { title: t('brands'), href: `${baseUrl}/admin/brands`, icon: Building2 },
           { title: t('creators'), href: `${baseUrl}/admin/creators`, icon: Users },
+          { title: t('youtuberEmail'), href: `${baseUrl}/admin/youtuber-search`, icon: Mail },
           { title: t('settlements'), href: `${baseUrl}/admin/settlements`, icon: DollarSign },
           { title: t('settings'), href: `${baseUrl}/admin/settings`, icon: Settings },
         ];

@@ -71,7 +71,8 @@
     "myShop": "Minha loja",
     "settings": "Configuracoes",
     "profile": "Perfil",
-    "mocra": "Status MoCRA"
+    "mocra": "Status MoCRA",
+    "youtuberEmail": "Envio de e-mail"
   },
   "shop": {
     "title": "Loja",

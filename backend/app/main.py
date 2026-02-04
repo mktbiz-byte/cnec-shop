@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 
-from app.api import reports, creators, sponsorships
+from app.api import reports, creators, sponsorships, stibee
 from app.core.config import settings
 
 # FastAPI 앱 생성
@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(reports.router, prefix="/api/reports", tags=["리포트"])
 app.include_router(creators.router, prefix="/api/creators", tags=["크리에이터"])
 app.include_router(sponsorships.router, prefix="/api/sponsorships", tags=["협찬 중개"])
+app.include_router(stibee.router, prefix="/api/stibee", tags=["스티비 이메일"])
 
 # 정적 파일 서빙 (프론트엔드 빌드 파일)
 # Render 환경에서는 /opt/render/project/src/가 루트 경로

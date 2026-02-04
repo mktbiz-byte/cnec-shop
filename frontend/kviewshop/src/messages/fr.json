@@ -71,7 +71,8 @@
     "myShop": "Ma boutique",
     "settings": "Parametres",
     "profile": "Profil",
-    "mocra": "Statut MoCRA"
+    "mocra": "Statut MoCRA",
+    "youtuberEmail": "Envoi d'e-mail"
   },
   "shop": {
     "title": "Boutique",

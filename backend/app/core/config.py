@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     
     # 뉴스레터 설정
     NEWSLETTER_FROM_EMAIL: str = "newsletter@cnecplus.com"
+
+    # 스티비(Stibee) API 설정
+    STIBEE_API_KEY: Optional[str] = None
+    STIBEE_API_BASE_URL: str = "https://api.stibee.com/v2"
     
     class Config:
         env_file = ".env"

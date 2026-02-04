@@ -71,7 +71,8 @@
     "myShop": "내 샵",
     "settings": "설정",
     "profile": "프로필",
-    "mocra": "MoCRA 현황"
+    "mocra": "MoCRA 현황",
+    "youtuberEmail": "이메일 발송"
   },
   "shop": {
     "title": "샵",
