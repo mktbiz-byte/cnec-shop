@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS short_urls (
 );
 
 -- Short code must be URL-safe: lowercase letters, numbers, underscores (3-20 chars)
+ALTER TABLE short_urls DROP CONSTRAINT IF EXISTS short_urls_code_format;
 ALTER TABLE short_urls ADD CONSTRAINT short_urls_code_format
   CHECK (short_code ~ '^[a-z0-9_]{3,20}$');
 
@@ -142,7 +143,7 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON mall_subscriptions(status
 
 -- Creator mall community settings
 ALTER TABLE creators ADD COLUMN IF NOT EXISTS community_enabled BOOLEAN DEFAULT false;
-ALTER TABLE creators ADD COLUMN IF NOT EXISTS community_type TEXT DEFAULT 'board' CHECK (community_type IN ('board', 'chat'));
+ALTER TABLE creators ADD COLUMN IF NOT EXISTS community_type TEXT DEFAULT 'board';
 
 -- Community posts (게시판)
 CREATE TABLE IF NOT EXISTS community_posts (
@@ -319,8 +320,7 @@ CREATE INDEX IF NOT EXISTS idx_points_history_created ON points_history(created_
 -- =============================================
 
 -- Add level columns to creators table
-ALTER TABLE creators ADD COLUMN IF NOT EXISTS level TEXT DEFAULT 'bronze'
-  CHECK (level IN ('bronze', 'silver', 'gold', 'platinum', 'diamond'));
+ALTER TABLE creators ADD COLUMN IF NOT EXISTS level TEXT DEFAULT 'bronze';
 ALTER TABLE creators ADD COLUMN IF NOT EXISTS level_points INTEGER DEFAULT 0;
 ALTER TABLE creators ADD COLUMN IF NOT EXISTS level_updated_at TIMESTAMP WITH TIME ZONE;
 
