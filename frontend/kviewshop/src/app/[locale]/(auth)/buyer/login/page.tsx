@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, Sparkles, Building2 } from 'lucide-react';
+import { Loader2, AlertCircle, ShoppingBag, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const loginSchema = z.object({
@@ -23,7 +23,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+export default function BuyerLoginPage() {
   const t = useTranslations('auth');
   const router = useRouter();
   const params = useParams();
@@ -54,74 +54,31 @@ export default function LoginPage() {
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           setLoginError(t('invalidCredentials'));
-        } else if (error.message.includes('Email not confirmed')) {
-          setLoginError(t('emailNotConfirmed'));
         } else {
           setLoginError(error.message);
         }
         return;
       }
 
-      // Get role from auth user metadata first
-      let role = authData.user?.user_metadata?.role;
+      // Verify user is a buyer
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authData.user?.id)
+        .single();
 
-      // If no role in metadata, check DB for user role
-      if (!role && authData.user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', authData.user.id)
-          .single();
-
-        if (userData?.role) {
-          role = userData.role;
-          // Update user metadata with role for future logins
-          await supabase.auth.updateUser({
-            data: { role: userData.role }
-          });
-        }
+      if (userData?.role !== 'buyer') {
+        setLoginError('This account is not registered as a buyer.');
+        await supabase.auth.signOut();
+        return;
       }
 
-      // If still no role, check if user is a creator or brand
-      if (!role && authData.user) {
-        const { data: creatorData } = await supabase
-          .from('creators')
-          .select('id')
-          .eq('user_id', authData.user.id)
-          .single();
-
-        if (creatorData) {
-          role = 'creator';
-          await supabase.auth.updateUser({ data: { role: 'creator' } });
-        } else {
-          const { data: brandData } = await supabase
-            .from('brands')
-            .select('id')
-            .eq('user_id', authData.user.id)
-            .single();
-
-          if (brandData) {
-            role = 'brand_admin';
-            await supabase.auth.updateUser({ data: { role: 'brand_admin' } });
-          }
-        }
-      }
+      toast.success('Welcome back!');
 
       if (returnUrl) {
         router.push(returnUrl);
       } else {
-        // Route based on role
-        const dashboardPath =
-          role === 'super_admin'
-            ? '/admin/dashboard'
-            : role === 'brand_admin'
-            ? '/brand/dashboard'
-            : role === 'creator'
-            ? '/creator/dashboard'
-            : role === 'buyer'
-            ? '/buyer/dashboard'
-            : '/buyer/login';
-        router.push(`/${locale}${dashboardPath}`);
+        router.push(`/${locale}/buyer/dashboard`);
       }
     } catch (error) {
       setLoginError(t('loginError'));
@@ -139,8 +96,13 @@ export default function LoginPage() {
               KviewShop
             </span>
           </Link>
-          <CardTitle className="text-2xl font-headline">{t('loginTitle')}</CardTitle>
-          <CardDescription>{t('loginSubtitle')}</CardDescription>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <ShoppingBag className="h-6 w-6 text-primary" />
+            <CardTitle className="text-2xl font-headline">Buyer Login</CardTitle>
+          </div>
+          <CardDescription>
+            Sign in to access your favorite creator shops and manage your orders
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -165,9 +127,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">{t('password')}</Label>
-              </div>
+              <Label htmlFor="password">{t('password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -190,7 +150,7 @@ export default function LoginPage() {
                   Loading...
                 </>
               ) : (
-                t('login')
+                'Sign In'
               )}
             </Button>
           </form>
@@ -202,37 +162,37 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  {t('or')}
+                  New here?
                 </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Link
-                href={`/${locale}/creator/login`}
-                className="flex items-center justify-center gap-2 rounded-lg border border-border p-3 text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <Sparkles className="h-4 w-4 text-primary" />
-                {t('creatorLogin')}
-              </Link>
-              <Link
-                href={`/${locale}/brand/login`}
-                className="flex items-center justify-center gap-2 rounded-lg border border-border p-3 text-sm font-medium hover:bg-accent transition-colors"
-              >
-                <Building2 className="h-4 w-4 text-primary" />
-                {t('brandLogin')}
-              </Link>
+            <Link
+              href={`/${locale}/buyer/signup`}
+              className="flex items-center justify-center gap-2 w-full rounded-lg border border-border p-3 text-sm font-medium hover:bg-accent transition-colors"
+            >
+              <ShoppingBag className="h-4 w-4 text-primary" />
+              Create Buyer Account
+            </Link>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Are you a creator?
+                </span>
+              </div>
             </div>
 
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">{t('noAccount')} </span>
-              <Link
-                href={`/${locale}/signup`}
-                className="text-primary hover:underline"
-              >
-                {t('signup')}
-              </Link>
-            </div>
+            <Link
+              href={`/${locale}/creator/login`}
+              className="flex items-center justify-center gap-2 w-full rounded-lg border border-primary/30 p-3 text-sm font-medium hover:bg-primary/10 transition-colors"
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+              Creator Login
+            </Link>
           </div>
         </CardContent>
       </Card>

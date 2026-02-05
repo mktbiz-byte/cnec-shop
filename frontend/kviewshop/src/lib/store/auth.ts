@@ -1,15 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, UserRole, Brand, Creator } from '@/types/database';
+import type { User, Brand, Creator, Buyer } from '@/types/database';
 
 interface AuthState {
   user: User | null;
   brand: Brand | null;
   creator: Creator | null;
+  buyer: Buyer | null;
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setBrand: (brand: Brand | null) => void;
   setCreator: (creator: Creator | null) => void;
+  setBuyer: (buyer: Buyer | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
 }
@@ -20,12 +22,14 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       brand: null,
       creator: null,
+      buyer: null,
       isLoading: true,
       setUser: (user) => set({ user }),
       setBrand: (brand) => set({ brand }),
       setCreator: (creator) => set({ creator }),
+      setBuyer: (buyer) => set({ buyer }),
       setLoading: (isLoading) => set({ isLoading }),
-      logout: () => set({ user: null, brand: null, creator: null }),
+      logout: () => set({ user: null, brand: null, creator: null, buyer: null }),
     }),
     {
       name: 'kviewshop-auth',

@@ -11,10 +11,12 @@ const intlMiddleware = createMiddleware({
 
 // Build regex patterns dynamically from config
 const LP = localePattern; // e.g. "en|ja|ko|es|it|ru|ar|zh|fr|pt|de"
-const loginPageRegex = new RegExp(`^/(${LP})/(brand|creator)/login`);
+const loginPageRegex = new RegExp(`^/(${LP})/(brand|creator|buyer)/login`);
+const signupPageRegex = new RegExp(`^/(${LP})/(buyer)/signup`);
 const adminRouteRegex = new RegExp(`^/(${LP})/admin`);
 const brandRouteRegex = new RegExp(`^/(${LP})/brand`);
 const creatorRouteRegex = new RegExp(`^/(${LP})/creator`);
+const buyerRouteRegex = new RegExp(`^/(${LP})/buyer`);
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -31,27 +33,42 @@ export async function middleware(request: NextRequest) {
   // Update Supabase session
   const { supabaseResponse, user } = await updateSession(request);
 
-  // Login pages should be accessible without authentication
-  const isLoginPage = loginPageRegex.test(pathname);
+  // Handle short URL redirects
+  const shortUrlRegex = new RegExp(`^/(${LP})/s/[a-z0-9_]+$`);
+  if (shortUrlRegex.test(pathname)) {
+    // Let the short URL page handle the redirect - pass through
+  }
 
-  // Protected routes - require authentication (exclude login pages)
-  const protectedPaths = ['/admin', '/brand', '/creator'];
-  const isProtectedRoute = !isLoginPage && protectedPaths.some((path) => {
+  // Login/signup pages should be accessible without authentication
+  const isLoginPage = loginPageRegex.test(pathname);
+  const isSignupPage = signupPageRegex.test(pathname);
+  const isPublicAuthPage = isLoginPage || isSignupPage;
+
+  // Protected routes - require authentication (exclude login/signup pages)
+  const protectedPaths = ['/admin', '/brand', '/creator', '/buyer'];
+  const isProtectedRoute = !isPublicAuthPage && protectedPaths.some((path) => {
     const pattern = new RegExp(`^/(${LP})${path}`);
     return pattern.test(pathname);
   });
 
   if (isProtectedRoute && !user) {
-    // Redirect to login with return URL
+    // Redirect to appropriate login with return URL
     const locale = pathname.split('/')[1] || defaultLocale;
     const returnUrl = encodeURIComponent(pathname);
+
+    // Redirect buyer routes to buyer login, others to general login
+    if (buyerRouteRegex.test(pathname)) {
+      return NextResponse.redirect(
+        new URL(`/${locale}/buyer/login?returnUrl=${returnUrl}`, request.url)
+      );
+    }
     return NextResponse.redirect(
       new URL(`/${locale}/login?returnUrl=${returnUrl}`, request.url)
     );
   }
 
-  // Role-based access control (exclude login pages)
-  if (user && !isLoginPage) {
+  // Role-based access control (exclude login/signup pages)
+  if (user && !isPublicAuthPage) {
     const userMetadata = user.user_metadata;
     const userRole = userMetadata?.role;
 
@@ -69,6 +86,12 @@ export async function middleware(request: NextRequest) {
 
     // Creator routes - only creator
     if (creatorRouteRegex.test(pathname) && userRole !== 'creator') {
+      const locale = pathname.split('/')[1] || defaultLocale;
+      return NextResponse.redirect(new URL(`/${locale}`, request.url));
+    }
+
+    // Buyer routes - only buyer
+    if (buyerRouteRegex.test(pathname) && userRole !== 'buyer') {
       const locale = pathname.split('/')[1] || defaultLocale;
       return NextResponse.redirect(new URL(`/${locale}`, request.url));
     }
