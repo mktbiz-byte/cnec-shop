@@ -26,9 +26,36 @@ import {
   Youtube,
   Twitter,
   ExternalLink,
+  Bell,
+  BellOff,
+  Award,
+  MessageSquare,
+  Music2,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Product, SocialLinks, Country } from '@/types/database';
+import { LegalFooter } from '@/components/shop/legal-footer';
+import { getClient } from '@/lib/supabase/client';
+
+const levelColors: Record<string, { color: string; name: string }> = {
+  bronze: { color: '#CD7F32', name: 'Bronze' },
+  silver: { color: '#C0C0C0', name: 'Silver' },
+  gold: { color: '#FFD700', name: 'Gold' },
+  platinum: { color: '#E5E4E2', name: 'Platinum' },
+  diamond: { color: '#B9F2FF', name: 'Diamond' },
+};
+
+interface ShopSettings {
+  show_footer: boolean;
+  show_social_links: boolean;
+  show_subscriber_count: boolean;
+  layout: 'grid' | 'list';
+  products_per_row: number;
+  show_prices: boolean;
+  announcement: string;
+  announcement_active: boolean;
+}
 
 interface CreatorShopProps {
   creator: {
@@ -38,8 +65,16 @@ interface CreatorShopProps {
     profileImage?: string;
     bio?: string;
     themeColor: string;
+    backgroundColor?: string;
+    textColor?: string;
     country: Country;
     socialLinks?: SocialLinks;
+    instagram?: string;
+    youtube?: string;
+    tiktok?: string;
+    level?: string;
+    communityEnabled?: boolean;
+    shopSettings?: ShopSettings;
   };
   products: (Product & { displayOrder: number; isFeatured: boolean })[];
   locale: string;
@@ -121,9 +156,88 @@ function ProductCard({
 export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
   const t = useTranslations('shop');
   const [cartOpen, setCartOpen] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
   const { items, addItem, removeItem, updateQuantity, clearCart } = useCartStore();
 
   const currency = locale === 'ja' ? 'JPY' : 'USD';
+  const shopSettings = creator.shopSettings || {
+    show_footer: true,
+    show_social_links: true,
+    show_subscriber_count: false,
+    layout: 'grid',
+    products_per_row: 3,
+    show_prices: true,
+    announcement: '',
+    announcement_active: false,
+  };
+
+  // Load subscriber count on mount
+  useState(() => {
+    const loadSubscriberCount = async () => {
+      const supabase = getClient();
+      const { count } = await supabase
+        .from('mall_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('creator_id', creator.id)
+        .eq('status', 'active');
+      setSubscriberCount(count || 0);
+    };
+    loadSubscriberCount();
+  });
+
+  const handleSubscribe = async () => {
+    setIsSubscribing(true);
+    try {
+      const supabase = getClient();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        toast.error('Please login to subscribe');
+        setIsSubscribing(false);
+        return;
+      }
+
+      // Get buyer
+      const { data: buyer } = await supabase
+        .from('buyers')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (!buyer) {
+        toast.error('Buyer account not found');
+        setIsSubscribing(false);
+        return;
+      }
+
+      if (isSubscribed) {
+        await supabase
+          .from('mall_subscriptions')
+          .delete()
+          .eq('buyer_id', buyer.id)
+          .eq('creator_id', creator.id);
+
+        setIsSubscribed(false);
+        setSubscriberCount((c) => Math.max(0, c - 1));
+        toast.success('Unsubscribed');
+      } else {
+        await supabase.from('mall_subscriptions').insert({
+          buyer_id: buyer.id,
+          creator_id: creator.id,
+        });
+
+        setIsSubscribed(true);
+        setSubscriberCount((c) => c + 1);
+        toast.success('Subscribed!');
+      }
+    } catch (error) {
+      toast.error('Failed to update subscription');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   const handleAddToCart = (productId: string) => {
     addItem({
@@ -155,8 +269,21 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: creator.themeColor || '#1a1a1a' }}
+      style={{
+        backgroundColor: creator.backgroundColor || '#1a1a1a',
+        color: creator.textColor || '#ffffff',
+      }}
     >
+      {/* Announcement Banner */}
+      {shopSettings.announcement_active && shopSettings.announcement && (
+        <div
+          className="p-3 text-center text-sm font-medium text-white"
+          style={{ backgroundColor: creator.themeColor || '#d4af37' }}
+        >
+          {shopSettings.announcement}
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
@@ -285,15 +412,65 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
                 {(creator.displayName || creator.username).charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <h1 className="mt-4 text-3xl font-headline font-bold">
-              {creator.displayName || `@${creator.username}`}
-            </h1>
+            <div className="flex items-center justify-center gap-2 mt-4">
+              <h1 className="text-3xl font-headline font-bold">
+                {creator.displayName || `@${creator.username}`}
+              </h1>
+              {creator.level && levelColors[creator.level] && (
+                <Badge
+                  style={{ backgroundColor: levelColors[creator.level].color }}
+                  className="text-black font-medium"
+                >
+                  <Award className="h-3 w-3 mr-1" />
+                  {levelColors[creator.level].name}
+                </Badge>
+              )}
+            </div>
+            {shopSettings.show_subscriber_count && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {subscriberCount.toLocaleString()} subscribers
+              </p>
+            )}
             {creator.bio && (
               <p className="mt-2 text-muted-foreground max-w-md">{creator.bio}</p>
             )}
-            {creator.socialLinks && (
+            {/* Social Links */}
+            {shopSettings.show_social_links && (
               <div className="mt-4 flex gap-3">
-                {Object.entries(creator.socialLinks).map(([platform, url]) => {
+                {creator.instagram && (
+                  <a
+                    href={creator.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-full transition-transform hover:scale-110"
+                    style={{ backgroundColor: creator.themeColor + '30' }}
+                  >
+                    <Instagram className="h-5 w-5" style={{ color: creator.themeColor }} />
+                  </a>
+                )}
+                {creator.youtube && (
+                  <a
+                    href={creator.youtube}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-full transition-transform hover:scale-110"
+                    style={{ backgroundColor: creator.themeColor + '30' }}
+                  >
+                    <Youtube className="h-5 w-5" style={{ color: creator.themeColor }} />
+                  </a>
+                )}
+                {creator.tiktok && (
+                  <a
+                    href={creator.tiktok}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 rounded-full transition-transform hover:scale-110"
+                    style={{ backgroundColor: creator.themeColor + '30' }}
+                  >
+                    <Music2 className="h-5 w-5" style={{ color: creator.themeColor }} />
+                  </a>
+                )}
+                {creator.socialLinks && Object.entries(creator.socialLinks).map(([platform, url]) => {
                   const Icon = socialIcons[platform];
                   if (!Icon || !url) return null;
                   return (
@@ -310,6 +487,32 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
                 })}
               </div>
             )}
+            {/* Action Buttons */}
+            <div className="mt-4 flex gap-3 justify-center">
+              <Button
+                variant={isSubscribed ? 'outline' : 'default'}
+                onClick={handleSubscribe}
+                disabled={isSubscribing}
+                style={!isSubscribed ? { backgroundColor: creator.themeColor || '#d4af37' } : {}}
+              >
+                {isSubscribing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : isSubscribed ? (
+                  <BellOff className="h-4 w-4 mr-2" />
+                ) : (
+                  <Bell className="h-4 w-4 mr-2" />
+                )}
+                {isSubscribed ? 'Unsubscribe' : 'Subscribe'}
+              </Button>
+              {creator.communityEnabled && (
+                <Button variant="outline" asChild>
+                  <Link href={`/${locale}/@${creator.username}/community`}>
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Community
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -341,6 +544,9 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
       </section>
 
       {/* Footer */}
+      {shopSettings.show_footer && (
+        <LegalFooter locale={locale} variant="full" />
+      )}
       <footer className="border-t border-border py-6">
         <div className="container text-center text-sm text-muted-foreground">
           <p>Powered by <span className="text-primary font-medium">KviewShop</span></p>
