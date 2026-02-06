@@ -144,13 +144,36 @@ export default function CreatorShopPage() {
           return;
         }
 
-        const { data: creator } = await supabase
+        let { data: creator } = await supabase
           .from('creators')
           .select('*')
           .eq('user_id', session.user.id)
           .single();
 
         if (cancelled) return;
+
+        // Auto-create creator record if it doesn't exist
+        if (!creator) {
+          const defaultUsername = session.user.email?.split('@')[0] || `user_${Date.now()}`;
+          const { data: newCreator, error: insertError } = await supabase
+            .from('creators')
+            .insert({
+              user_id: session.user.id,
+              username: defaultUsername,
+              display_name: session.user.user_metadata?.name || defaultUsername,
+              theme_color: '#d4af37',
+              background_color: '#1a1a1a',
+              text_color: '#ffffff',
+            })
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('Failed to create creator record:', insertError);
+          } else {
+            creator = newCreator;
+          }
+        }
 
         if (creator) {
           setCreatorId(creator.id);
@@ -209,26 +232,47 @@ export default function CreatorShopPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const { error } = await supabase
-        .from('creators')
-        .update({
-          display_name: settings.displayName || null,
-          bio: settings.bio || null,
-          theme_color: settings.themeColor,
-          background_color: settings.backgroundColor,
-          text_color: settings.textColor,
-          instagram: settings.instagram || null,
-          youtube: settings.youtube || null,
-          tiktok: settings.tiktok || null,
-          community_enabled: settings.communityEnabled,
-          community_type: settings.communityType,
-          shop_settings: shopSettings,
-        })
-        .eq('user_id', session.user.id);
+      const updateData = {
+        display_name: settings.displayName || null,
+        bio: settings.bio || null,
+        theme_color: settings.themeColor,
+        background_color: settings.backgroundColor,
+        text_color: settings.textColor,
+        instagram: settings.instagram || null,
+        youtube: settings.youtube || null,
+        tiktok: settings.tiktok || null,
+        community_enabled: settings.communityEnabled,
+        community_type: settings.communityType,
+        shop_settings: shopSettings,
+      };
 
-      if (error) {
+      // Try update first
+      const { data: updated, error: updateError } = await supabase
+        .from('creators')
+        .update(updateData)
+        .eq('user_id', session.user.id)
+        .select();
+
+      if (updateError) {
         toast.error(tCommon('error'));
-        console.error('Save error:', error);
+        console.error('Save error:', updateError);
+      } else if (!updated || updated.length === 0) {
+        // No row was updated - creator record doesn't exist, insert it
+        const defaultUsername = username || session.user.email?.split('@')[0] || `user_${Date.now()}`;
+        const { error: insertError } = await supabase
+          .from('creators')
+          .insert({
+            user_id: session.user.id,
+            username: defaultUsername,
+            ...updateData,
+          });
+
+        if (insertError) {
+          toast.error(tCommon('error'));
+          console.error('Insert error:', insertError);
+        } else {
+          toast.success(t('settingsSaved'));
+        }
       } else {
         toast.success(t('settingsSaved'));
       }
