@@ -6,7 +6,7 @@ import { useAuthStore } from '@/lib/store/auth';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 export function useUser() {
-  const { user, brand, creator, isLoading, setUser, setBrand, setCreator, setLoading } =
+  const { user, brand, creator, buyer, isLoading, setUser, setBrand, setCreator, setBuyer, setLoading } =
     useAuthStore();
   const [supabaseUser, setSupabaseUser] = useState<SupabaseUser | null>(null);
   const fetchingRef = useRef(false);
@@ -111,8 +111,7 @@ export function useUser() {
           .from('creators')
           .select('*')
           .eq('user_id', userId)
-          .maybeSingle();
-        if (!creatorError && creatorData) setCreator(creatorData);
+
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -129,12 +128,14 @@ export function useUser() {
     setUser(null);
     setBrand(null);
     setCreator(null);
+    setBuyer(null);
   };
 
   return {
     user,
     brand,
     creator,
+    buyer,
     supabaseUser,
     isLoading,
     signOut,

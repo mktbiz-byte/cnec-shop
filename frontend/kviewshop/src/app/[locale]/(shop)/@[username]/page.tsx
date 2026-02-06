@@ -94,8 +94,24 @@ export default async function ShopPage({ params }: ShopPageProps) {
         bio: locale === 'ja' ? creator.bio_jp : locale === 'en' ? creator.bio_en : creator.bio,
         themeColor: creator.theme_color,
         backgroundColor: creator.background_color || '#1a1a1a',
+
         country: creator.country,
         socialLinks: creator.social_links,
+        instagram: creator.instagram,
+        youtube: creator.youtube,
+        tiktok: creator.tiktok,
+        level: creator.level || 'bronze',
+        communityEnabled: creator.community_enabled || false,
+        shopSettings: creator.shop_settings || {
+          show_footer: true,
+          show_social_links: true,
+          show_subscriber_count: false,
+          layout: 'grid',
+          products_per_row: 3,
+          show_prices: true,
+          announcement: '',
+          announcement_active: false,
+        },
       }}
       products={products}
       locale={locale}

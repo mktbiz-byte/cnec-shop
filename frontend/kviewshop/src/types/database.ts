@@ -1,11 +1,17 @@
 // Database Types for KviewShop
 
-export type UserRole = 'super_admin' | 'brand_admin' | 'creator';
+export type UserRole = 'super_admin' | 'brand_admin' | 'creator' | 'buyer';
 export type Country = string;
 export type Currency = string;
 export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'completed' | 'cancelled' | 'refunded';
 export type MoCRAStatus = 'green' | 'yellow' | 'red';
 export type SettlementStatus = 'pending' | 'completed';
+export type CreatorLevel = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
+export type SubscriptionStatus = 'active' | 'paused' | 'cancelled';
+export type LiveSessionStatus = 'scheduled' | 'live' | 'ended' | 'cancelled';
+export type LivePlatform = 'instagram' | 'youtube' | 'tiktok' | 'internal';
+export type PointsType = 'review_text' | 'review_instagram' | 'purchase' | 'referral' | 'event' | 'expiry' | 'use_order' | 'admin_adjustment';
+export type CommunityPostType = 'general' | 'review' | 'question' | 'announcement';
 
 export interface Database {
   public: {
@@ -373,3 +379,417 @@ export const COMMISSION_RATES = {
   MAX_CREATOR_RATE: 0.30, // 30%
   DEFAULT_CREATOR_RATE: 0.25, // 25%
 } as const;
+
+// =============================================
+// BUYER TYPES
+// =============================================
+
+export interface Buyer {
+  id: string;
+  user_id: string;
+  nickname: string;
+  profile_image?: string;
+  phone?: string;
+  default_shipping_address?: ShippingAddress;
+  points_balance: number;
+  total_points_earned: number;
+  total_points_used: number;
+  total_orders: number;
+  total_spent: number;
+  total_reviews: number;
+  preferred_language: string;
+  preferred_currency: string;
+  marketing_consent: boolean;
+  eligible_for_creator: boolean;
+  creator_conversion_date?: string;
+  instagram_username?: string;
+  instagram_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================
+// SHORT URL TYPES
+// =============================================
+
+export interface ShortUrl {
+  id: string;
+  creator_id: string;
+  short_code: string;
+  custom_domain?: string;
+  is_primary: boolean;
+  total_clicks: number;
+  last_clicked_at?: string;
+  is_active: boolean;
+  expires_at?: string;
+  source_tag?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  creator?: Creator;
+}
+
+export interface ShortUrlAnalytics {
+  id: string;
+  short_url_id: string;
+  clicked_at: string;
+  referrer?: string;
+  user_agent?: string;
+  ip_country?: string;
+  device_type?: string;
+}
+
+// =============================================
+// SUBSCRIPTION TYPES
+// =============================================
+
+export interface MallSubscription {
+  id: string;
+  buyer_id: string;
+  creator_id: string;
+  status: SubscriptionStatus;
+  notify_new_products: boolean;
+  notify_sales: boolean;
+  notify_live_streams: boolean;
+  subscribed_at: string;
+  unsubscribed_at?: string;
+  // Joined
+  buyer?: Buyer;
+  creator?: Creator;
+}
+
+// =============================================
+// COMMUNITY TYPES
+// =============================================
+
+export interface CommunityPost {
+  id: string;
+  creator_id: string;
+  buyer_id?: string;
+  title?: string;
+  content: string;
+  images: string[];
+  likes_count: number;
+  comments_count: number;
+  views_count: number;
+  is_pinned: boolean;
+  is_hidden: boolean;
+  hidden_reason?: string;
+  post_type: CommunityPostType;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  buyer?: Buyer;
+  creator?: Creator;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  buyer_id?: string;
+  parent_comment_id?: string;
+  content: string;
+  likes_count: number;
+  is_hidden: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  buyer?: Buyer;
+  replies?: CommunityComment[];
+}
+
+// =============================================
+// REVIEW & Q&A TYPES
+// =============================================
+
+export interface ProductQuestion {
+  id: string;
+  product_id: string;
+  buyer_id?: string;
+  question: string;
+  answer?: string;
+  answered_by?: string;
+  answered_at?: string;
+  is_public: boolean;
+  is_answered: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  buyer?: Buyer;
+  product?: Product;
+}
+
+export interface ProductReview {
+  id: string;
+  product_id: string;
+  buyer_id?: string;
+  order_id?: string;
+  rating: number;
+  title?: string;
+  content: string;
+  images: string[];
+  instagram_post_url?: string;
+  instagram_verified: boolean;
+  points_awarded: number;
+  points_awarded_at?: string;
+  helpful_count: number;
+  is_verified_purchase: boolean;
+  is_approved: boolean;
+  is_featured: boolean;
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  buyer?: Buyer;
+  product?: Product;
+}
+
+// =============================================
+// POINTS SYSTEM TYPES
+// =============================================
+
+export interface PointsHistory {
+  id: string;
+  buyer_id: string;
+  amount: number;
+  balance_after: number;
+  type: PointsType;
+  reference_id?: string;
+  description?: string;
+  expires_at?: string;
+  created_at: string;
+}
+
+// =============================================
+// CREATOR LEVEL TYPES
+// =============================================
+
+export interface CreatorLevelDefinition {
+  id: string;
+  level_name: CreatorLevel;
+  min_points: number;
+  commission_bonus: number;
+  badge_color: string;
+  badge_icon: string;
+  benefits: string[];
+  created_at: string;
+}
+
+export interface CreatorLevelHistory {
+  id: string;
+  creator_id: string;
+  from_level?: string;
+  to_level: string;
+  points_at_change: number;
+  reason?: string;
+  created_at: string;
+}
+
+// Extended Creator with level
+export interface CreatorWithLevel extends Creator {
+  level: CreatorLevel;
+  level_points: number;
+  level_updated_at?: string;
+  community_enabled: boolean;
+  community_type: 'board' | 'chat';
+  shop_settings: ShopSettings;
+  background_color: string;
+  background_image?: string;
+  text_color: string;
+}
+
+export interface ShopSettings {
+  show_footer: boolean;
+  footer_type: 'full' | 'minimal';
+  show_social_links: boolean;
+  show_subscriber_count: boolean;
+  layout: 'grid' | 'list';
+  products_per_row: number;
+  show_prices: boolean;
+  currency_display: 'local' | 'usd' | 'both';
+  announcement: string;
+  announcement_active: boolean;
+}
+
+// =============================================
+// LIVE SHOPPING TYPES
+// =============================================
+
+export interface LiveSession {
+  id: string;
+  creator_id: string;
+  title: string;
+  description?: string;
+  platform: LivePlatform;
+  external_url?: string;
+  stream_key?: string;
+  scheduled_at?: string;
+  started_at?: string;
+  ended_at?: string;
+  status: LiveSessionStatus;
+  featured_product_ids: string[];
+  peak_viewers: number;
+  total_viewers: number;
+  total_orders: number;
+  total_revenue: number;
+  chat_enabled: boolean;
+  bot_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  creator?: Creator;
+  products?: LiveProduct[];
+}
+
+export interface LiveProduct {
+  id: string;
+  live_session_id: string;
+  product_id: string;
+  display_order: number;
+  live_price_usd?: number;
+  live_price_jpy?: number;
+  clicks: number;
+  orders: number;
+  created_at: string;
+  // Joined
+  product?: Product;
+}
+
+export interface LiveBotSettings {
+  id: string;
+  creator_id: string;
+  is_enabled: boolean;
+  welcome_message: string;
+  product_link_interval: number;
+  scheduled_messages: ScheduledMessage[];
+  auto_responses: Record<string, string>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduledMessage {
+  time_offset: number; // seconds from start
+  message: string;
+}
+
+export interface LiveChatMessage {
+  id: string;
+  live_session_id: string;
+  buyer_id?: string;
+  is_bot_message: boolean;
+  message: string;
+  product_id?: string;
+  product_link?: string;
+  is_pinned: boolean;
+  is_hidden: boolean;
+  created_at: string;
+  // Joined
+  buyer?: Buyer;
+}
+
+// =============================================
+// CREATOR APPLICATION (Buyer -> Creator)
+// =============================================
+
+export interface CreatorApplication {
+  id: string;
+  buyer_id: string;
+  desired_username: string;
+  display_name: string;
+  bio?: string;
+  instagram_url?: string;
+  youtube_url?: string;
+  tiktok_url?: string;
+  follower_count?: number;
+  motivation?: string;
+  content_plan?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
+  created_creator_id?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  buyer?: Buyer;
+}
+
+export interface ConversionCriteria {
+  id: string;
+  min_orders: number;
+  min_reviews: number;
+  min_spent: number;
+  min_account_age_days: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================
+// LEGAL CONTENT TYPES
+// =============================================
+
+export type LegalContentType =
+  | 'terms_of_service'
+  | 'privacy_policy'
+  | 'refund_policy'
+  | 'shipping_policy'
+  | 'business_info'
+  | 'contact_info';
+
+export interface LegalContent {
+  id: string;
+  content_type: LegalContentType;
+  country: string;
+  language: string;
+  title: string;
+  content: string;
+  is_active: boolean;
+  version: number;
+  effective_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// =============================================
+// WISHLIST & CART TYPES
+// =============================================
+
+export interface BuyerWishlist {
+  id: string;
+  buyer_id: string;
+  product_id: string;
+  creator_id: string;
+  created_at: string;
+  // Joined
+  product?: Product;
+  creator?: Creator;
+}
+
+export interface BuyerCart {
+  id: string;
+  buyer_id: string;
+  product_id: string;
+  creator_id: string;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  product?: Product;
+  creator?: Creator;
+}
+
+// =============================================
+// BUYER DASHBOARD STATS
+// =============================================
+
+export interface BuyerDashboardStats {
+  total_orders: number;
+  total_spent: number;
+  points_balance: number;
+  active_subscriptions: number;
+  wishlist_count: number;
+  pending_reviews: number;
+  recent_orders: Order[];
+  subscribed_malls: MallSubscription[];
+}
