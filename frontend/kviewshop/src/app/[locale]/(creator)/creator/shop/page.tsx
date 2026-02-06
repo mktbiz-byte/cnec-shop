@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -74,9 +73,7 @@ export default function CreatorShopPage() {
   const [shortUrls, setShortUrls] = useState<ShortUrl[]>([]);
   const [newShortCode, setNewShortCode] = useState('');
   const [newSourceTag, setNewSourceTag] = useState('general');
-  const [profileImage, setProfileImage] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const [settings, setSettings] = useState({
     displayName: '',
@@ -151,7 +148,7 @@ export default function CreatorShopPage() {
           .from('creators')
           .select('*')
           .eq('user_id', session.user.id)
-          .maybeSingle();
+          .single();
 
         if (cancelled) return;
 
@@ -159,9 +156,7 @@ export default function CreatorShopPage() {
           setCreatorId(creator.id);
           setUsername(creator.username || '');
           setLevel(creator.level || 'bronze');
-          if (creator.profile_image) {
-            setProfileImage(creator.profile_image);
-          }
+
           setSettings({
             displayName: creator.display_name || '',
             bio: creator.bio || '',
@@ -206,97 +201,6 @@ export default function CreatorShopPage() {
     };
   }, []);
 
-  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('파일 크기는 5MB 이하여야 합니다');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const supabase = getClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `creators/${session.user.id}/profile.${fileExt}`;
-
-      const { data, error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (uploadError) {
-        const { data: fallbackData, error: fallbackError } = await supabase.storage
-          .from('products')
-          .upload(`profiles/${session.user.id}/profile.${fileExt}`, file, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (fallbackError) {
-          console.error('Upload error:', fallbackError);
-          toast.error('업로드에 실패했습니다');
-          return;
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('products')
-          .getPublicUrl(`profiles/${session.user.id}/profile.${fileExt}`);
-
-        const imageUrl = urlData.publicUrl;
-        setProfileImage(imageUrl);
-
-        await supabase
-          .from('creators')
-          .update({ profile_image: imageUrl })
-          .eq('user_id', session.user.id);
-      } else {
-        const { data: urlData } = supabase.storage
-          .from('profiles')
-          .getPublicUrl(fileName);
-
-        const imageUrl = urlData.publicUrl;
-        setProfileImage(imageUrl);
-
-        await supabase
-          .from('creators')
-          .update({ profile_image: imageUrl })
-          .eq('user_id', session.user.id);
-      }
-
-      toast.success(t('settingsSaved'));
-    } catch (error) {
-      console.error('Profile upload error:', error);
-      toast.error(tCommon('error'));
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleRemoveProfileImage = async () => {
-    const supabase = getClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
-    setProfileImage('');
-    await supabase
-      .from('creators')
-      .update({ profile_image: null })
-      .eq('user_id', session.user.id);
-
-    toast.success(t('settingsSaved'));
-  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -449,52 +353,7 @@ export default function CreatorShopPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Profile Image */}
-                <div className="space-y-2">
-                  <Label>{t('profileImage')}</Label>
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                      {profileImage ? (
-                        <AvatarImage src={profileImage} alt="Profile" />
-                      ) : null}
-                      <AvatarFallback
-                        style={{ backgroundColor: settings.themeColor }}
-                        className="text-xl font-bold text-white"
-                      >
-                        {settings.displayName?.charAt(0)?.toUpperCase() || username?.charAt(0)?.toUpperCase() || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                      >
-                        {isUploading ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                        ) : null}
-                        {t('upload')}
-                      </Button>
-                      {profileImage && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleRemoveProfileImage}
-                        >
-                          {t('remove')}
-                        </Button>
-                      )}
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleProfileImageUpload}
-                    />
-                  </div>
-                </div>
+
 
                 <div className="space-y-2">
                   <Label>{t('displayName')}</Label>
@@ -921,9 +780,7 @@ export default function CreatorShopPage() {
                   ['--tw-ring-offset-color' as any]: settings.backgroundColor,
                 }}
               >
-                {profileImage ? (
-                  <AvatarImage src={profileImage} alt="Profile" />
-                ) : null}
+
                 <AvatarFallback
                   style={{ backgroundColor: settings.themeColor }}
                   className="text-2xl font-bold text-white"
