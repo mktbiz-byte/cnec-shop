@@ -43,12 +43,6 @@ export async function middleware(request: NextRequest) {
   // Update Supabase session
   const { supabaseResponse, user } = await updateSession(request);
 
-  // Handle short URL redirects
-  const shortUrlRegex = new RegExp(`^/(${LP})/s/[a-z0-9_]+$`);
-  if (shortUrlRegex.test(pathname)) {
-    // Let the short URL page handle the redirect - pass through
-  }
-
   // Login/signup pages should be accessible without authentication
   const isLoginPage = loginPageRegex.test(pathname);
   const isSignupPage = signupPageRegex.test(pathname);

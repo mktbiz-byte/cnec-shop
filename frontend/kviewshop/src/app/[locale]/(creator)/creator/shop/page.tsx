@@ -21,30 +21,18 @@ import {
   ExternalLink,
   Copy,
   Check,
-  Plus,
-  Trash2,
   Eye,
   Settings,
   MessageSquare,
-  QrCode,
   Instagram,
   Youtube,
   Music2,
-  RefreshCw,
   Award,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
-interface ShortUrl {
-  id: string;
-  short_code: string;
-  is_primary: boolean;
-  total_clicks: number;
-  source_tag?: string;
-  is_active: boolean;
-}
+import { useAuthStore } from '@/lib/store/auth';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface ShopSettings {
   show_footer: boolean;
@@ -64,16 +52,15 @@ export default function CreatorShopPage() {
   const params = useParams();
   const locale = params.locale as string;
 
+  // Read auth state from zustand store (populated by Header's useUser hook)
+  const { creator: storeCreator, isLoading: authLoading } = useAuthStore();
+
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [username, setUsername] = useState('');
   const [creatorId, setCreatorId] = useState('');
   const [level, setLevel] = useState('bronze');
-  const [shortUrls, setShortUrls] = useState<ShortUrl[]>([]);
-  const [newShortCode, setNewShortCode] = useState('');
-  const [newSourceTag, setNewSourceTag] = useState('general');
-
 
   const [settings, setSettings] = useState({
     displayName: '',
@@ -129,13 +116,46 @@ export default function CreatorShopPage() {
     diamond: { color: '#B9F2FF', icon: 'diamond' },
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    const safetyTimeout = setTimeout(() => {
-      if (!cancelled) setIsLoading(false);
-    }, 3000);
+  // Populate form from creator data (store or freshly fetched)
+  const populateFromCreator = (creator: any) => {
+    setCreatorId(creator.id);
+    setUsername(creator.username || '');
+    setLevel(creator.level || 'bronze');
+    setSettings({
+      displayName: creator.display_name || '',
+      bio: creator.bio || '',
+      themeColor: creator.theme_color || '#d4af37',
+      backgroundColor: creator.background_color || '#1a1a1a',
+      textColor: creator.text_color || '#ffffff',
+      instagram: creator.instagram || '',
+      youtube: creator.youtube || '',
+      tiktok: creator.tiktok || '',
+      communityEnabled: creator.community_enabled || false,
+      communityType: creator.community_type || 'board',
+    });
+    if (creator.shop_settings) {
+      setShopSettings(creator.shop_settings);
+    }
+  };
 
-    const loadCreatorData = async () => {
+  useEffect(() => {
+    // Wait for auth store to finish loading
+    if (authLoading) return;
+
+    // If creator data already in store, use it directly (no extra DB calls)
+    if (storeCreator) {
+      populateFromCreator(storeCreator);
+      setIsLoading(false);
+      return;
+    }
+
+    // No creator in store - either not logged in or need to auto-create
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      if (!cancelled) setIsLoading(false);
+    }, 5000);
+
+    const initCreator = async () => {
       try {
         const supabase = getClient();
         const { data: { session } } = await supabase.auth.getSession();
@@ -144,16 +164,19 @@ export default function CreatorShopPage() {
           return;
         }
 
-        let { data: creator } = await supabase
+        // Try to fetch creator (maybe store missed it)
+        const { data: creator } = await supabase
           .from('creators')
           .select('*')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
 
         if (cancelled) return;
 
-        // Auto-create creator record if it doesn't exist
-        if (!creator) {
+        if (creator) {
+          populateFromCreator(creator);
+        } else {
+          // Auto-create creator record
           const defaultUsername = session.user.email?.split('@')[0] || `user_${Date.now()}`;
           const { data: newCreator, error: insertError } = await supabase
             .from('creators')
@@ -169,69 +192,42 @@ export default function CreatorShopPage() {
             .select()
             .single();
 
-          if (insertError) {
-            console.error('Failed to create creator record:', insertError);
-          } else {
-            creator = newCreator;
-          }
-        }
-
-        if (creator) {
-          setCreatorId(creator.id);
-          setUsername(creator.username || '');
-          setLevel(creator.level || 'bronze');
-
-          setSettings({
-            displayName: creator.display_name || '',
-            bio: creator.bio || '',
-            themeColor: creator.theme_color || '#d4af37',
-            backgroundColor: creator.background_color || '#1a1a1a',
-            textColor: creator.text_color || '#ffffff',
-            instagram: creator.instagram || '',
-            youtube: creator.youtube || '',
-            tiktok: creator.tiktok || '',
-            communityEnabled: creator.community_enabled || false,
-            communityType: creator.community_type || 'board',
-          });
-          if (creator.shop_settings) {
-            setShopSettings(creator.shop_settings);
-          }
-
-          // Load short URLs
-          const { data: urls } = await supabase
-            .from('short_urls')
-            .select('*')
-            .eq('creator_id', creator.id)
-            .order('is_primary', { ascending: false });
-
-          if (urls) {
-            setShortUrls(urls);
+          if (!insertError && newCreator && !cancelled) {
+            populateFromCreator(newCreator);
           }
         }
       } catch (error) {
         console.error('Failed to load creator data:', error);
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    loadCreatorData();
+    initCreator();
 
     return () => {
       cancelled = true;
-      clearTimeout(safetyTimeout);
+      clearTimeout(timeout);
     };
-  }, []);
-
+  }, [authLoading, storeCreator]);
 
   const handleSave = async () => {
     setIsSaving(true);
+
+    // 10-second timeout for save
+    const saveTimeout = setTimeout(() => {
+      setIsSaving(false);
+      toast.error(tCommon('error'));
+    }, 10000);
+
     try {
       const supabase = getClient();
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) {
+        clearTimeout(saveTimeout);
+        setIsSaving(false);
+        return;
+      }
 
       const updateData = {
         display_name: settings.displayName || null,
@@ -247,18 +243,18 @@ export default function CreatorShopPage() {
         shop_settings: shopSettings,
       };
 
-      // Try update first
       const { data: updated, error: updateError } = await supabase
         .from('creators')
         .update(updateData)
         .eq('user_id', session.user.id)
         .select();
 
+      clearTimeout(saveTimeout);
+
       if (updateError) {
         toast.error(tCommon('error'));
         console.error('Save error:', updateError);
       } else if (!updated || updated.length === 0) {
-        // No row was updated - creator record doesn't exist, insert it
         const defaultUsername = username || session.user.email?.split('@')[0] || `user_${Date.now()}`;
         const { error: insertError } = await supabase
           .from('creators')
@@ -279,56 +275,10 @@ export default function CreatorShopPage() {
         toast.success(t('settingsSaved'));
       }
     } catch (error) {
+      clearTimeout(saveTimeout);
       toast.error(tCommon('error'));
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleCreateShortUrl = async () => {
-    if (!newShortCode || newShortCode.length < 3) {
-      toast.error('Short code must be at least 3 characters');
-      return;
-    }
-
-    try {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('short_urls')
-        .insert({
-          creator_id: creatorId,
-          short_code: newShortCode.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-          source_tag: newSourceTag,
-          is_primary: shortUrls.length === 0,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          toast.error('This short code is already taken');
-        } else {
-          toast.error('Failed to create short URL');
-        }
-        return;
-      }
-
-      setShortUrls([...shortUrls, data]);
-      setNewShortCode('');
-      toast.success('Short URL created!');
-    } catch (error) {
-      toast.error('Failed to create short URL');
-    }
-  };
-
-  const handleDeleteShortUrl = async (id: string) => {
-    try {
-      const supabase = getClient();
-      await supabase.from('short_urls').delete().eq('id', id);
-      setShortUrls(shortUrls.filter(u => u.id !== id));
-      toast.success('Short URL deleted');
-    } catch (error) {
-      toast.error('Failed to delete short URL');
     }
   };
 
@@ -339,13 +289,6 @@ export default function CreatorShopPage() {
     setTimeout(() => setCopiedUrl(null), 2000);
   };
 
-  const getShortUrl = (code: string) => {
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}/${locale}/s/${code}`;
-    }
-    return `/s/${code}`;
-  };
-
   const getShopUrl = () => {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/${locale}/@${username}`;
@@ -353,7 +296,7 @@ export default function CreatorShopPage() {
     return `/@${username}`;
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -382,10 +325,9 @@ export default function CreatorShopPage() {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> {t('tabProfile')}</TabsTrigger>
             <TabsTrigger value="theme"><Palette className="h-4 w-4 mr-1" /> {t('tabTheme')}</TabsTrigger>
-            <TabsTrigger value="urls"><LinkIcon className="h-4 w-4 mr-1" /> {t('tabUrls')}</TabsTrigger>
             <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" /> {t('tabSettings')}</TabsTrigger>
           </TabsList>
 
@@ -399,8 +341,6 @@ export default function CreatorShopPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-
-
                 <div className="space-y-2">
                   <Label>{t('displayName')}</Label>
                   <Input
@@ -459,6 +399,33 @@ export default function CreatorShopPage() {
                     value={settings.tiktok}
                     onChange={(e) => setSettings({ ...settings, tiktok: e.target.value })}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Shop URL */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ExternalLink className="h-5 w-5" />
+                  {t('shopUrl')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Input value={getShopUrl()} readOnly className="font-mono text-sm" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(getShopUrl())}
+                  >
+                    {copiedUrl === getShopUrl() ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="outline" size="icon" asChild>
+                    <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -524,126 +491,6 @@ export default function CreatorShopPage() {
                       <p className="text-xs text-center">{color.name}</p>
                     </button>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="urls" className="space-y-4 mt-4">
-            {/* Shop URL */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ExternalLink className="h-5 w-5" />
-                  {t('shopUrl')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Input value={getShopUrl()} readOnly className="font-mono text-sm" />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(getShopUrl())}
-                  >
-                    {copiedUrl === getShopUrl() ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                  <Button variant="outline" size="icon" asChild>
-                    <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Short URLs */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <QrCode className="h-5 w-5" />
-                  {t('shortUrls')}
-                </CardTitle>
-                <CardDescription>
-                  {t('shortUrlsDesc')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Create New */}
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="short_code"
-                      value={newShortCode}
-                      onChange={(e) => setNewShortCode(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                      className="font-mono"
-                    />
-                  </div>
-                  <select
-                    value={newSourceTag}
-                    onChange={(e) => setNewSourceTag(e.target.value)}
-                    className="px-3 rounded-md border bg-muted"
-                  >
-                    <option value="general">General</option>
-                    <option value="instagram">Instagram</option>
-                    <option value="youtube">YouTube</option>
-                    <option value="tiktok">TikTok</option>
-                  </select>
-                  <Button onClick={handleCreateShortUrl}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {/* List */}
-                <div className="space-y-2">
-                  {shortUrls.map((url) => (
-                    <div
-                      key={url.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm truncate">
-                            /s/{url.short_code}
-                          </span>
-                          {url.is_primary && (
-                            <Badge variant="secondary" className="text-xs">{t('primary')}</Badge>
-                          )}
-                          {url.source_tag && (
-                            <Badge variant="outline" className="text-xs">{url.source_tag}</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {url.total_clicks} {t('clicks')}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => copyToClipboard(getShortUrl(url.short_code))}
-                        >
-                          {copiedUrl === getShortUrl(url.short_code) ? (
-                            <Check className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteShortUrl(url.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  {shortUrls.length === 0 && (
-                    <p className="text-center text-muted-foreground py-4">
-                      {t('noShortUrls')}
-                    </p>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -826,7 +673,6 @@ export default function CreatorShopPage() {
                   ['--tw-ring-offset-color' as any]: settings.backgroundColor,
                 }}
               >
-
                 <AvatarFallback
                   style={{ backgroundColor: settings.themeColor }}
                   className="text-2xl font-bold text-white"
