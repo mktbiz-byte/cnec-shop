@@ -65,7 +65,7 @@ export default function BuyerLoginPage() {
         .from('users')
         .select('role')
         .eq('id', authData.user?.id)
-        .single();
+        .maybeSingle();
 
       if (userData?.role !== 'buyer') {
         setLoginError('This account is not registered as a buyer.');

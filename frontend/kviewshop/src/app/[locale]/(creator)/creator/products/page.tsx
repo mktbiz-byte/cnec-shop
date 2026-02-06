@@ -109,7 +109,7 @@ export default function CreatorProductsPage() {
         // Fetch brands with shipping/cert info
         const { data: brandsData } = await supabase
           .from('brands')
-          .select('id, user_id, brand_name, shipping_countries, certifications');
+          .select('*');
 
         if (cancelled) return;
 

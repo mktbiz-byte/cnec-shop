@@ -113,7 +113,7 @@ export default function CreatorLivePage() {
           .from('live_bot_settings')
           .select('*')
           .eq('creator_id', creator.id)
-          .single();
+          .maybeSingle();
 
         if (botData) {
           setBotSettings(botData);

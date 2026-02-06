@@ -78,7 +78,7 @@ export default function BecomeCreatorPage() {
           .from('conversion_criteria')
           .select('*')
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
         if (criteriaData) {
           setCriteria(criteriaData);
@@ -91,7 +91,7 @@ export default function BecomeCreatorPage() {
           .eq('buyer_id', buyer.id)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         if (appData) {
           setExistingApplication(appData);
@@ -146,7 +146,7 @@ export default function BecomeCreatorPage() {
         .from('creators')
         .select('id')
         .eq('username', form.desired_username.toLowerCase())
-        .single();
+        .maybeSingle();
 
       if (existingCreator) {
         toast.error('This username is already taken');

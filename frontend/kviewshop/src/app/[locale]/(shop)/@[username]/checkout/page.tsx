@@ -89,7 +89,7 @@ export default function CheckoutPage() {
           .from('creators')
           .select('id, username, display_name, theme_color')
           .eq('username', username)
-          .single();
+          .maybeSingle();
 
         if (!creatorData) {
           router.push('/' + locale);

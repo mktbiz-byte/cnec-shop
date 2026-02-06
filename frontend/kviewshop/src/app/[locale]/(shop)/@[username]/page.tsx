@@ -31,7 +31,7 @@ async function getCreatorData(username: string) {
       )
     `)
     .eq('username', username.toLowerCase())
-    .single();
+    .maybeSingle();
 
   if (error || !creator) {
     return null;
