@@ -111,7 +111,15 @@ export function useUser() {
           .from('creators')
           .select('*')
           .eq('user_id', userId)
-
+          .maybeSingle();
+        if (!creatorError && creatorData) setCreator(creatorData);
+      } else if (userData.role === 'buyer') {
+        const { data: buyerData, error: buyerError } = await supabase
+          .from('buyers')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+        if (!buyerError && buyerData) setBuyer(buyerData);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);

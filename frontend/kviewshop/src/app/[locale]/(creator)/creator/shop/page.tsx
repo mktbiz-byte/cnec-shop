@@ -289,7 +289,7 @@ export default function CreatorShopPage() {
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedUrl(text);
-    toast.success('Copied to clipboard!');
+    toast.success(t('linkCopied'));
     setTimeout(() => setCopiedUrl(null), 2000);
   };
 
@@ -337,10 +337,10 @@ export default function CreatorShopPage() {
 
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> Profile</TabsTrigger>
-            <TabsTrigger value="theme"><Palette className="h-4 w-4 mr-1" /> Theme</TabsTrigger>
-            <TabsTrigger value="urls"><LinkIcon className="h-4 w-4 mr-1" /> URLs</TabsTrigger>
-            <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" /> Settings</TabsTrigger>
+            <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> {t('tabProfile')}</TabsTrigger>
+            <TabsTrigger value="theme"><Palette className="h-4 w-4 mr-1" /> {t('tabTheme')}</TabsTrigger>
+            <TabsTrigger value="urls"><LinkIcon className="h-4 w-4 mr-1" /> {t('tabUrls')}</TabsTrigger>
+            <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" /> {t('tabSettings')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-4 mt-4">
@@ -349,23 +349,24 @@ export default function CreatorShopPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Profile Information
+                  {t('profileSection')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
 
+
                 <div className="space-y-2">
-                  <Label>Display Name</Label>
+                  <Label>{t('displayName')}</Label>
                   <Input
-                    placeholder="Your shop name"
+                    placeholder={t('shopNamePlaceholder')}
                     value={settings.displayName}
                     onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Bio</Label>
+                  <Label>{t('bio')}</Label>
                   <Textarea
-                    placeholder="Tell customers about your shop..."
+                    placeholder={t('bioPlaceholderShop')}
                     value={settings.bio}
                     onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
                     rows={4}
@@ -379,7 +380,7 @@ export default function CreatorShopPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <LinkIcon className="h-5 w-5" />
-                  Social Links
+                  {t('socialLinks')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -421,8 +422,8 @@ export default function CreatorShopPage() {
             {/* Theme Color */}
             <Card>
               <CardHeader>
-                <CardTitle>Accent Color</CardTitle>
-                <CardDescription>Choose your shop's main accent color</CardDescription>
+                <CardTitle>{t('themeColor')}</CardTitle>
+                <CardDescription>{t('themeColorDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-3">
@@ -451,8 +452,8 @@ export default function CreatorShopPage() {
             {/* Background Color */}
             <Card>
               <CardHeader>
-                <CardTitle>Background Color</CardTitle>
-                <CardDescription>Set your shop's background</CardDescription>
+                <CardTitle>{t('backgroundColor')}</CardTitle>
+                <CardDescription>{t('backgroundColorDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-3">
@@ -488,7 +489,7 @@ export default function CreatorShopPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ExternalLink className="h-5 w-5" />
-                  Shop URL
+                  {t('shopUrl')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -515,10 +516,10 @@ export default function CreatorShopPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <QrCode className="h-5 w-5" />
-                  Short URLs
+                  {t('shortUrls')}
                 </CardTitle>
                 <CardDescription>
-                  Create short links for Instagram, YouTube, etc.
+                  {t('shortUrlsDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -560,14 +561,14 @@ export default function CreatorShopPage() {
                             /s/{url.short_code}
                           </span>
                           {url.is_primary && (
-                            <Badge variant="secondary" className="text-xs">Primary</Badge>
+                            <Badge variant="secondary" className="text-xs">{t('primary')}</Badge>
                           )}
                           {url.source_tag && (
                             <Badge variant="outline" className="text-xs">{url.source_tag}</Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {url.total_clicks} clicks
+                          {url.total_clicks} {t('clicks')}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -594,7 +595,7 @@ export default function CreatorShopPage() {
                   ))}
                   {shortUrls.length === 0 && (
                     <p className="text-center text-muted-foreground py-4">
-                      No short URLs created yet
+                      {t('noShortUrls')}
                     </p>
                   )}
                 </div>
@@ -608,16 +609,16 @@ export default function CreatorShopPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
-                  Community
+                  {t('community')}
                 </CardTitle>
-                <CardDescription>Enable community features for your shop</CardDescription>
+                <CardDescription>{t('enableCommunityDesc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Enable Community</p>
+                    <p className="font-medium">{t('enableCommunity')}</p>
                     <p className="text-sm text-muted-foreground">
-                      Let buyers interact and share opinions
+                      {t('enableCommunityDesc')}
                     </p>
                   </div>
                   <Switch
@@ -629,21 +630,21 @@ export default function CreatorShopPage() {
                 </div>
                 {settings.communityEnabled && (
                   <div className="space-y-2">
-                    <Label>Community Type</Label>
+                    <Label>{t('communityType')}</Label>
                     <div className="flex gap-2">
                       <Button
                         variant={settings.communityType === 'board' ? 'default' : 'outline'}
                         className="flex-1"
                         onClick={() => setSettings({ ...settings, communityType: 'board' })}
                       >
-                        Board (Forum)
+                        {t('communityBoard')}
                       </Button>
                       <Button
                         variant={settings.communityType === 'chat' ? 'default' : 'outline'}
                         className="flex-1"
                         onClick={() => setSettings({ ...settings, communityType: 'chat' })}
                       >
-                        Chat
+                        {t('communityChat')}
                       </Button>
                     </div>
                   </div>
@@ -654,13 +655,13 @@ export default function CreatorShopPage() {
             {/* Shop Display Settings */}
             <Card>
               <CardHeader>
-                <CardTitle>Display Settings</CardTitle>
+                <CardTitle>{t('displaySettings')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Show Footer</p>
-                    <p className="text-sm text-muted-foreground">Display legal footer</p>
+                    <p className="font-medium">{t('showFooter')}</p>
+                    <p className="text-sm text-muted-foreground">{t('showFooterDesc')}</p>
                   </div>
                   <Switch
                     checked={shopSettings.show_footer}
@@ -671,8 +672,8 @@ export default function CreatorShopPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Show Social Links</p>
-                    <p className="text-sm text-muted-foreground">Display social media links</p>
+                    <p className="font-medium">{t('showSocialLinks')}</p>
+                    <p className="text-sm text-muted-foreground">{t('showSocialLinksDesc')}</p>
                   </div>
                   <Switch
                     checked={shopSettings.show_social_links}
@@ -683,8 +684,8 @@ export default function CreatorShopPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Show Subscriber Count</p>
-                    <p className="text-sm text-muted-foreground">Display how many follow your shop</p>
+                    <p className="font-medium">{t('showSubscriberCount')}</p>
+                    <p className="text-sm text-muted-foreground">{t('showSubscriberCountDesc')}</p>
                   </div>
                   <Switch
                     checked={shopSettings.show_subscriber_count}
@@ -699,11 +700,11 @@ export default function CreatorShopPage() {
             {/* Announcement */}
             <Card>
               <CardHeader>
-                <CardTitle>Shop Announcement</CardTitle>
+                <CardTitle>{t('shopAnnouncement')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <Label>Active</Label>
+                  <Label>{t('active')}</Label>
                   <Switch
                     checked={shopSettings.announcement_active}
                     onCheckedChange={(checked) =>
@@ -712,7 +713,7 @@ export default function CreatorShopPage() {
                   />
                 </div>
                 <Textarea
-                  placeholder="Enter announcement text..."
+                  placeholder={t('enterAnnouncement')}
                   value={shopSettings.announcement}
                   onChange={(e) =>
                     setShopSettings({ ...shopSettings, announcement: e.target.value })
@@ -742,12 +743,12 @@ export default function CreatorShopPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              Live Preview
+              {t('livePreview')}
             </h2>
             <Button variant="outline" size="sm" asChild>
               <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Open Shop
+                {t('openShop')}
               </a>
             </Button>
           </div>
@@ -789,12 +790,12 @@ export default function CreatorShopPage() {
               </Avatar>
 
               <h2 className="text-xl font-bold">
-                {settings.displayName || username || 'Your Shop'}
+                {settings.displayName || username || t('yourShop')}
               </h2>
               <p className="text-sm opacity-70 mt-1">@{username}</p>
 
               {shopSettings.show_subscriber_count && (
-                <p className="text-xs opacity-50 mt-1">0 subscribers</p>
+                <p className="text-xs opacity-50 mt-1">0 {t('subscribers')}</p>
               )}
 
               {settings.bio && (
@@ -848,7 +849,7 @@ export default function CreatorShopPage() {
                       opacity: 0.5,
                     }}
                   >
-                    Product {i}
+                    {t('productPlaceholder')} {i}
                   </div>
                 ))}
               </div>

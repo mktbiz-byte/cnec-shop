@@ -28,7 +28,7 @@ export default function ShortUrlRedirectPage() {
           `)
           .eq('short_code', code.toLowerCase())
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
 
         if (fetchError || !shortUrl) {
           setError('Link not found');

@@ -204,7 +204,7 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
         .from('buyers')
         .select('id')
         .eq('user_id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (!buyer) {
         toast.error('Buyer account not found');
