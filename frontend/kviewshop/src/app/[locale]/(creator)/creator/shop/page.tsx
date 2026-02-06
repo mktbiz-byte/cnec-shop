@@ -161,6 +161,7 @@ export default function CreatorShopPage() {
               user_id: session.user.id,
               username: defaultUsername,
               display_name: session.user.user_metadata?.name || defaultUsername,
+              country: locale === 'ja' ? 'JP' : 'US',
               theme_color: '#d4af37',
               background_color: '#1a1a1a',
               text_color: '#ffffff',
@@ -264,6 +265,7 @@ export default function CreatorShopPage() {
           .insert({
             user_id: session.user.id,
             username: defaultUsername,
+            country: locale === 'ja' ? 'JP' : 'US',
             ...updateData,
           });
 
