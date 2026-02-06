@@ -71,7 +71,7 @@ export default function BrandLoginPage() {
           .from('users')
           .select('role')
           .eq('id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (userData?.role) {
           role = userData.role;
@@ -87,7 +87,7 @@ export default function BrandLoginPage() {
           .from('brands')
           .select('id, approved')
           .eq('user_id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (brandData) {
           role = 'brand_admin';
@@ -107,7 +107,7 @@ export default function BrandLoginPage() {
         .from('brands')
         .select('approved')
         .eq('user_id', authData.user.id)
-        .single();
+        .maybeSingle();
 
       if (approvalData && !approvalData.approved) {
         setLoginError(t('brandPendingApproval'));

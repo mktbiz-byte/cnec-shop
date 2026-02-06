@@ -71,7 +71,7 @@
     "myShop": "متجري",
     "settings": "الإعدادات",
     "profile": "الملف الشخصي",
-    "mocra": "حالة MoCRA"
+    "support": "الدعم"
   },
   "shop": {
     "title": "المتجر",
@@ -118,7 +118,22 @@
     "shippingAddress": "عنوان الشحن",
     "customerInfo": "معلومات العميل",
     "orderSummary": "ملخص الطلب",
-    "noOrders": "لم يتم العثور على طلبات"
+    "noOrders": "لم يتم العثور على طلبات",
+    "manageOrders": "إدارة الطلبات",
+    "searchOrders": "البحث في الطلبات",
+    "allOrders": "جميع الطلبات",
+    "totalOrders": "إجمالي الطلبات",
+    "recentOrders": "الطلبات الأخيرة",
+    "totalCount": "العدد الإجمالي",
+    "myOrdersDesc": "تتبع وإدارة جميع طلباتك",
+    "brandRevenue": "إيرادات العلامة التجارية",
+    "creatorRevenue": "إيرادات صانع المحتوى",
+    "platformFee": "رسوم المنصة",
+    "viaCreator": "عبر صانع المحتوى",
+    "markShipped": "تحديد كمشحون",
+    "markCompleted": "تحديد كمكتمل",
+    "myEarning": "أرباحي",
+    "orderTotal": "إجمالي الطلب"
   },
   "creator": {
     "myShop": "متجري",
@@ -233,6 +248,23 @@
     "sampleRequestError": "فشل في إرسال الطلب",
     "sampleRequestHistory": "سجل الطلبات",
     "sampleProducts": "منتجات",
+    "shippingAddress": "عنوان الشحن",
+    "shippingAddressRequired": "يرجى ملء حقول العنوان المطلوبة",
+    "recipientName": "اسم المستلم",
+    "recipientNamePlaceholder": "الاسم الكامل",
+    "phoneNumber": "رقم الهاتف",
+    "countryRegion": "البلد / المنطقة",
+    "selectCountry": "اختر بلدًا",
+    "addressLine1": "سطر العنوان 1",
+    "addressLine1Placeholder": "عنوان الشارع، صندوق بريد",
+    "addressLine2": "سطر العنوان 2",
+    "addressLine2Placeholder": "شقة، جناح، وحدة، مبنى، طابق، إلخ.",
+    "city": "المدينة",
+    "cityPlaceholder": "المدينة",
+    "stateProvince": "الولاية / المقاطعة",
+    "stateProvincePlaceholder": "الولاية أو المقاطعة",
+    "postalCode": "الرمز البريدي",
+    "postalCodePlaceholder": "الرمز البريدي",
     "sampleStatus": {
       "pending": "قيد الانتظار",
       "approved": "موافق عليه",
@@ -372,5 +404,26 @@
     "accountHolder": "صاحب الحساب",
     "accountHolderPlaceholder": "اسم صاحب الحساب",
     "accountNumber": "رقم الحساب"
+  },
+  "support": {
+    "title": "الدعم",
+    "subtitle": "استقبال والرد على استفسارات العملاء",
+    "waiting": "قيد الانتظار",
+    "resolvedLabel": "تم الحل",
+    "inquiries": "الاستفسارات",
+    "inquiriesDesc": "استفسارات العملاء وصناع المحتوى لعلامتك التجارية",
+    "noInquiries": "لا توجد استفسارات بعد",
+    "noInquiriesDesc": "ستظهر استفسارات العملاء هنا",
+    "productInquiry": "استفسار عن المنتج",
+    "csInquiry": "استفسار خدمة العملاء",
+    "relatedOrder": "الطلب المرتبط",
+    "yourReply": "ردك",
+    "replyPlaceholder": "اكتب ردك...",
+    "sendReply": "إرسال الرد",
+    "replied": "تم إرسال الرد بنجاح",
+    "brandResponsibility": "مسؤولية العلامة التجارية",
+    "brandResponsibilityDesc": "جودة المنتج، الشحن، المرتجعات والاستبدال",
+    "cnecResponsibility": "مسؤولية CNEC",
+    "cnecResponsibilityDesc": "أخطاء الدفع، الاسترداد، استفسارات المنصة"
   }
 }

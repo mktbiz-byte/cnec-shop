@@ -16,7 +16,7 @@ export default async function BrandLayout({
       <Header locale={locale as Locale} />
       <div className="flex">
         <Sidebar role="brand_admin" locale={locale as Locale} />
-        <main className="ml-64 flex-1 p-6">{children}</main>
+        <main className="w-full lg:ml-60 flex-1 p-4 sm:p-6">{children}</main>
       </div>
     </div>
   );

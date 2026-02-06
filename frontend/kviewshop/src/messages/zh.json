@@ -71,7 +71,7 @@
     "myShop": "我的店铺",
     "settings": "设置",
     "profile": "个人资料",
-    "mocra": "MoCRA 状态"
+    "support": "客服支持"
   },
   "shop": {
     "title": "商店",
@@ -118,7 +118,22 @@
     "shippingAddress": "收货地址",
     "customerInfo": "客户信息",
     "orderSummary": "订单摘要",
-    "noOrders": "未找到订单"
+    "noOrders": "未找到订单",
+    "manageOrders": "管理订单",
+    "searchOrders": "搜索订单",
+    "allOrders": "全部订单",
+    "totalOrders": "总订单数",
+    "recentOrders": "最近订单",
+    "totalCount": "总数量",
+    "myOrdersDesc": "跟踪和管理您的所有订单",
+    "brandRevenue": "品牌收入",
+    "creatorRevenue": "创作者收入",
+    "platformFee": "平台费用",
+    "viaCreator": "通过创作者",
+    "markShipped": "标记为已发货",
+    "markCompleted": "标记为已完成",
+    "myEarning": "我的收益",
+    "orderTotal": "订单总额"
   },
   "creator": {
     "myShop": "我的店铺",
@@ -233,6 +248,23 @@
     "sampleRequestError": "提交申请失败",
     "sampleRequestHistory": "申请记录",
     "sampleProducts": "件产品",
+    "shippingAddress": "收货地址",
+    "shippingAddressRequired": "请填写必填的收货地址信息",
+    "recipientName": "收件人姓名",
+    "recipientNamePlaceholder": "全名",
+    "phoneNumber": "电话号码",
+    "countryRegion": "国家 / 地区",
+    "selectCountry": "选择国家",
+    "addressLine1": "地址行 1",
+    "addressLine1Placeholder": "街道地址、邮政信箱",
+    "addressLine2": "地址行 2",
+    "addressLine2Placeholder": "公寓、套房、单元、楼栋、楼层等",
+    "city": "城市",
+    "cityPlaceholder": "城市",
+    "stateProvince": "州 / 省",
+    "stateProvincePlaceholder": "州或省",
+    "postalCode": "邮政编码",
+    "postalCodePlaceholder": "邮政编码",
     "sampleStatus": {
       "pending": "待处理",
       "approved": "已通过",
@@ -372,5 +404,26 @@
     "accountHolder": "账户持有人",
     "accountHolderPlaceholder": "账户持有人姓名",
     "accountNumber": "账号"
+  },
+  "support": {
+    "title": "客服支持",
+    "subtitle": "接收和回复客户咨询",
+    "waiting": "待处理",
+    "resolvedLabel": "已解决",
+    "inquiries": "咨询列表",
+    "inquiriesDesc": "品牌收到的客户和创作者咨询",
+    "noInquiries": "暂无咨询",
+    "noInquiriesDesc": "客户咨询将显示在此处",
+    "productInquiry": "产品咨询",
+    "csInquiry": "客服咨询",
+    "relatedOrder": "相关订单",
+    "yourReply": "您的回复",
+    "replyPlaceholder": "输入您的回复...",
+    "sendReply": "发送回复",
+    "replied": "回复发送成功",
+    "brandResponsibility": "品牌负责",
+    "brandResponsibilityDesc": "产品质量、物流配送、退货退换",
+    "cnecResponsibility": "CNEC负责",
+    "cnecResponsibilityDesc": "支付错误、退款、平台咨询"
   }
 }

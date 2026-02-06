@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { CreatorShop } from '@/components/shop/creator-shop';
+import type { Metadata } from 'next';
 
 interface ShopPageProps {
   params: Promise<{
@@ -12,7 +13,6 @@ interface ShopPageProps {
 async function getCreatorData(username: string) {
   const supabase = await createClient();
 
-  // Fetch creator by username
   const { data: creator, error } = await supabase
     .from('creators')
     .select(`
@@ -31,7 +31,7 @@ async function getCreatorData(username: string) {
       )
     `)
     .eq('username', username.toLowerCase())
-    .single();
+    .maybeSingle();
 
   if (error || !creator) {
     return null;
@@ -40,29 +40,28 @@ async function getCreatorData(username: string) {
   return creator;
 }
 
-export async function generateMetadata({ params }: ShopPageProps) {
+export async function generateMetadata({ params }: ShopPageProps): Promise<Metadata> {
   const { username, locale } = await params;
   const creator = await getCreatorData(username);
 
   if (!creator) {
-    return {
-      title: 'Shop Not Found',
-    };
+    return { title: 'Shop Not Found' };
   }
 
   const displayName = creator.display_name || `@${creator.username}`;
+  const bio = locale === 'ja' ? creator.bio_jp : locale === 'en' ? creator.bio_en : creator.bio;
 
   return {
-    title: `${displayName}'s Shop`,
-    description: creator.bio || `Shop curated K-Beauty products from ${displayName}`,
+    title: `${displayName}'s Shop | CNEC`,
+    description: bio || `Shop curated K-Beauty products from ${displayName}`,
     openGraph: {
-      title: `${displayName}'s Shop | KviewShop`,
-      description: creator.bio || `Shop curated K-Beauty products from ${displayName}`,
+      title: `${displayName}'s Shop | CNEC Commerce`,
+      description: bio || `Shop curated K-Beauty products from ${displayName}`,
       images: creator.profile_image ? [creator.profile_image] : [],
     },
     robots: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
     },
   };
 }
@@ -75,7 +74,6 @@ export default async function ShopPage({ params }: ShopPageProps) {
     notFound();
   }
 
-  // Transform products data
   const products = creator.creator_products
     ?.map((cp: any) => ({
       ...cp.product,
@@ -94,24 +92,8 @@ export default async function ShopPage({ params }: ShopPageProps) {
         bio: locale === 'ja' ? creator.bio_jp : locale === 'en' ? creator.bio_en : creator.bio,
         themeColor: creator.theme_color,
         backgroundColor: creator.background_color || '#1a1a1a',
-
         country: creator.country,
         socialLinks: creator.social_links,
-        instagram: creator.instagram,
-        youtube: creator.youtube,
-        tiktok: creator.tiktok,
-        level: creator.level || 'bronze',
-        communityEnabled: creator.community_enabled || false,
-        shopSettings: creator.shop_settings || {
-          show_footer: true,
-          show_social_links: true,
-          show_subscriber_count: false,
-          layout: 'grid',
-          products_per_row: 3,
-          show_prices: true,
-          announcement: '',
-          announcement_active: false,
-        },
       }}
       products={products}
       locale={locale}

@@ -1,95 +1,246 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { User, CreditCard, Bell, Globe } from 'lucide-react';
+import { User, CreditCard, Bell, Globe, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { getClient } from '@/lib/supabase/client';
 
 export default function CreatorSettingsPage() {
+  const t = useTranslations('creator');
+  const tCommon = useTranslations('common');
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
-    // 프로필 정보
     displayName: '',
     email: '',
     phone: '',
     country: 'US',
-    // 정산 정보
     paymentMethod: 'paypal',
     paypalEmail: '',
     bankName: '',
     accountNumber: '',
     swiftCode: '',
-    // 알림 설정
     emailNotifications: true,
     orderNotifications: true,
     settlementNotifications: true,
   });
 
-  const handleSave = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    const safetyTimeout = setTimeout(() => {
+      if (!cancelled) setIsLoading(false);
+    }, 3000);
+
+    const loadSettings = async () => {
+      try {
+        const supabase = getClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user || cancelled) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Load user data
+        const { data: userData } = await supabase
+          .from('users')
+          .select('email, phone')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        // Load creator data
+        const { data: creatorData } = await supabase
+          .from('creators')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (creatorData) {
+          const notifSettings = creatorData.notification_settings || {};
+          setSettings({
+            displayName: creatorData.display_name || '',
+            email: creatorData.email || userData?.email || session.user.email || '',
+            phone: creatorData.phone || userData?.phone || '',
+            country: creatorData.country || 'US',
+            paymentMethod: creatorData.payment_method || 'paypal',
+            paypalEmail: creatorData.paypal_email || '',
+            bankName: creatorData.bank_name || '',
+            accountNumber: creatorData.account_number || '',
+            swiftCode: creatorData.swift_code || '',
+            emailNotifications: notifSettings.email_notifications ?? true,
+            orderNotifications: notifSettings.order_notifications ?? true,
+            settlementNotifications: notifSettings.settlement_notifications ?? true,
+          });
+        } else if (userData) {
+          setSettings(prev => ({
+            ...prev,
+            email: userData.email || session.user.email || '',
+            phone: userData.phone || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+    return () => {
+      cancelled = true;
+      clearTimeout(safetyTimeout);
+    };
+  }, []);
+
+  const handleSave = async (section?: string) => {
     setLoading(true);
     try {
-      toast.success('설정이 저장되었습니다');
+      const supabase = getClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error(tCommon('error'));
+        return;
+      }
+
+      if (section === 'profile' || !section) {
+        const { error } = await supabase
+          .from('creators')
+          .update({
+            display_name: settings.displayName || null,
+            email: settings.email || null,
+            phone: settings.phone || null,
+            country: settings.country || null,
+          })
+          .eq('user_id', session.user.id);
+
+        if (error) {
+          console.error('Profile save error:', error);
+          toast.error(tCommon('error'));
+          return;
+        }
+      }
+
+      if (section === 'payment' || !section) {
+        const { error } = await supabase
+          .from('creators')
+          .update({
+            payment_method: settings.paymentMethod,
+            paypal_email: settings.paypalEmail || null,
+            bank_name: settings.bankName || null,
+            account_number: settings.accountNumber || null,
+            swift_code: settings.swiftCode || null,
+          })
+          .eq('user_id', session.user.id);
+
+        if (error) {
+          console.error('Payment save error:', error);
+          toast.error(tCommon('error'));
+          return;
+        }
+      }
+
+      if (section === 'notifications' || !section) {
+        const { error } = await supabase
+          .from('creators')
+          .update({
+            notification_settings: {
+              email_notifications: settings.emailNotifications,
+              order_notifications: settings.orderNotifications,
+              settlement_notifications: settings.settlementNotifications,
+            },
+          })
+          .eq('user_id', session.user.id);
+
+        if (error) {
+          console.error('Notification save error:', error);
+          toast.error(tCommon('error'));
+          return;
+        }
+      }
+
+      toast.success(t('settingsSaved'));
     } catch (error) {
-      toast.error('저장에 실패했습니다');
+      console.error('Save error:', error);
+      toast.error(tCommon('error'));
     } finally {
       setLoading(false);
     }
   };
 
   const countries = [
-    { code: 'US', name: '미국', flag: '🇺🇸' },
-    { code: 'JP', name: '일본', flag: '🇯🇵' },
-    { code: 'KR', name: '한국', flag: '🇰🇷' },
-    { code: 'CN', name: '중국', flag: '🇨🇳' },
-    { code: 'TW', name: '대만', flag: '🇹🇼' },
-    { code: 'TH', name: '태국', flag: '🇹🇭' },
-    { code: 'VN', name: '베트남', flag: '🇻🇳' },
-    { code: 'ID', name: '인도네시아', flag: '🇮🇩' },
-    { code: 'MY', name: '말레이시아', flag: '🇲🇾' },
-    { code: 'SG', name: '싱가포르', flag: '🇸🇬' },
+    { code: 'US', name: 'United States', flag: '\u{1F1FA}\u{1F1F8}' },
+    { code: 'JP', name: 'Japan', flag: '\u{1F1EF}\u{1F1F5}' },
+    { code: 'KR', name: 'South Korea', flag: '\u{1F1F0}\u{1F1F7}' },
+    { code: 'CN', name: 'China', flag: '\u{1F1E8}\u{1F1F3}' },
+    { code: 'TW', name: 'Taiwan', flag: '\u{1F1F9}\u{1F1FC}' },
+    { code: 'TH', name: 'Thailand', flag: '\u{1F1F9}\u{1F1ED}' },
+    { code: 'VN', name: 'Vietnam', flag: '\u{1F1FB}\u{1F1F3}' },
+    { code: 'ID', name: 'Indonesia', flag: '\u{1F1EE}\u{1F1E9}' },
+    { code: 'MY', name: 'Malaysia', flag: '\u{1F1F2}\u{1F1FE}' },
+    { code: 'SG', name: 'Singapore', flag: '\u{1F1F8}\u{1F1EC}' },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-headline font-bold">설정</h1>
-        <p className="text-muted-foreground">계정 및 정산 설정을 관리합니다</p>
+        <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('settings')}</h1>
+        <p className="text-sm text-muted-foreground">{t('settingsDesc')}</p>
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList>
-          <TabsTrigger value="profile">프로필</TabsTrigger>
-          <TabsTrigger value="payment">정산 정보</TabsTrigger>
-          <TabsTrigger value="notifications">알림</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto gap-1 w-full">
+          <TabsTrigger value="profile" className="flex-1 min-w-0 text-xs sm:text-sm">
+            <User className="h-4 w-4 mr-1 hidden sm:inline" />
+            {t('profileSection')}
+          </TabsTrigger>
+          <TabsTrigger value="payment" className="flex-1 min-w-0 text-xs sm:text-sm">
+            <CreditCard className="h-4 w-4 mr-1 hidden sm:inline" />
+            {t('paymentInfo')}
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 min-w-0 text-xs sm:text-sm">
+            <Bell className="h-4 w-4 mr-1 hidden sm:inline" />
+            {t('notifications')}
+          </TabsTrigger>
         </TabsList>
 
-        {/* 프로필 탭 */}
+        {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <User className="h-5 w-5" />
-                프로필 정보
+                {t('profileSection')}
               </CardTitle>
-              <CardDescription>기본 계정 정보를 설정합니다</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">{t('profileSectionDesc')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>표시 이름</Label>
+                  <Label>{t('displayName')}</Label>
                   <Input
-                    placeholder="크리에이터 이름"
+                    placeholder={t('displayNamePlaceholder')}
                     value={settings.displayName}
                     onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>이메일</Label>
+                  <Label>{t('email')}</Label>
                   <Input
                     type="email"
                     placeholder="email@example.com"
@@ -98,7 +249,7 @@ export default function CreatorSettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>전화번호</Label>
+                  <Label>{t('phone')}</Label>
                   <Input
                     placeholder="+1 000-000-0000"
                     value={settings.phone}
@@ -108,7 +259,7 @@ export default function CreatorSettingsPage() {
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
-                    거주 국가
+                    {t('country')}
                   </Label>
                   <select
                     value={settings.country}
@@ -123,37 +274,41 @@ export default function CreatorSettingsPage() {
                   </select>
                 </div>
               </div>
-              <Button onClick={handleSave} disabled={loading} className="btn-gold">
-                {loading ? '저장 중...' : '저장하기'}
+              <Button onClick={() => handleSave('profile')} disabled={loading} className="btn-gold w-full sm:w-auto">
+                {loading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('loading')}</>
+                ) : (
+                  <><Save className="mr-2 h-4 w-4" />{tCommon('save')}</>
+                )}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* 정산 정보 탭 */}
+        {/* Payment Tab */}
         <TabsContent value="payment" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <CreditCard className="h-5 w-5" />
-                정산 정보
+                {t('paymentInfo')}
               </CardTitle>
-              <CardDescription>수익 정산을 받을 계좌 정보를 입력합니다</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">{t('paymentInfoDesc')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* 정산 방법 선택 */}
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-6">
+              {/* Payment Method */}
               <div className="space-y-2">
-                <Label>정산 방법</Label>
+                <Label>{t('paymentMethod')}</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { value: 'paypal', label: 'PayPal' },
-                    { value: 'bank', label: '해외 송금' },
+                    { value: 'bank', label: t('bankTransfer') },
                   ].map((option) => (
                     <button
                       key={option.value}
                       type="button"
                       onClick={() => setSettings({ ...settings, paymentMethod: option.value })}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`p-3 rounded-lg border-2 transition-all text-sm ${
                         settings.paymentMethod === option.value
                           ? 'border-primary bg-primary/10'
                           : 'border-muted hover:border-primary/50'
@@ -165,30 +320,28 @@ export default function CreatorSettingsPage() {
                 </div>
               </div>
 
-              {/* PayPal 정보 */}
+              {/* PayPal */}
               {settings.paymentMethod === 'paypal' && (
                 <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
                   <div className="space-y-2">
-                    <Label>PayPal 이메일</Label>
+                    <Label>{t('paypalEmail')}</Label>
                     <Input
                       type="email"
                       placeholder="paypal@example.com"
                       value={settings.paypalEmail}
                       onChange={(e) => setSettings({ ...settings, paypalEmail: e.target.value })}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      PayPal 계정에 등록된 이메일 주소를 입력하세요
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('paypalEmailDesc')}</p>
                   </div>
                 </div>
               )}
 
-              {/* 해외 송금 정보 */}
+              {/* Bank Transfer */}
               {settings.paymentMethod === 'bank' && (
                 <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label>은행명 (영문)</Label>
+                      <Label>{t('bankNameLabel')}</Label>
                       <Input
                         placeholder="Bank Name"
                         value={settings.bankName}
@@ -196,17 +349,17 @@ export default function CreatorSettingsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>SWIFT/BIC 코드</Label>
+                      <Label>SWIFT/BIC</Label>
                       <Input
                         placeholder="XXXXXXXX"
                         value={settings.swiftCode}
                         onChange={(e) => setSettings({ ...settings, swiftCode: e.target.value })}
                       />
                     </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label>계좌번호 (IBAN)</Label>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>{t('accountNumberLabel')}</Label>
                       <Input
-                        placeholder="계좌번호를 입력하세요"
+                        placeholder="Account number / IBAN"
                         value={settings.accountNumber}
                         onChange={(e) => setSettings({ ...settings, accountNumber: e.target.value })}
                       />
@@ -215,68 +368,74 @@ export default function CreatorSettingsPage() {
                 </div>
               )}
 
-              {/* 안내 메시지 */}
+              {/* Info Box */}
               <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <p className="text-sm">
-                  <span className="font-medium text-blue-500">해외 크리에이터 정산 안내</span>
-                </p>
-                <ul className="mt-2 text-sm text-muted-foreground space-y-1">
-                  <li>• 해외 거주 크리에이터는 원천징수세가 적용되지 않습니다</li>
-                  <li>• 정산은 USD로 진행되며, 최소 정산 금액은 $50입니다</li>
-                  <li>• 정산 주기는 월 1회 (매월 15일)입니다</li>
+                <p className="text-sm font-medium text-blue-500">{t('settlementInfo')}</p>
+                <ul className="mt-2 text-xs sm:text-sm text-muted-foreground space-y-1">
+                  <li>- {t('settlementNote1')}</li>
+                  <li>- {t('settlementNote2')}</li>
+                  <li>- {t('settlementNote3')}</li>
                 </ul>
               </div>
 
-              <Button onClick={handleSave} disabled={loading} className="btn-gold">
-                {loading ? '저장 중...' : '저장하기'}
+              <Button onClick={() => handleSave('payment')} disabled={loading} className="btn-gold w-full sm:w-auto">
+                {loading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('loading')}</>
+                ) : (
+                  <><Save className="mr-2 h-4 w-4" />{tCommon('save')}</>
+                )}
               </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* 알림 설정 탭 */}
+        {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                 <Bell className="h-5 w-5" />
-                알림 설정
+                {t('notifications')}
               </CardTitle>
-              <CardDescription>알림 수신 설정을 관리합니다</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">{t('notificationsDesc')}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>이메일 알림</Label>
-                  <p className="text-sm text-muted-foreground">이메일로 알림을 받습니다</p>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <Label>{t('emailNotifications')}</Label>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('emailNotificationsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.emailNotifications}
                   onCheckedChange={(checked) => setSettings({ ...settings, emailNotifications: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>주문 알림</Label>
-                  <p className="text-sm text-muted-foreground">새 주문이 들어오면 알림을 받습니다</p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <Label>{t('orderNotifications')}</Label>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('orderNotificationsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.orderNotifications}
                   onCheckedChange={(checked) => setSettings({ ...settings, orderNotifications: checked })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>정산 알림</Label>
-                  <p className="text-sm text-muted-foreground">정산 완료 시 알림을 받습니다</p>
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <Label>{t('settlementNotifications')}</Label>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{t('settlementNotificationsDesc')}</p>
                 </div>
                 <Switch
                   checked={settings.settlementNotifications}
                   onCheckedChange={(checked) => setSettings({ ...settings, settlementNotifications: checked })}
                 />
               </div>
-              <Button onClick={handleSave} disabled={loading} className="btn-gold">
-                {loading ? '저장 중...' : '저장하기'}
+              <Button onClick={() => handleSave('notifications')} disabled={loading} className="btn-gold w-full sm:w-auto">
+                {loading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('loading')}</>
+                ) : (
+                  <><Save className="mr-2 h-4 w-4" />{tCommon('save')}</>
+                )}
               </Button>
             </CardContent>
           </Card>

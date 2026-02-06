@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,14 +10,14 @@ import {
   Users,
   DollarSign,
   ShoppingCart,
-  TrendingUp,
   AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/i18n/config';
 import { MOCRA_THRESHOLDS } from '@/types/database';
+import { getClient } from '@/lib/supabase/client';
 
-// Mock data - replace with real data from Supabase
-const mockBrandStats: {
+interface BrandStats {
   totalRevenue: number;
   totalOrders: number;
   productCount: number;
@@ -24,27 +25,21 @@ const mockBrandStats: {
   usSalesYTD: number;
   jpSalesYTD: number;
   mocraStatus: 'green' | 'yellow' | 'red';
-} = {
-  totalRevenue: 45000, // USD
-  totalOrders: 320,
-  productCount: 25,
-  activeCreators: 12,
-  usSalesYTD: 750000, // USD
-  jpSalesYTD: 5500000, // JPY
-  mocraStatus: 'yellow',
-};
+}
 
-const mockTopProducts = [
-  { id: '1', name: 'Glow Serum', sold: 150, revenue: 7500 },
-  { id: '2', name: 'Hydra Cream', sold: 120, revenue: 6000 },
-  { id: '3', name: 'Vitamin C Toner', sold: 95, revenue: 4750 },
-];
+interface TopProduct {
+  id: string;
+  name: string;
+  sold: number;
+  revenue: number;
+}
 
-const mockTopCreators = [
-  { id: '1', name: '@sakura_beauty', sold: 85, revenue: 4250 },
-  { id: '2', name: '@mika_skin', sold: 72, revenue: 3600 },
-  { id: '3', name: '@beauty_jin', sold: 58, revenue: 2900 },
-];
+interface TopCreator {
+  id: string;
+  name: string;
+  sold: number;
+  revenue: number;
+}
 
 function getMoCRAStatusColor(status: 'green' | 'yellow' | 'red') {
   switch (status) {
@@ -57,11 +52,170 @@ function getMoCRAStatusColor(status: 'green' | 'yellow' | 'red') {
   }
 }
 
+function getMoCRAStatus(usSales: number): 'green' | 'yellow' | 'red' {
+  if (usSales >= MOCRA_THRESHOLDS.CRITICAL) return 'red';
+  if (usSales >= MOCRA_THRESHOLDS.WARNING) return 'yellow';
+  return 'green';
+}
+
 export default function BrandDashboardPage() {
   const t = useTranslations('dashboard');
   const tMocra = useTranslations('mocra');
 
-  const mocraProgress = (mockBrandStats.usSalesYTD / MOCRA_THRESHOLDS.CRITICAL) * 100;
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<BrandStats>({
+    totalRevenue: 0,
+    totalOrders: 0,
+    productCount: 0,
+    activeCreators: 0,
+    usSalesYTD: 0,
+    jpSalesYTD: 0,
+    mocraStatus: 'green',
+  });
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [topCreators, setTopCreators] = useState<TopCreator[]>([]);
+
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        const supabase = getClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          setLoading(false);
+          return;
+        }
+
+        const userId = session.user.id;
+
+        // Get brand info
+        const { data: brand } = await supabase
+          .from('brands')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!brand) {
+          setLoading(false);
+          return;
+        }
+
+        const brandId = brand.id;
+
+        // Fetch all data in parallel
+        const [productsRes, ordersRes, creatorsRes] = await Promise.all([
+          supabase.from('products').select('id, name, is_active').eq('brand_id', brandId),
+          supabase.from('orders').select('id, total_amount, currency, country, created_at, items').eq('brand_id', brandId),
+          supabase.from('creators').select('id, display_name, username, picked_products').not('picked_products', 'is', null),
+        ]);
+
+        const products = productsRes.data || [];
+        const orders = ordersRes.data || [];
+
+        // Calculate stats from real data
+        const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+        const totalOrders = orders.length;
+        const productCount = products.filter(p => p.is_active).length;
+
+        // Count creators that have picked this brand's products
+        const productIds = products.map(p => p.id);
+        const allCreators = creatorsRes.data || [];
+        const activeCreators = allCreators.filter(c => {
+          try {
+            const picked = c.picked_products || [];
+            return picked.some((pid: string) => productIds.includes(pid));
+          } catch {
+            return false;
+          }
+        });
+
+        // Calculate US and JP sales YTD
+        const currentYear = new Date().getFullYear();
+        const ytdOrders = orders.filter(o => new Date(o.created_at).getFullYear() === currentYear);
+        const usSalesYTD = ytdOrders
+          .filter(o => o.country === 'US')
+          .reduce((sum, o) => sum + (o.total_amount || 0), 0);
+        const jpSalesYTD = ytdOrders
+          .filter(o => o.country === 'JP')
+          .reduce((sum, o) => sum + (o.total_amount || 0), 0);
+
+        const mocraStatus = getMoCRAStatus(usSalesYTD);
+
+        setStats({
+          totalRevenue,
+          totalOrders,
+          productCount,
+          activeCreators: activeCreators.length,
+          usSalesYTD,
+          jpSalesYTD,
+          mocraStatus,
+        });
+
+        // Calculate top products by revenue from order items
+        const productRevenue: Record<string, { name: string; sold: number; revenue: number }> = {};
+        for (const order of orders) {
+          const items = order.items || [];
+          for (const item of items) {
+            if (!productRevenue[item.product_id]) {
+              const prod = products.find(p => p.id === item.product_id);
+              productRevenue[item.product_id] = {
+                name: prod?.name || item.product_name || 'Unknown',
+                sold: 0,
+                revenue: 0,
+              };
+            }
+            productRevenue[item.product_id].sold += item.quantity || 1;
+            productRevenue[item.product_id].revenue += item.total || item.price || 0;
+          }
+        }
+        const sortedProducts = Object.entries(productRevenue)
+          .map(([id, data]) => ({ id, ...data }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 3);
+        setTopProducts(sortedProducts);
+
+        // Calculate top creators by revenue
+        const creatorRevenue: Record<string, { name: string; sold: number; revenue: number }> = {};
+        for (const order of orders) {
+          const cid = (order as Record<string, unknown>).creator_id as string | undefined;
+          if (!cid) continue;
+          if (!creatorRevenue[cid]) {
+            const creator = allCreators.find(c => c.id === cid);
+            creatorRevenue[cid] = {
+              name: creator ? `@${creator.username || creator.display_name}` : 'Unknown',
+              sold: 0,
+              revenue: 0,
+            };
+          }
+          creatorRevenue[cid].sold += 1;
+          creatorRevenue[cid].revenue += (order.total_amount || 0);
+        }
+        const sortedCreators = Object.entries(creatorRevenue)
+          .map(([id, data]) => ({ id, ...data }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 3);
+        setTopCreators(sortedCreators);
+
+      } catch (error) {
+        console.error('Failed to load dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const mocraProgress = stats.usSalesYTD > 0
+    ? (stats.usSalesYTD / MOCRA_THRESHOLDS.CRITICAL) * 100
+    : 0;
 
   return (
     <div className="space-y-6">
@@ -71,14 +225,14 @@ export default function BrandDashboardPage() {
       </div>
 
       {/* MoCRA Alert Banner */}
-      {mockBrandStats.mocraStatus !== 'green' && (
-        <Card className={`border ${getMoCRAStatusColor(mockBrandStats.mocraStatus)}`}>
+      {stats.mocraStatus !== 'green' && (
+        <Card className={`border ${getMoCRAStatusColor(stats.mocraStatus)}`}>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />
               <CardTitle className="text-lg">{tMocra('title')}</CardTitle>
-              <Badge className={getMoCRAStatusColor(mockBrandStats.mocraStatus)}>
-                {tMocra(mockBrandStats.mocraStatus)}
+              <Badge className={getMoCRAStatusColor(stats.mocraStatus)}>
+                {tMocra(stats.mocraStatus)}
               </Badge>
             </div>
           </CardHeader>
@@ -87,12 +241,12 @@ export default function BrandDashboardPage() {
               <div className="flex justify-between text-sm">
                 <span>{tMocra('usSalesYTD')}</span>
                 <span className="font-bold">
-                  {formatCurrency(mockBrandStats.usSalesYTD, 'USD')}
+                  {formatCurrency(stats.usSalesYTD, 'USD')}
                 </span>
               </div>
               <Progress value={mocraProgress} className="h-2" />
               <p className="text-xs text-muted-foreground">
-                {tMocra(`${mockBrandStats.mocraStatus}Desc`)}
+                {tMocra(`${stats.mocraStatus}Desc`)}
               </p>
             </div>
           </CardContent>
@@ -108,12 +262,8 @@ export default function BrandDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(mockBrandStats.totalRevenue, 'USD')}
+              {formatCurrency(stats.totalRevenue, 'USD')}
             </div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <TrendingUp className="mr-1 h-3 w-3 text-success" />
-              +15.3% from last month
-            </p>
           </CardContent>
         </Card>
 
@@ -123,11 +273,7 @@ export default function BrandDashboardPage() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockBrandStats.totalOrders}</div>
-            <p className="text-xs text-muted-foreground flex items-center mt-1">
-              <TrendingUp className="mr-1 h-3 w-3 text-success" />
-              +22 this week
-            </p>
+            <div className="text-2xl font-bold">{stats.totalOrders}</div>
           </CardContent>
         </Card>
 
@@ -137,10 +283,7 @@ export default function BrandDashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockBrandStats.productCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              3 low stock alerts
-            </p>
+            <div className="text-2xl font-bold">{stats.productCount}</div>
           </CardContent>
         </Card>
 
@@ -150,10 +293,7 @@ export default function BrandDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockBrandStats.activeCreators}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Selling your products
-            </p>
+            <div className="text-2xl font-bold">{stats.activeCreators}</div>
           </CardContent>
         </Card>
       </div>
@@ -163,102 +303,117 @@ export default function BrandDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('topProducts')}</CardTitle>
-            <CardDescription>Best performing products this month</CardDescription>
+            <CardDescription>{t('topProductsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockTopProducts.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <p className="font-medium">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {product.sold} sold
-                      </p>
+            {topProducts.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">{t('noData')}</p>
+            ) : (
+              <div className="space-y-4">
+                {topProducts.map((product, index) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {product.sold} {t('sold')}
+                        </p>
+                      </div>
                     </div>
+                    <span className="font-bold">
+                      {formatCurrency(product.revenue, 'USD')}
+                    </span>
                   </div>
-                  <span className="font-bold">
-                    {formatCurrency(product.revenue, 'USD')}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>{t('topCreators')}</CardTitle>
-            <CardDescription>Best performing creators this month</CardDescription>
+            <CardDescription>{t('topCreatorsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {mockTopCreators.map((creator, index) => (
-                <div
-                  key={creator.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/10 text-secondary text-sm font-bold">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <p className="font-medium">{creator.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {creator.sold} items sold
-                      </p>
+            {topCreators.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">{t('noData')}</p>
+            ) : (
+              <div className="space-y-4">
+                {topCreators.map((creator, index) => (
+                  <div
+                    key={creator.id}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/10 text-secondary text-sm font-bold">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="font-medium">{creator.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {creator.sold} {t('itemsSold')}
+                        </p>
+                      </div>
                     </div>
+                    <span className="font-bold">
+                      {formatCurrency(creator.revenue, 'USD')}
+                    </span>
                   </div>
-                  <span className="font-bold">
-                    {formatCurrency(creator.revenue, 'USD')}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
       {/* Sales by Country */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('salesByCountry')}</CardTitle>
-          <CardDescription>Year-to-date revenue by market</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🇯🇵</span>
-                <span className="font-medium">{t('japan')}</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {formatCurrency(mockBrandStats.jpSalesYTD, 'JPY')}
-              </p>
-              <Progress value={65} className="h-2" />
+      {(stats.usSalesYTD > 0 || stats.jpSalesYTD > 0) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('salesByCountry')}</CardTitle>
+            <CardDescription>{t('salesByCountryDesc')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-6 md:grid-cols-2">
+              {stats.jpSalesYTD > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm">JP</span>
+                    <span className="font-medium">{t('japan')}</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(stats.jpSalesYTD, 'JPY')}
+                  </p>
+                </div>
+              )}
+              {stats.usSalesYTD > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm">US</span>
+                    <span className="font-medium">{t('usa')}</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(stats.usSalesYTD, 'USD')}
+                  </p>
+                  <Progress value={mocraProgress} className="h-2" />
+                  {stats.mocraStatus !== 'green' && (
+                    <p className="text-xs text-warning">
+                      {tMocra(`${stats.mocraStatus}Desc`)}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">🇺🇸</span>
-                <span className="font-medium">{t('usa')}</span>
-              </div>
-              <p className="text-2xl font-bold">
-                {formatCurrency(mockBrandStats.usSalesYTD, 'USD')}
-              </p>
-              <Progress value={75} className="h-2" />
-              <p className="text-xs text-warning">
-                {mockBrandStats.mocraStatus === 'yellow' && '⚠️ Approaching MoCRA threshold'}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

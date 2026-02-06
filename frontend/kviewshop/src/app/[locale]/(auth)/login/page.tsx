@@ -71,7 +71,7 @@ export default function LoginPage() {
           .from('users')
           .select('role')
           .eq('id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (userData?.role) {
           role = userData.role;
@@ -88,7 +88,7 @@ export default function LoginPage() {
           .from('creators')
           .select('id')
           .eq('user_id', authData.user.id)
-          .single();
+          .maybeSingle();
 
         if (creatorData) {
           role = 'creator';
@@ -98,7 +98,7 @@ export default function LoginPage() {
             .from('brands')
             .select('id')
             .eq('user_id', authData.user.id)
-            .single();
+            .maybeSingle();
 
           if (brandData) {
             role = 'brand_admin';
