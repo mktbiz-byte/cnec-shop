@@ -71,7 +71,7 @@
     "myShop": "Ma boutique",
     "settings": "Parametres",
     "profile": "Profil",
-    "mocra": "Statut MoCRA"
+    "support": "Support"
   },
   "shop": {
     "title": "Boutique",
@@ -118,7 +118,22 @@
     "shippingAddress": "Adresse de livraison",
     "customerInfo": "Informations client",
     "orderSummary": "Resume de la commande",
-    "noOrders": "Aucune commande trouvee"
+    "noOrders": "Aucune commande trouvee",
+    "manageOrders": "Gerer les commandes",
+    "searchOrders": "Rechercher des commandes",
+    "allOrders": "Toutes les commandes",
+    "totalOrders": "Total des commandes",
+    "recentOrders": "Commandes recentes",
+    "totalCount": "Nombre total",
+    "myOrdersDesc": "Suivez et gerez toutes vos commandes",
+    "brandRevenue": "Revenus de la marque",
+    "creatorRevenue": "Revenus du createur",
+    "platformFee": "Frais de plateforme",
+    "viaCreator": "Via le createur",
+    "markShipped": "Marquer comme expedie",
+    "markCompleted": "Marquer comme termine",
+    "myEarning": "Mes gains",
+    "orderTotal": "Total de la commande"
   },
   "creator": {
     "myShop": "Ma boutique",
@@ -233,6 +248,23 @@
     "sampleRequestError": "Echec de l'envoi de la demande",
     "sampleRequestHistory": "Historique des demandes",
     "sampleProducts": "produits",
+    "shippingAddress": "Adresse de livraison",
+    "shippingAddressRequired": "Veuillez remplir les champs d'adresse obligatoires",
+    "recipientName": "Nom du destinataire",
+    "recipientNamePlaceholder": "Nom complet",
+    "phoneNumber": "Numéro de téléphone",
+    "countryRegion": "Pays / Région",
+    "selectCountry": "Sélectionner un pays",
+    "addressLine1": "Adresse ligne 1",
+    "addressLine1Placeholder": "Adresse, boîte postale",
+    "addressLine2": "Adresse ligne 2",
+    "addressLine2Placeholder": "Appartement, suite, unité, bâtiment, étage, etc.",
+    "city": "Ville",
+    "cityPlaceholder": "Ville",
+    "stateProvince": "État / Province",
+    "stateProvincePlaceholder": "État ou province",
+    "postalCode": "Code postal",
+    "postalCodePlaceholder": "Code postal",
     "sampleStatus": {
       "pending": "En attente",
       "approved": "Approuve",
@@ -372,5 +404,26 @@
     "accountHolder": "Titulaire du compte",
     "accountHolderPlaceholder": "Nom du titulaire du compte",
     "accountNumber": "Numero de compte"
+  },
+  "support": {
+    "title": "Support",
+    "subtitle": "Recevoir et repondre aux demandes clients",
+    "waiting": "En attente",
+    "resolvedLabel": "Resolu",
+    "inquiries": "Demandes",
+    "inquiriesDesc": "Demandes des clients et createurs pour votre marque",
+    "noInquiries": "Aucune demande pour le moment",
+    "noInquiriesDesc": "Les demandes clients apparaitront ici",
+    "productInquiry": "Demande produit",
+    "csInquiry": "Demande CS",
+    "relatedOrder": "Commande associee",
+    "yourReply": "Votre reponse",
+    "replyPlaceholder": "Ecrivez votre reponse...",
+    "sendReply": "Envoyer la reponse",
+    "replied": "Reponse envoyee avec succes",
+    "brandResponsibility": "Marque responsable",
+    "brandResponsibilityDesc": "Qualite produit, livraison, retours et echanges",
+    "cnecResponsibility": "CNEC responsable",
+    "cnecResponsibilityDesc": "Erreurs de paiement, remboursements, demandes plateforme"
   }
 }

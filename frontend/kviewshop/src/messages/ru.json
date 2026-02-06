@@ -71,7 +71,7 @@
     "myShop": "Мой магазин",
     "settings": "Настройки",
     "profile": "Профиль",
-    "mocra": "Статус MoCRA"
+    "support": "Поддержка"
   },
   "shop": {
     "title": "Магазин",
@@ -118,7 +118,22 @@
     "shippingAddress": "Адрес доставки",
     "customerInfo": "Информация о клиенте",
     "orderSummary": "Сводка заказа",
-    "noOrders": "Заказы не найдены"
+    "noOrders": "Заказы не найдены",
+    "manageOrders": "Управление заказами",
+    "searchOrders": "Поиск заказов",
+    "allOrders": "Все заказы",
+    "totalOrders": "Всего заказов",
+    "recentOrders": "Последние заказы",
+    "totalCount": "Общее количество",
+    "myOrdersDesc": "Отслеживайте и управляйте всеми вашими заказами",
+    "brandRevenue": "Доход бренда",
+    "creatorRevenue": "Доход создателя",
+    "platformFee": "Комиссия платформы",
+    "viaCreator": "Через создателя",
+    "markShipped": "Отметить как отправленный",
+    "markCompleted": "Отметить как выполненный",
+    "myEarning": "Мой заработок",
+    "orderTotal": "Сумма заказа"
   },
   "creator": {
     "myShop": "Мой магазин",
@@ -233,6 +248,23 @@
     "sampleRequestError": "Не удалось отправить запрос",
     "sampleRequestHistory": "История запросов",
     "sampleProducts": "товаров",
+    "shippingAddress": "Адрес доставки",
+    "shippingAddressRequired": "Пожалуйста, заполните обязательные поля адреса",
+    "recipientName": "Имя получателя",
+    "recipientNamePlaceholder": "Полное имя",
+    "phoneNumber": "Номер телефона",
+    "countryRegion": "Страна / Регион",
+    "selectCountry": "Выберите страну",
+    "addressLine1": "Адрес строка 1",
+    "addressLine1Placeholder": "Улица, почтовый ящик",
+    "addressLine2": "Адрес строка 2",
+    "addressLine2Placeholder": "Квартира, корпус, строение, этаж и т.д.",
+    "city": "Город",
+    "cityPlaceholder": "Город",
+    "stateProvince": "Область / Край",
+    "stateProvincePlaceholder": "Область или край",
+    "postalCode": "Почтовый индекс",
+    "postalCodePlaceholder": "Индекс",
     "sampleStatus": {
       "pending": "В ожидании",
       "approved": "Одобрено",
@@ -372,5 +404,26 @@
     "accountHolder": "Владелец счета",
     "accountHolderPlaceholder": "Имя владельца счета",
     "accountNumber": "Номер счета"
+  },
+  "support": {
+    "title": "Поддержка",
+    "subtitle": "Получайте и отвечайте на запросы клиентов",
+    "waiting": "Ожидание",
+    "resolvedLabel": "Решено",
+    "inquiries": "Запросы",
+    "inquiriesDesc": "Запросы клиентов и создателей для вашего бренда",
+    "noInquiries": "Запросов пока нет",
+    "noInquiriesDesc": "Запросы клиентов будут отображаться здесь",
+    "productInquiry": "Запрос о товаре",
+    "csInquiry": "CS запрос",
+    "relatedOrder": "Связанный заказ",
+    "yourReply": "Ваш ответ",
+    "replyPlaceholder": "Напишите ваш ответ...",
+    "sendReply": "Отправить ответ",
+    "replied": "Ответ успешно отправлен",
+    "brandResponsibility": "Ответственность бренда",
+    "brandResponsibilityDesc": "Качество товара, доставка, возвраты и обмен",
+    "cnecResponsibility": "Ответственность CNEC",
+    "cnecResponsibilityDesc": "Ошибки оплаты, возврат средств, запросы платформы"
   }
 }

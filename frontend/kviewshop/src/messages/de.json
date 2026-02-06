@@ -71,7 +71,7 @@
     "myShop": "Mein Shop",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "mocra": "MoCRA-Status"
+    "support": "Kundenservice"
   },
   "shop": {
     "title": "Shop",
@@ -118,7 +118,22 @@
     "shippingAddress": "Lieferadresse",
     "customerInfo": "Kundeninformationen",
     "orderSummary": "Bestellubersicht",
-    "noOrders": "Keine Bestellungen gefunden"
+    "noOrders": "Keine Bestellungen gefunden",
+    "manageOrders": "Bestellungen verwalten",
+    "searchOrders": "Bestellungen suchen",
+    "allOrders": "Alle Bestellungen",
+    "totalOrders": "Gesamtbestellungen",
+    "recentOrders": "Aktuelle Bestellungen",
+    "totalCount": "Gesamtanzahl",
+    "myOrdersDesc": "Verfolgen und verwalten Sie alle Ihre Bestellungen",
+    "brandRevenue": "Markeneinnahmen",
+    "creatorRevenue": "Creator-Einnahmen",
+    "platformFee": "Plattformgebuhr",
+    "viaCreator": "Uber Creator",
+    "markShipped": "Als versendet markieren",
+    "markCompleted": "Als abgeschlossen markieren",
+    "myEarning": "Mein Verdienst",
+    "orderTotal": "Bestellsumme"
   },
   "creator": {
     "myShop": "Mein Shop",
@@ -233,6 +248,23 @@
     "sampleRequestError": "Anfrage konnte nicht gesendet werden",
     "sampleRequestHistory": "Anfragenverlauf",
     "sampleProducts": "Produkte",
+    "shippingAddress": "Lieferadresse",
+    "shippingAddressRequired": "Bitte füllen Sie die Pflichtfelder der Lieferadresse aus",
+    "recipientName": "Empfängername",
+    "recipientNamePlaceholder": "Vollständiger Name",
+    "phoneNumber": "Telefonnummer",
+    "countryRegion": "Land / Region",
+    "selectCountry": "Land auswählen",
+    "addressLine1": "Adresszeile 1",
+    "addressLine1Placeholder": "Straße, Postfach",
+    "addressLine2": "Adresszeile 2",
+    "addressLine2Placeholder": "Wohnung, Suite, Einheit, Gebäude, Etage, usw.",
+    "city": "Stadt",
+    "cityPlaceholder": "Stadt",
+    "stateProvince": "Bundesland / Kanton",
+    "stateProvincePlaceholder": "Bundesland oder Kanton",
+    "postalCode": "Postleitzahl",
+    "postalCodePlaceholder": "PLZ",
     "sampleStatus": {
       "pending": "Ausstehend",
       "approved": "Genehmigt",
@@ -372,5 +404,26 @@
     "accountHolder": "Kontoinhaber",
     "accountHolderPlaceholder": "Name des Kontoinhabers",
     "accountNumber": "Kontonummer"
+  },
+  "support": {
+    "title": "Kundenservice",
+    "subtitle": "Kundenanfragen empfangen und beantworten",
+    "waiting": "Wartend",
+    "resolvedLabel": "Gelost",
+    "inquiries": "Anfragen",
+    "inquiriesDesc": "Kunden- und Creator-Anfragen fur Ihre Marke",
+    "noInquiries": "Noch keine Anfragen",
+    "noInquiriesDesc": "Kundenanfragen werden hier angezeigt",
+    "productInquiry": "Produktanfrage",
+    "csInquiry": "CS-Anfrage",
+    "relatedOrder": "Zugehorige Bestellung",
+    "yourReply": "Ihre Antwort",
+    "replyPlaceholder": "Schreiben Sie Ihre Antwort...",
+    "sendReply": "Antwort senden",
+    "replied": "Antwort erfolgreich gesendet",
+    "brandResponsibility": "Marke zustandig",
+    "brandResponsibilityDesc": "Produktqualitat, Versand, Rucksendungen und Umtausch",
+    "cnecResponsibility": "CNEC zustandig",
+    "cnecResponsibilityDesc": "Zahlungsfehler, Erstattungen, Plattform-Anfragen"
   }
 }
