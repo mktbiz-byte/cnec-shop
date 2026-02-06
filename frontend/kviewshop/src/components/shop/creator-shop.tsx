@@ -66,7 +66,7 @@ interface CreatorShopProps {
     bio?: string;
     themeColor: string;
     backgroundColor?: string;
-    textColor?: string;
+
     country: Country;
     socialLinks?: SocialLinks;
     instagram?: string;
@@ -269,10 +269,7 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
   return (
     <div
       className="min-h-screen"
-      style={{
-        backgroundColor: creator.backgroundColor || '#1a1a1a',
-        color: creator.textColor || '#ffffff',
-      }}
+
     >
       {/* Announcement Banner */}
       {shopSettings.announcement_active && shopSettings.announcement && (

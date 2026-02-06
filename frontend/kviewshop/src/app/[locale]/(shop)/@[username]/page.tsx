@@ -94,7 +94,7 @@ export default async function ShopPage({ params }: ShopPageProps) {
         bio: locale === 'ja' ? creator.bio_jp : locale === 'en' ? creator.bio_en : creator.bio,
         themeColor: creator.theme_color,
         backgroundColor: creator.background_color || '#1a1a1a',
-        textColor: creator.text_color || '#ffffff',
+
         country: creator.country,
         socialLinks: creator.social_links,
         instagram: creator.instagram,

@@ -74,6 +74,7 @@ export default function CreatorShopPage() {
   const [newShortCode, setNewShortCode] = useState('');
   const [newSourceTag, setNewSourceTag] = useState('general');
 
+
   const [settings, setSettings] = useState({
     displayName: '',
     bio: '',
@@ -155,6 +156,7 @@ export default function CreatorShopPage() {
           setCreatorId(creator.id);
           setUsername(creator.username || '');
           setLevel(creator.level || 'bronze');
+
           setSettings({
             displayName: creator.display_name || '',
             bio: creator.bio || '',
@@ -198,6 +200,7 @@ export default function CreatorShopPage() {
       clearTimeout(safetyTimeout);
     };
   }, []);
+
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -350,6 +353,7 @@ export default function CreatorShopPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+
                 <div className="space-y-2">
                   <Label>Display Name</Label>
                   <Input
@@ -775,6 +779,7 @@ export default function CreatorShopPage() {
                   ['--tw-ring-offset-color' as any]: settings.backgroundColor,
                 }}
               >
+
                 <AvatarFallback
                   style={{ backgroundColor: settings.themeColor }}
                   className="text-2xl font-bold text-white"
