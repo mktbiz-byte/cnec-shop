@@ -88,7 +88,15 @@
     "continueShopping": "Continue Shopping",
     "featured": "Featured",
     "newArrivals": "New Arrivals",
-    "bestSellers": "Best Sellers"
+    "bestSellers": "Best Sellers",
+    "subscribe": "Subscribe",
+    "unsubscribe": "Unsubscribe",
+    "subscribers": "subscribers",
+    "noProducts": "No products yet. Check back soon!",
+    "addedToCart": "Added to cart!",
+    "loginRequired": "Please login first",
+    "community": "Community",
+    "shareShop": "Share"
   },
   "product": {
     "name": "Product Name",

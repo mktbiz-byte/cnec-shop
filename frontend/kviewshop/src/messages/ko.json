@@ -88,7 +88,15 @@
     "continueShopping": "쇼핑 계속하기",
     "featured": "추천 상품",
     "newArrivals": "신상품",
-    "bestSellers": "베스트셀러"
+    "bestSellers": "베스트셀러",
+    "subscribe": "구독",
+    "unsubscribe": "구독 취소",
+    "subscribers": "구독자",
+    "noProducts": "아직 상품이 없습니다",
+    "addedToCart": "장바구니에 추가됨!",
+    "loginRequired": "로그인이 필요합니다",
+    "community": "커뮤니티",
+    "shareShop": "공유"
   },
   "product": {
     "name": "상품명",

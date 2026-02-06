@@ -88,7 +88,15 @@
     "continueShopping": "Weiter einkaufen",
     "featured": "Empfohlen",
     "newArrivals": "Neuheiten",
-    "bestSellers": "Bestseller"
+    "bestSellers": "Bestseller",
+    "subscribe": "Abonnieren",
+    "unsubscribe": "Abbestellen",
+    "subscribers": "Abonnenten",
+    "noProducts": "Noch keine Produkte",
+    "addedToCart": "Zum Warenkorb hinzugefügt!",
+    "loginRequired": "Bitte zuerst anmelden",
+    "community": "Community",
+    "shareShop": "Teilen"
   },
   "product": {
     "name": "Produktname",
