@@ -1,13 +1,13 @@
 import { redirect } from 'next/navigation';
 
-// KviewShop is strictly private - no main page
-// All access must be through creator shop links
+// Main page redirects to buyer login
+// Buyers are the primary users accessing creator malls
 export default async function HomePage({
   params
 }: {
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params;
-  // Redirect to login for now, or show a minimal landing page
-  redirect(`/${locale}/login`);
+  // Redirect to buyer login as the main entry point
+  redirect(`/${locale}/buyer/login`);
 }

@@ -1,17 +1,62 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Palette, User, Link as LinkIcon, Eye, EyeOff, Save, Loader2, ExternalLink, Paintbrush, Camera, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Palette,
+  User,
+  Link as LinkIcon,
+  Save,
+  Loader2,
+  ExternalLink,
+  Copy,
+  Check,
+  Plus,
+  Trash2,
+  Eye,
+  Settings,
+  MessageSquare,
+  QrCode,
+  Instagram,
+  Youtube,
+  Music2,
+  RefreshCw,
+  Award,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+interface ShortUrl {
+  id: string;
+  short_code: string;
+  is_primary: boolean;
+  total_clicks: number;
+  source_tag?: string;
+  is_active: boolean;
+}
+
+interface ShopSettings {
+  show_footer: boolean;
+  footer_type: 'full' | 'minimal';
+  show_social_links: boolean;
+  show_subscriber_count: boolean;
+  layout: 'grid' | 'list';
+  products_per_row: number;
+  show_prices: boolean;
+  announcement: string;
+  announcement_active: boolean;
+}
 
 export default function CreatorShopPage() {
   const t = useTranslations('creator');
@@ -19,21 +64,39 @@ export default function CreatorShopPage() {
   const params = useParams();
   const locale = params.locale as string;
 
-  const [showPreview, setShowPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [username, setUsername] = useState('');
-  const [profileImage, setProfileImage] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [creatorId, setCreatorId] = useState('');
+  const [level, setLevel] = useState('bronze');
+  const [shortUrls, setShortUrls] = useState<ShortUrl[]>([]);
+  const [newShortCode, setNewShortCode] = useState('');
+  const [newSourceTag, setNewSourceTag] = useState('general');
+
   const [settings, setSettings] = useState({
     displayName: '',
     bio: '',
     themeColor: '#d4af37',
     backgroundColor: '#1a1a1a',
+    textColor: '#ffffff',
     instagram: '',
     youtube: '',
     tiktok: '',
+    communityEnabled: false,
+    communityType: 'board' as 'board' | 'chat',
+  });
+
+  const [shopSettings, setShopSettings] = useState<ShopSettings>({
+    show_footer: true,
+    footer_type: 'full',
+    show_social_links: true,
+    show_subscriber_count: false,
+    layout: 'grid',
+    products_per_row: 3,
+    show_prices: true,
+    announcement: '',
+    announcement_active: false,
   });
 
   const themeColors = [
@@ -43,26 +106,30 @@ export default function CreatorShopPage() {
     { name: 'Purple', value: '#9c27b0' },
     { name: 'Green', value: '#4caf50' },
     { name: 'Orange', value: '#ff9800' },
-    { name: 'Black', value: '#1a1a1a' },
     { name: 'Teal', value: '#009688' },
     { name: 'Pink', value: '#ff4081' },
+    { name: 'Coral', value: '#ff6b6b' },
   ];
 
   const backgroundColors = [
-    { name: 'Dark', value: '#1a1a1a' },
-    { name: 'Charcoal', value: '#2a2a2a' },
-    { name: 'Navy', value: '#0f172a' },
-    { name: 'Dark Purple', value: '#1e1033' },
-    { name: 'Dark Green', value: '#0a1f1a' },
+    { name: 'Black', value: '#1a1a1a' },
     { name: 'White', value: '#ffffff' },
-    { name: 'Light Gray', value: '#f5f5f5' },
-    { name: 'Warm White', value: '#faf8f5' },
-    { name: 'Cool Gray', value: '#f0f4f8' },
+    { name: 'Dark Gray', value: '#2d2d2d' },
+    { name: 'Navy', value: '#1a237e' },
+    { name: 'Forest', value: '#1b5e20' },
+    { name: 'Wine', value: '#4a1c40' },
   ];
+
+  const levelColors: Record<string, { color: string; icon: string }> = {
+    bronze: { color: '#CD7F32', icon: 'medal' },
+    silver: { color: '#C0C0C0', icon: 'award' },
+    gold: { color: '#FFD700', icon: 'crown' },
+    platinum: { color: '#E5E4E2', icon: 'gem' },
+    diamond: { color: '#B9F2FF', icon: 'diamond' },
+  };
 
   useEffect(() => {
     let cancelled = false;
-
     const safetyTimeout = setTimeout(() => {
       if (!cancelled) setIsLoading(false);
     }, 3000);
@@ -80,22 +147,40 @@ export default function CreatorShopPage() {
           .from('creators')
           .select('*')
           .eq('user_id', session.user.id)
-          .maybeSingle();
+          .single();
 
         if (cancelled) return;
 
         if (creator) {
+          setCreatorId(creator.id);
           setUsername(creator.username || '');
-          setProfileImage(creator.profile_image || '');
+          setLevel(creator.level || 'bronze');
           setSettings({
             displayName: creator.display_name || '',
             bio: creator.bio || '',
             themeColor: creator.theme_color || '#d4af37',
             backgroundColor: creator.background_color || '#1a1a1a',
+            textColor: creator.text_color || '#ffffff',
             instagram: creator.instagram || '',
             youtube: creator.youtube || '',
             tiktok: creator.tiktok || '',
+            communityEnabled: creator.community_enabled || false,
+            communityType: creator.community_type || 'board',
           });
+          if (creator.shop_settings) {
+            setShopSettings(creator.shop_settings);
+          }
+
+          // Load short URLs
+          const { data: urls } = await supabase
+            .from('short_urls')
+            .select('*')
+            .eq('creator_id', creator.id)
+            .order('is_primary', { ascending: false });
+
+          if (urls) {
+            setShortUrls(urls);
+          }
         }
       } catch (error) {
         console.error('Failed to load creator data:', error);
@@ -114,109 +199,12 @@ export default function CreatorShopPage() {
     };
   }, []);
 
-  const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      toast.error('이미지 파일만 업로드 가능합니다');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('파일 크기는 5MB 이하여야 합니다');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const supabase = getClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `creators/${session.user.id}/profile.${fileExt}`;
-
-      // Upload to profiles bucket
-      const { data, error: uploadError } = await supabase.storage
-        .from('profiles')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (uploadError) {
-        // If profiles bucket doesn't exist, try products bucket
-        const { data: fallbackData, error: fallbackError } = await supabase.storage
-          .from('products')
-          .upload(`profiles/${session.user.id}/profile.${fileExt}`, file, {
-            cacheControl: '3600',
-            upsert: true,
-          });
-
-        if (fallbackError) {
-          console.error('Upload error:', fallbackError);
-          toast.error('업로드에 실패했습니다');
-          return;
-        }
-
-        const { data: urlData } = supabase.storage
-          .from('products')
-          .getPublicUrl(`profiles/${session.user.id}/profile.${fileExt}`);
-
-        const imageUrl = urlData.publicUrl;
-        setProfileImage(imageUrl);
-
-        await supabase
-          .from('creators')
-          .update({ profile_image: imageUrl })
-          .eq('user_id', session.user.id);
-      } else {
-        const { data: urlData } = supabase.storage
-          .from('profiles')
-          .getPublicUrl(fileName);
-
-        const imageUrl = urlData.publicUrl;
-        setProfileImage(imageUrl);
-
-        await supabase
-          .from('creators')
-          .update({ profile_image: imageUrl })
-          .eq('user_id', session.user.id);
-      }
-
-      toast.success(t('settingsSaved'));
-    } catch (error) {
-      console.error('Profile upload error:', error);
-      toast.error(tCommon('error'));
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleRemoveProfileImage = async () => {
-    const supabase = getClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
-    setProfileImage('');
-    await supabase
-      .from('creators')
-      .update({ profile_image: null })
-      .eq('user_id', session.user.id);
-
-    toast.success(t('settingsSaved'));
-  };
-
   const handleSave = async () => {
     setIsSaving(true);
     try {
       const supabase = getClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      const user = session.user;
 
       const { error } = await supabase
         .from('creators')
@@ -225,11 +213,15 @@ export default function CreatorShopPage() {
           bio: settings.bio || null,
           theme_color: settings.themeColor,
           background_color: settings.backgroundColor,
+          text_color: settings.textColor,
           instagram: settings.instagram || null,
           youtube: settings.youtube || null,
           tiktok: settings.tiktok || null,
+          community_enabled: settings.communityEnabled,
+          community_type: settings.communityType,
+          shop_settings: shopSettings,
         })
-        .eq('user_id', user.id);
+        .eq('user_id', session.user.id);
 
       if (error) {
         toast.error(tCommon('error'));
@@ -244,11 +236,72 @@ export default function CreatorShopPage() {
     }
   };
 
-  const isLightBg = (hex: string) => {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return (r * 299 + g * 587 + b * 114) / 1000 > 128;
+  const handleCreateShortUrl = async () => {
+    if (!newShortCode || newShortCode.length < 3) {
+      toast.error('Short code must be at least 3 characters');
+      return;
+    }
+
+    try {
+      const supabase = getClient();
+      const { data, error } = await supabase
+        .from('short_urls')
+        .insert({
+          creator_id: creatorId,
+          short_code: newShortCode.toLowerCase().replace(/[^a-z0-9_]/g, ''),
+          source_tag: newSourceTag,
+          is_primary: shortUrls.length === 0,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('This short code is already taken');
+        } else {
+          toast.error('Failed to create short URL');
+        }
+        return;
+      }
+
+      setShortUrls([...shortUrls, data]);
+      setNewShortCode('');
+      toast.success('Short URL created!');
+    } catch (error) {
+      toast.error('Failed to create short URL');
+    }
+  };
+
+  const handleDeleteShortUrl = async (id: string) => {
+    try {
+      const supabase = getClient();
+      await supabase.from('short_urls').delete().eq('id', id);
+      setShortUrls(shortUrls.filter(u => u.id !== id));
+      toast.success('Short URL deleted');
+    } catch (error) {
+      toast.error('Failed to delete short URL');
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedUrl(text);
+    toast.success('Copied to clipboard!');
+    setTimeout(() => setCopiedUrl(null), 2000);
+  };
+
+  const getShortUrl = (code: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/${locale}/s/${code}`;
+    }
+    return `/s/${code}`;
+  };
+
+  const getShopUrl = () => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/${locale}/@${username}`;
+    }
+    return `/@${username}`;
   };
 
   if (isLoading) {
@@ -260,347 +313,556 @@ export default function CreatorShopPage() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('customizeShop')}</h1>
-          <p className="text-sm text-muted-foreground">{t('customizeShopDesc')}</p>
+    <div className="flex gap-6 h-[calc(100vh-8rem)]">
+      {/* Left: Settings Panel */}
+      <div className="w-1/2 overflow-y-auto pr-4 space-y-6">
+        <div className="flex items-center justify-between sticky top-0 bg-background py-2 z-10">
+          <div>
+            <h1 className="text-3xl font-headline font-bold">{t('customizeShop')}</h1>
+            <p className="text-muted-foreground">{t('customizeShopDesc')}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              style={{ backgroundColor: levelColors[level]?.color }}
+              className="text-black font-medium"
+            >
+              <Award className="h-3 w-3 mr-1" />
+              {level.charAt(0).toUpperCase() + level.slice(1)}
+            </Badge>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPreview(!showPreview)}
-            className="flex-1 sm:flex-none"
-          >
-            {showPreview ? (
-              <><EyeOff className="mr-2 h-4 w-4" />{t('hidePreview')}</>
+
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> Profile</TabsTrigger>
+            <TabsTrigger value="theme"><Palette className="h-4 w-4 mr-1" /> Theme</TabsTrigger>
+            <TabsTrigger value="urls"><LinkIcon className="h-4 w-4 mr-1" /> URLs</TabsTrigger>
+            <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" /> Settings</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile" className="space-y-4 mt-4">
+            {/* Profile Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Profile Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Display Name</Label>
+                  <Input
+                    placeholder="Your shop name"
+                    value={settings.displayName}
+                    onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Bio</Label>
+                  <Textarea
+                    placeholder="Tell customers about your shop..."
+                    value={settings.bio}
+                    onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Social Links */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LinkIcon className="h-5 w-5" />
+                  Social Links
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Instagram className="h-4 w-4" /> Instagram
+                  </Label>
+                  <Input
+                    placeholder="https://instagram.com/..."
+                    value={settings.instagram}
+                    onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Youtube className="h-4 w-4" /> YouTube
+                  </Label>
+                  <Input
+                    placeholder="https://youtube.com/..."
+                    value={settings.youtube}
+                    onChange={(e) => setSettings({ ...settings, youtube: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Music2 className="h-4 w-4" /> TikTok
+                  </Label>
+                  <Input
+                    placeholder="https://tiktok.com/..."
+                    value={settings.tiktok}
+                    onChange={(e) => setSettings({ ...settings, tiktok: e.target.value })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="theme" className="space-y-4 mt-4">
+            {/* Theme Color */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Accent Color</CardTitle>
+                <CardDescription>Choose your shop's main accent color</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  {themeColors.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => setSettings({ ...settings, themeColor: color.value })}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        settings.themeColor === color.value
+                          ? 'border-primary scale-105'
+                          : 'border-transparent hover:border-muted'
+                      }`}
+                      style={{ backgroundColor: color.value + '20' }}
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full mx-auto mb-1"
+                        style={{ backgroundColor: color.value }}
+                      />
+                      <p className="text-xs text-center">{color.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Background Color */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Background Color</CardTitle>
+                <CardDescription>Set your shop's background</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  {backgroundColors.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => setSettings({
+                        ...settings,
+                        backgroundColor: color.value,
+                        textColor: color.value === '#ffffff' ? '#1a1a1a' : '#ffffff'
+                      })}
+                      className={`p-3 rounded-lg border-2 transition-all ${
+                        settings.backgroundColor === color.value
+                          ? 'border-primary scale-105'
+                          : 'border-transparent hover:border-muted'
+                      }`}
+                    >
+                      <div
+                        className="w-6 h-6 rounded-full mx-auto mb-1 border"
+                        style={{ backgroundColor: color.value }}
+                      />
+                      <p className="text-xs text-center">{color.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="urls" className="space-y-4 mt-4">
+            {/* Shop URL */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ExternalLink className="h-5 w-5" />
+                  Shop URL
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Input value={getShopUrl()} readOnly className="font-mono text-sm" />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => copyToClipboard(getShopUrl())}
+                  >
+                    {copiedUrl === getShopUrl() ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="outline" size="icon" asChild>
+                    <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Short URLs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5" />
+                  Short URLs
+                </CardTitle>
+                <CardDescription>
+                  Create short links for Instagram, YouTube, etc.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Create New */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="short_code"
+                      value={newShortCode}
+                      onChange={(e) => setNewShortCode(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                      className="font-mono"
+                    />
+                  </div>
+                  <select
+                    value={newSourceTag}
+                    onChange={(e) => setNewSourceTag(e.target.value)}
+                    className="px-3 rounded-md border bg-muted"
+                  >
+                    <option value="general">General</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="tiktok">TikTok</option>
+                  </select>
+                  <Button onClick={handleCreateShortUrl}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* List */}
+                <div className="space-y-2">
+                  {shortUrls.map((url) => (
+                    <div
+                      key={url.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm truncate">
+                            /s/{url.short_code}
+                          </span>
+                          {url.is_primary && (
+                            <Badge variant="secondary" className="text-xs">Primary</Badge>
+                          )}
+                          {url.source_tag && (
+                            <Badge variant="outline" className="text-xs">{url.source_tag}</Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {url.total_clicks} clicks
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => copyToClipboard(getShortUrl(url.short_code))}
+                        >
+                          {copiedUrl === getShortUrl(url.short_code) ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteShortUrl(url.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {shortUrls.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">
+                      No short URLs created yet
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-4 mt-4">
+            {/* Community Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Community
+                </CardTitle>
+                <CardDescription>Enable community features for your shop</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Enable Community</p>
+                    <p className="text-sm text-muted-foreground">
+                      Let buyers interact and share opinions
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.communityEnabled}
+                    onCheckedChange={(checked) =>
+                      setSettings({ ...settings, communityEnabled: checked })
+                    }
+                  />
+                </div>
+                {settings.communityEnabled && (
+                  <div className="space-y-2">
+                    <Label>Community Type</Label>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={settings.communityType === 'board' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => setSettings({ ...settings, communityType: 'board' })}
+                      >
+                        Board (Forum)
+                      </Button>
+                      <Button
+                        variant={settings.communityType === 'chat' ? 'default' : 'outline'}
+                        className="flex-1"
+                        onClick={() => setSettings({ ...settings, communityType: 'chat' })}
+                      >
+                        Chat
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Shop Display Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Display Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Show Footer</p>
+                    <p className="text-sm text-muted-foreground">Display legal footer</p>
+                  </div>
+                  <Switch
+                    checked={shopSettings.show_footer}
+                    onCheckedChange={(checked) =>
+                      setShopSettings({ ...shopSettings, show_footer: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Show Social Links</p>
+                    <p className="text-sm text-muted-foreground">Display social media links</p>
+                  </div>
+                  <Switch
+                    checked={shopSettings.show_social_links}
+                    onCheckedChange={(checked) =>
+                      setShopSettings({ ...shopSettings, show_social_links: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Show Subscriber Count</p>
+                    <p className="text-sm text-muted-foreground">Display how many follow your shop</p>
+                  </div>
+                  <Switch
+                    checked={shopSettings.show_subscriber_count}
+                    onCheckedChange={(checked) =>
+                      setShopSettings({ ...shopSettings, show_subscriber_count: checked })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Announcement */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Shop Announcement</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Active</Label>
+                  <Switch
+                    checked={shopSettings.announcement_active}
+                    onCheckedChange={(checked) =>
+                      setShopSettings({ ...shopSettings, announcement_active: checked })
+                    }
+                  />
+                </div>
+                <Textarea
+                  placeholder="Enter announcement text..."
+                  value={shopSettings.announcement}
+                  onChange={(e) =>
+                    setShopSettings({ ...shopSettings, announcement: e.target.value })
+                  }
+                  rows={3}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Save Button */}
+        <div className="sticky bottom-0 bg-background py-4 border-t">
+          <Button className="w-full btn-gold" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('loading')}</>
             ) : (
-              <><Eye className="mr-2 h-4 w-4" />{t('shopPreview')}</>
+              <><Save className="mr-2 h-4 w-4" />{tCommon('save')}</>
             )}
           </Button>
-          {username && (
-            <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
-              <a
-                href={`/${locale}/shop/${username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <ExternalLink className="mr-2 h-4 w-4" />
-                <span className="hidden sm:inline">{t('viewLiveShop')}</span>
-                <span className="sm:hidden">Live</span>
-              </a>
-            </Button>
-          )}
         </div>
       </div>
 
-      {/* Live Preview */}
-      {showPreview && (
-        <Card className="overflow-hidden border-2 border-primary/30">
+      {/* Right: Live Preview */}
+      <div className="w-1/2 border-l pl-6">
+        <div className="sticky top-0">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Live Preview
+            </h2>
+            <Button variant="outline" size="sm" asChild>
+              <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Shop
+              </a>
+            </Button>
+          </div>
+
+          {/* Preview Frame */}
           <div
-            className="p-6 sm:p-8 text-center transition-colors duration-300"
+            className="rounded-lg overflow-hidden border shadow-lg"
             style={{
               backgroundColor: settings.backgroundColor,
-              color: isLightBg(settings.backgroundColor) ? '#1a1a1a' : '#e8e8e8',
+              color: settings.textColor,
             }}
           >
-            {profileImage ? (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 sm:mb-4 overflow-hidden border-2" style={{ borderColor: settings.themeColor }}>
-                <Image src={profileImage} alt="Profile" width={80} height={80} className="w-full h-full object-cover" />
-              </div>
-            ) : (
+            {/* Announcement Banner */}
+            {shopSettings.announcement_active && shopSettings.announcement && (
               <div
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center text-white text-xl sm:text-2xl font-bold"
+                className="p-2 text-center text-sm"
                 style={{ backgroundColor: settings.themeColor }}
               >
-                {settings.displayName?.charAt(0)?.toUpperCase() || username?.charAt(0)?.toUpperCase() || '?'}
+                {shopSettings.announcement}
               </div>
             )}
-            <h2 className="text-xl sm:text-2xl font-bold">
-              {settings.displayName || username || 'Creator'}
-            </h2>
-            <p className="text-sm opacity-60 mt-1">@{username}</p>
-            {settings.bio && (
-              <p className="mt-3 text-sm max-w-md mx-auto opacity-80">{settings.bio}</p>
-            )}
-            <div className="flex justify-center gap-3 mt-4 flex-wrap">
-              {settings.instagram && (
-                <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: settings.themeColor + '30', color: settings.themeColor }}>Instagram</span>
-              )}
-              {settings.youtube && (
-                <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: settings.themeColor + '30', color: settings.themeColor }}>YouTube</span>
-              )}
-              {settings.tiktok && (
-                <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: settings.themeColor + '30', color: settings.themeColor }}>TikTok</span>
-              )}
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-3 max-w-sm mx-auto">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-lg flex items-center justify-center text-xs border border-dashed"
-                  style={{
-                    borderColor: isLightBg(settings.backgroundColor) ? '#00000020' : '#ffffff20',
-                    backgroundColor: isLightBg(settings.backgroundColor) ? '#00000008' : '#ffffff08',
-                    color: isLightBg(settings.backgroundColor) ? '#00000050' : '#ffffff50',
-                  }}
-                >
-                  {t('productPlaceholder')}
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-      )}
 
-      {/* Shop URL Banner */}
-      {username && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground mb-1">{t('shopUrl')}</p>
-              <p className="text-sm font-mono truncate">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/{locale}/shop/{username}
-              </p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const url = `${window.location.origin}/${locale}/shop/${username}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success(t('linkCopied'));
+            {/* Header */}
+            <div className="p-6 text-center">
+              <Avatar
+                className="h-20 w-20 mx-auto mb-4 ring-4 ring-offset-2"
+                style={{
+                  ['--tw-ring-color' as any]: settings.themeColor,
+                  ['--tw-ring-offset-color' as any]: settings.backgroundColor,
                 }}
               >
-                <LinkIcon className="mr-2 h-3 w-3" />
-                {t('copyLink')}
-              </Button>
-              <Button size="sm" asChild className="btn-gold">
-                <a href={`/${locale}/shop/${username}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-3 w-3" />
-                  {t('viewLiveShop')}
-                </a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2">
-        {/* Profile */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <User className="h-5 w-5" />
-              {t('profileSection')}
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">{t('profileSectionDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-            {/* Profile Image Upload */}
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative group">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleProfileImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-all relative"
+                <AvatarFallback
+                  style={{ backgroundColor: settings.themeColor }}
+                  className="text-2xl font-bold text-white"
                 >
-                  {isUploading ? (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    </div>
-                  ) : profileImage ? (
-                    <Image src={profileImage} alt="Profile" width={96} height={96} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                      <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground/50" />
+                  {settings.displayName?.charAt(0)?.toUpperCase() || username?.charAt(0)?.toUpperCase() || '?'}
+                </AvatarFallback>
+              </Avatar>
+
+              <h2 className="text-xl font-bold">
+                {settings.displayName || username || 'Your Shop'}
+              </h2>
+              <p className="text-sm opacity-70 mt-1">@{username}</p>
+
+              {shopSettings.show_subscriber_count && (
+                <p className="text-xs opacity-50 mt-1">0 subscribers</p>
+              )}
+
+              {settings.bio && (
+                <p className="mt-3 text-sm opacity-80 max-w-xs mx-auto">
+                  {settings.bio}
+                </p>
+              )}
+
+              {/* Social Links */}
+              {shopSettings.show_social_links && (settings.instagram || settings.youtube || settings.tiktok) && (
+                <div className="flex justify-center gap-3 mt-4">
+                  {settings.instagram && (
+                    <div
+                      className="p-2 rounded-full"
+                      style={{ backgroundColor: settings.themeColor + '30' }}
+                    >
+                      <Instagram className="h-4 w-4" style={{ color: settings.themeColor }} />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-full">
-                    <Camera className="h-5 w-5 text-white" />
-                  </div>
-                </button>
-                {profileImage && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveProfileImage}
-                    className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/80 transition-colors"
+                  {settings.youtube && (
+                    <div
+                      className="p-2 rounded-full"
+                      style={{ backgroundColor: settings.themeColor + '30' }}
+                    >
+                      <Youtube className="h-4 w-4" style={{ color: settings.themeColor }} />
+                    </div>
+                  )}
+                  {settings.tiktok && (
+                    <div
+                      className="p-2 rounded-full"
+                      style={{ backgroundColor: settings.themeColor + '30' }}
+                    >
+                      <Music2 className="h-4 w-4" style={{ color: settings.themeColor }} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Products Grid Preview */}
+            <div className="p-6 pt-0">
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-square rounded-lg flex items-center justify-center text-xs border border-dashed"
+                    style={{
+                      borderColor: settings.themeColor + '40',
+                      backgroundColor: settings.themeColor + '10',
+                      color: settings.textColor,
+                      opacity: 0.5,
+                    }}
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{t('profileImage')}</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t('displayName')}</Label>
-              <Input
-                placeholder={t('displayNamePlaceholder')}
-                value={settings.displayName}
-                onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t('bio')}</Label>
-              <Textarea
-                placeholder={t('bioPlaceholder')}
-                value={settings.bio}
-                onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
-                rows={4}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Theme Color */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Palette className="h-5 w-5" />
-              {t('themeColor')}
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">{t('themeColorDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {themeColors.map((color) => (
-                <button
-                  key={color.value}
-                  onClick={() => setSettings({ ...settings, themeColor: color.value })}
-                  className={`p-3 sm:p-4 rounded-lg border-2 transition-all ${
-                    settings.themeColor === color.value
-                      ? 'border-primary scale-105'
-                      : 'border-transparent hover:border-muted'
-                  }`}
-                  style={{ backgroundColor: color.value + '20' }}
-                >
-                  <div
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full mx-auto mb-1 sm:mb-2"
-                    style={{ backgroundColor: color.value }}
-                  />
-                  <p className="text-[10px] sm:text-xs text-center">{color.name}</p>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Background Color */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Paintbrush className="h-5 w-5" />
-              {t('backgroundColor')}
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">{t('backgroundColorDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {backgroundColors.map((color) => (
-                <button
-                  key={color.value}
-                  onClick={() => setSettings({ ...settings, backgroundColor: color.value })}
-                  className={`p-3 sm:p-4 rounded-lg border-2 transition-all ${
-                    settings.backgroundColor === color.value
-                      ? 'border-primary scale-105'
-                      : 'border-transparent hover:border-muted'
-                  }`}
-                  style={{ backgroundColor: color.value + (isLightBg(color.value) ? '' : '40') }}
-                >
-                  <div
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg mx-auto mb-1 sm:mb-2 border border-border/30"
-                    style={{ backgroundColor: color.value }}
-                  />
-                  <p className="text-[10px] sm:text-xs text-center">{color.name}</p>
-                </button>
-              ))}
-            </div>
-            {/* Custom color picker */}
-            <div className="flex items-center gap-3 pt-2 border-t">
-              <Label className="text-xs whitespace-nowrap">{t('customColor')}</Label>
-              <div className="flex items-center gap-2 flex-1">
-                <input
-                  type="color"
-                  value={settings.backgroundColor}
-                  onChange={(e) => setSettings({ ...settings, backgroundColor: e.target.value })}
-                  className="w-8 h-8 rounded cursor-pointer border border-border"
-                />
-                <Input
-                  value={settings.backgroundColor}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (/^#[0-9a-fA-F]{0,6}$/.test(val)) {
-                      setSettings({ ...settings, backgroundColor: val });
-                    }
-                  }}
-                  placeholder="#1a1a1a"
-                  className="font-mono text-sm h-8"
-                />
+                    Product {i}
+                  </div>
+                ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Social Links */}
-        <Card>
-          <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <LinkIcon className="h-5 w-5" />
-              {t('socialLinks')}
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">{t('socialLinksDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-            <div className="grid gap-4 grid-cols-1">
-              <div className="space-y-2">
-                <Label>Instagram</Label>
-                <Input
-                  placeholder="https://instagram.com/..."
-                  value={settings.instagram}
-                  onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
-                />
+            {/* Footer Preview */}
+            {shopSettings.show_footer && (
+              <div
+                className="p-4 text-center text-xs border-t"
+                style={{
+                  borderColor: settings.textColor + '20',
+                  opacity: 0.5,
+                }}
+              >
+                <p>KviewShop | Terms | Privacy</p>
               </div>
-              <div className="space-y-2">
-                <Label>YouTube</Label>
-                <Input
-                  placeholder="https://youtube.com/..."
-                  value={settings.youtube}
-                  onChange={(e) => setSettings({ ...settings, youtube: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>TikTok</Label>
-                <Input
-                  placeholder="https://tiktok.com/..."
-                  value={settings.tiktok}
-                  onChange={(e) => setSettings({ ...settings, tiktok: e.target.value })}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-end">
-        <Button className="btn-gold w-full sm:w-auto" onClick={handleSave} disabled={isSaving}>
-          {isSaving ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('loading')}</>
-          ) : (
-            <><Save className="mr-2 h-4 w-4" />{tCommon('save')}</>
-          )}
-        </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
