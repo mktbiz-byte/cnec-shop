@@ -11,10 +11,15 @@ import { Switch } from '@/components/ui/switch';
 import { User, CreditCard, Bell, Globe, Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
 
 export default function CreatorSettingsPage() {
   const t = useTranslations('creator');
   const tCommon = useTranslations('common');
+
+  // Read auth state from zustand store
+  const { user: storeUser, creator: storeCreator, isLoading: authLoading } = useAuthStore();
+
   const [loading, setLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
@@ -33,141 +38,87 @@ export default function CreatorSettingsPage() {
   });
 
   useEffect(() => {
-    let cancelled = false;
-    const safetyTimeout = setTimeout(() => {
-      if (!cancelled) setIsLoading(false);
-    }, 3000);
+    if (authLoading) return;
 
-    const loadSettings = async () => {
-      try {
-        const supabase = getClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user || cancelled) {
-          setIsLoading(false);
-          return;
-        }
-
-        // Load user data
-        const { data: userData } = await supabase
-          .from('users')
-          .select('email, phone')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        // Load creator data
-        const { data: creatorData } = await supabase
-          .from('creators')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (cancelled) return;
-
-        if (creatorData) {
-          const notifSettings = creatorData.notification_settings || {};
-          setSettings({
-            displayName: creatorData.display_name || '',
-            email: creatorData.email || userData?.email || session.user.email || '',
-            phone: creatorData.phone || userData?.phone || '',
-            country: creatorData.country || 'US',
-            paymentMethod: creatorData.payment_method || 'paypal',
-            paypalEmail: creatorData.paypal_email || '',
-            bankName: creatorData.bank_name || '',
-            accountNumber: creatorData.account_number || '',
-            swiftCode: creatorData.swift_code || '',
-            emailNotifications: notifSettings.email_notifications ?? true,
-            orderNotifications: notifSettings.order_notifications ?? true,
-            settlementNotifications: notifSettings.settlement_notifications ?? true,
-          });
-        } else if (userData) {
-          setSettings(prev => ({
-            ...prev,
-            email: userData.email || session.user.email || '',
-            phone: userData.phone || '',
-          }));
-        }
-      } catch (error) {
-        console.error('Failed to load settings:', error);
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
-
-    loadSettings();
-    return () => {
-      cancelled = true;
-      clearTimeout(safetyTimeout);
-    };
-  }, []);
+    // Populate settings from store data (no extra DB calls needed)
+    if (storeCreator) {
+      const notifSettings = storeCreator.notification_settings || {};
+      setSettings({
+        displayName: storeCreator.display_name || '',
+        email: storeCreator.email || storeUser?.email || '',
+        phone: storeCreator.phone || storeUser?.phone || '',
+        country: storeCreator.country || 'US',
+        paymentMethod: storeCreator.payment_method || 'paypal',
+        paypalEmail: storeCreator.paypal_email || '',
+        bankName: storeCreator.bank_name || '',
+        accountNumber: storeCreator.account_number || '',
+        swiftCode: storeCreator.swift_code || '',
+        emailNotifications: notifSettings.email_notifications ?? true,
+        orderNotifications: notifSettings.order_notifications ?? true,
+        settlementNotifications: notifSettings.settlement_notifications ?? true,
+      });
+    }
+    setIsLoading(false);
+  }, [authLoading, storeCreator, storeUser]);
 
   const handleSave = async (section?: string) => {
+    if (!storeCreator) return;
     setLoading(true);
+
+    const saveTimeout = setTimeout(() => setLoading(false), 10000);
+
     try {
       const supabase = getClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        toast.error(tCommon('error'));
-        return;
-      }
+      let updateData: Record<string, any> = {};
 
       if (section === 'profile' || !section) {
-        const { error } = await supabase
-          .from('creators')
-          .update({
-            display_name: settings.displayName || null,
-            email: settings.email || null,
-            phone: settings.phone || null,
-            country: settings.country || null,
-          })
-          .eq('user_id', session.user.id);
-
-        if (error) {
-          console.error('Profile save error:', error);
-          toast.error(tCommon('error'));
-          return;
-        }
+        updateData = {
+          ...updateData,
+          display_name: settings.displayName || null,
+          email: settings.email || null,
+          phone: settings.phone || null,
+          country: settings.country || null,
+        };
       }
 
       if (section === 'payment' || !section) {
-        const { error } = await supabase
-          .from('creators')
-          .update({
-            payment_method: settings.paymentMethod,
-            paypal_email: settings.paypalEmail || null,
-            bank_name: settings.bankName || null,
-            account_number: settings.accountNumber || null,
-            swift_code: settings.swiftCode || null,
-          })
-          .eq('user_id', session.user.id);
-
-        if (error) {
-          console.error('Payment save error:', error);
-          toast.error(tCommon('error'));
-          return;
-        }
+        updateData = {
+          ...updateData,
+          payment_method: settings.paymentMethod,
+          paypal_email: settings.paypalEmail || null,
+          bank_name: settings.bankName || null,
+          account_number: settings.accountNumber || null,
+          swift_code: settings.swiftCode || null,
+        };
       }
 
       if (section === 'notifications' || !section) {
-        const { error } = await supabase
-          .from('creators')
-          .update({
-            notification_settings: {
-              email_notifications: settings.emailNotifications,
-              order_notifications: settings.orderNotifications,
-              settlement_notifications: settings.settlementNotifications,
-            },
-          })
-          .eq('user_id', session.user.id);
-
-        if (error) {
-          console.error('Notification save error:', error);
-          toast.error(tCommon('error'));
-          return;
-        }
+        updateData = {
+          ...updateData,
+          notification_settings: {
+            email_notifications: settings.emailNotifications,
+            order_notifications: settings.orderNotifications,
+            settlement_notifications: settings.settlementNotifications,
+          },
+        };
       }
 
-      toast.success(t('settingsSaved'));
+      // Single update call instead of multiple
+      const { error } = await supabase
+        .from('creators')
+        .update(updateData)
+        .eq('id', storeCreator.id);
+
+      clearTimeout(saveTimeout);
+
+      if (error) {
+        console.error('Save error:', error);
+        toast.error(tCommon('error'));
+      } else {
+        toast.success(t('settingsSaved'));
+      }
     } catch (error) {
+      clearTimeout(saveTimeout);
       console.error('Save error:', error);
       toast.error(tCommon('error'));
     } finally {

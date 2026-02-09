@@ -139,15 +139,29 @@ export interface Creator {
   bio?: string;
   bio_en?: string;
   bio_jp?: string;
+  email?: string;
+  phone?: string;
   theme_color: string;
+  background_color?: string;
+  text_color?: string;
   country?: Country;
   social_links?: SocialLinks;
   instagram?: string;
   youtube?: string;
   tiktok?: string;
   picked_products?: string[];
+  level?: CreatorLevel;
   total_revenue: number;
   total_orders: number;
+  community_enabled?: boolean;
+  community_type?: 'board' | 'chat';
+  shop_settings?: ShopSettings;
+  payment_method?: string;
+  paypal_email?: string;
+  bank_name?: string;
+  account_number?: string;
+  swift_code?: string;
+  notification_settings?: Record<string, boolean>;
   created_at: string;
   updated_at: string;
 }
@@ -171,6 +185,8 @@ export interface Product {
   price?: number;
   price_usd: number;
   price_jpy: number;
+  price_krw?: number;
+  price_eur?: number;
   original_price_usd?: number;
   original_price_jpy?: number;
   stock: number;

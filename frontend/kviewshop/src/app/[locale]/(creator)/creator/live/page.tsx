@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useUser } from '@/lib/hooks/use-user';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,7 +63,7 @@ interface BotSettings {
 }
 
 export default function CreatorLivePage() {
-  const { creator } = useUser();
+  const { creator } = useAuthStore();
   const params = useParams();
   const locale = params.locale as string;
 

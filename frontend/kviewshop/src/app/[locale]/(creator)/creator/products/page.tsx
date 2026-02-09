@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Package, Globe, ShieldCheck, Check, Plus, Minus, ChevronDown, ChevronUp, X, Gift, Truck, Loader2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
 import { SHIPPING_REGIONS, CERTIFICATION_TYPES } from '@/lib/shipping-countries';
 
 interface Product {
@@ -62,6 +63,9 @@ export default function CreatorProductsPage() {
   const params = useParams();
   const locale = params.locale as string;
 
+  // Read auth state from zustand store
+  const { creator: storeCreator, isLoading: authLoading } = useAuthStore();
+
   const [search, setSearch] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [brands, setBrands] = useState<Record<string, Brand>>({});
@@ -74,7 +78,6 @@ export default function CreatorProductsPage() {
   const [sampleMessage, setSampleMessage] = useState('');
   const [sampleRequests, setSampleRequests] = useState<SampleRequest[]>([]);
   const [submittingSample, setSubmittingSample] = useState(false);
-  const [creatorId, setCreatorId] = useState<string | null>(null);
 
   // Shipping address state
   const [shippingAddress, setShippingAddress] = useState({
@@ -89,40 +92,34 @@ export default function CreatorProductsPage() {
   });
 
   useEffect(() => {
-    let cancelled = false;
+    if (authLoading) return;
 
-    // Safety timeout - show page after 3 seconds no matter what
+    let cancelled = false;
     const safetyTimeout = setTimeout(() => {
       if (!cancelled) setLoading(false);
-    }, 3000);
+    }, 5000);
 
     async function fetchData() {
       try {
         const supabase = getClient();
 
-        // Fetch products
-        const { data: productsData } = await supabase
-          .from('products')
-          .select('*')
-          .eq('is_active', true);
-
-        // Fetch brands with shipping/cert info
-        const { data: brandsData } = await supabase
-          .from('brands')
-          .select('*');
+        // Fetch products and brands in parallel (no auth needed for these)
+        const [productsRes, brandsRes] = await Promise.all([
+          supabase.from('products').select('*').eq('is_active', true),
+          supabase.from('brands').select('*'),
+        ]);
 
         if (cancelled) return;
 
         // Build brand lookup
         const brandMap: Record<string, Brand> = {};
-        if (brandsData) {
-          for (const brand of brandsData) {
+        if (brandsRes.data) {
+          for (const brand of brandsRes.data) {
             brandMap[brand.id] = {
               ...brand,
               shipping_countries: brand.shipping_countries || [],
               certifications: brand.certifications || [],
             };
-            // Also index by user_id for product lookups
             brandMap[brand.user_id] = {
               ...brand,
               shipping_countries: brand.shipping_countries || [],
@@ -131,33 +128,24 @@ export default function CreatorProductsPage() {
           }
         }
 
-        // Fetch creator's picked products and sample requests
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && !cancelled) {
-          const { data: creatorData } = await supabase
-            .from('creators')
-            .select('id, picked_products')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          if (creatorData) {
-            setCreatorId(creatorData.id);
-            if (creatorData.picked_products) {
-              setPickedProductIds(creatorData.picked_products);
-            }
-            // Fetch sample requests
-            const { data: requestsData } = await supabase
-              .from('sample_requests')
-              .select('*')
-              .eq('creator_id', creatorData.id)
-              .order('created_at', { ascending: false });
-            if (requestsData) {
-              setSampleRequests(requestsData);
-            }
+        // Use creator from store instead of querying again
+        if (storeCreator) {
+          if (storeCreator.picked_products) {
+            setPickedProductIds(storeCreator.picked_products);
+          }
+          // Fetch sample requests using store creator ID
+          const { data: requestsData } = await supabase
+            .from('sample_requests')
+            .select('*')
+            .eq('creator_id', storeCreator.id)
+            .order('created_at', { ascending: false });
+          if (requestsData && !cancelled) {
+            setSampleRequests(requestsData);
           }
         }
 
         if (!cancelled) {
-          setProducts(productsData || []);
+          setProducts(productsRes.data || []);
           setBrands(brandMap);
         }
       } catch (error) {
@@ -172,7 +160,7 @@ export default function CreatorProductsPage() {
       cancelled = true;
       clearTimeout(safetyTimeout);
     };
-  }, []);
+  }, [authLoading, storeCreator]);
 
   const filteredProducts = useMemo(() => {
     if (!search) return products;
@@ -188,35 +176,29 @@ export default function CreatorProductsPage() {
   }, [products, pickedProductIds]);
 
   const handlePickProduct = async (productId: string) => {
+    if (!storeCreator) return;
     const supabase = getClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const user = session.user;
-
     const newPicked = [...pickedProductIds, productId];
     setPickedProductIds(newPicked);
 
     await supabase
       .from('creators')
       .update({ picked_products: newPicked })
-      .eq('user_id', user.id);
+      .eq('id', storeCreator.id);
 
     toast.success(tCreator('pickProduct'));
   };
 
   const handleUnpickProduct = async (productId: string) => {
+    if (!storeCreator) return;
     const supabase = getClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const user = session.user;
-
     const newPicked = pickedProductIds.filter(id => id !== productId);
     setPickedProductIds(newPicked);
 
     await supabase
       .from('creators')
       .update({ picked_products: newPicked })
-      .eq('user_id', user.id);
+      .eq('id', storeCreator.id);
 
     toast.success(tCreator('unpickProduct'));
   };
@@ -232,9 +214,8 @@ export default function CreatorProductsPage() {
   };
 
   const handleSubmitSampleRequest = async () => {
-    if (sampleSelectedIds.length === 0 || !creatorId) return;
+    if (sampleSelectedIds.length === 0 || !storeCreator) return;
 
-    // Validate required shipping address fields
     if (!shippingAddress.recipientName || !shippingAddress.country || !shippingAddress.addressLine1 || !shippingAddress.city || !shippingAddress.postalCode) {
       toast.error(t('shippingAddressRequired'));
       return;
@@ -244,7 +225,6 @@ export default function CreatorProductsPage() {
 
     try {
       const supabase = getClient();
-      // Group by brand
       const brandGroups: Record<string, string[]> = {};
       for (const pid of sampleSelectedIds) {
         const product = products.find(p => p.id === pid);
@@ -255,12 +235,11 @@ export default function CreatorProductsPage() {
         }
       }
 
-      // Create one request per brand
       for (const [brandId, productIds] of Object.entries(brandGroups)) {
         const { data, error } = await supabase
           .from('sample_requests')
           .insert({
-            creator_id: creatorId,
+            creator_id: storeCreator.id,
             brand_id: brandId,
             product_ids: productIds,
             message: sampleMessage || null,
@@ -307,9 +286,7 @@ export default function CreatorProductsPage() {
     const regions: string[] = [];
     for (const region of SHIPPING_REGIONS) {
       const matchCount = region.countries.filter(c => countries.includes(c.code)).length;
-      if (matchCount === region.countries.length) {
-        regions.push(region.nameKey);
-      } else if (matchCount > 0) {
+      if (matchCount > 0) {
         regions.push(region.nameKey);
       }
     }
@@ -326,7 +303,6 @@ export default function CreatorProductsPage() {
 
     return (
       <Card key={product.id} className="overflow-hidden flex flex-col">
-        {/* Product Image */}
         <div className="aspect-square bg-muted relative">
           {product.images?.[0] ? (
             <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
@@ -343,7 +319,6 @@ export default function CreatorProductsPage() {
         </div>
 
         <CardContent className="p-4 flex-1 flex flex-col">
-          {/* Product Info */}
           <div className="flex-1">
             <p className="font-medium line-clamp-1">{product.name}</p>
             {brand && (
@@ -354,7 +329,6 @@ export default function CreatorProductsPage() {
             </p>
           </div>
 
-          {/* Shipping Countries Summary */}
           {shippingCountries.length > 0 && (
             <div className="mt-3 pt-3 border-t">
               <div className="flex items-center gap-1 mb-1.5">
@@ -376,7 +350,6 @@ export default function CreatorProductsPage() {
             </div>
           )}
 
-          {/* Certifications Summary */}
           {approvedCerts.length > 0 && (
             <div className="mt-2">
               <div className="flex items-center gap-1 mb-1.5">
@@ -398,7 +371,6 @@ export default function CreatorProductsPage() {
             </div>
           )}
 
-          {/* Expand/Collapse Details */}
           <button
             onClick={() => setExpandedProduct(isExpanded ? null : product.id)}
             className="flex items-center gap-1 text-xs text-primary mt-2 hover:underline"
@@ -410,10 +382,8 @@ export default function CreatorProductsPage() {
             )}
           </button>
 
-          {/* Expanded Details */}
           {isExpanded && (
             <div className="mt-3 pt-3 border-t space-y-3 text-sm">
-              {/* Full Shipping Countries */}
               {shippingCountries.length > 0 && (
                 <div>
                   <p className="font-medium text-xs mb-2 flex items-center gap-1">
@@ -443,7 +413,6 @@ export default function CreatorProductsPage() {
                 </div>
               )}
 
-              {/* Full Certifications */}
               {certifications.length > 0 && (
                 <div>
                   <p className="font-medium text-xs mb-2 flex items-center gap-1">
@@ -473,14 +442,12 @@ export default function CreatorProductsPage() {
                 </div>
               )}
 
-              {/* No Shipping/Cert Info */}
               {shippingCountries.length === 0 && certifications.length === 0 && (
                 <p className="text-xs text-muted-foreground">{t('noShippingInfo')}</p>
               )}
             </div>
           )}
 
-          {/* Pick/Unpick Button */}
           <div className="mt-3">
             {isPicked ? (
               <Button
@@ -540,8 +507,10 @@ export default function CreatorProductsPage() {
             </CardContent>
           </Card>
 
-          {loading ? (
-            <div className="text-center py-8 text-muted-foreground">{tc('loading')}</div>
+          {loading || authLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
@@ -581,7 +550,6 @@ export default function CreatorProductsPage() {
           )}
         </TabsContent>
 
-        {/* Sample Box Tab */}
         <TabsContent value="sample" className="space-y-4">
           <Card>
             <CardHeader>
@@ -592,7 +560,6 @@ export default function CreatorProductsPage() {
               <CardDescription>{t('sampleBoxDesc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Product selection for sample */}
               <div>
                 <Label className="mb-3 block">{t('selectSampleProducts')}</Label>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -622,13 +589,11 @@ export default function CreatorProductsPage() {
                 )}
               </div>
 
-              {/* Shipping Address */}
               <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="h-4 w-4 text-primary" />
                   <Label className="text-sm font-semibold">{t('shippingAddress')}</Label>
                 </div>
-
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t('recipientName')} *</Label>
@@ -647,7 +612,6 @@ export default function CreatorProductsPage() {
                     />
                   </div>
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t('countryRegion')} *</Label>
                   <Select
@@ -668,7 +632,6 @@ export default function CreatorProductsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t('addressLine1')} *</Label>
                   <Input
@@ -677,7 +640,6 @@ export default function CreatorProductsPage() {
                     onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine1: e.target.value })}
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs">{t('addressLine2')}</Label>
                   <Input
@@ -686,7 +648,6 @@ export default function CreatorProductsPage() {
                     onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine2: e.target.value })}
                   />
                 </div>
-
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">{t('city')} *</Label>
@@ -715,7 +676,6 @@ export default function CreatorProductsPage() {
                 </div>
               </div>
 
-              {/* Message */}
               <div className="space-y-2">
                 <Label>{t('sampleMessage')}</Label>
                 <Textarea
@@ -726,7 +686,6 @@ export default function CreatorProductsPage() {
                 />
               </div>
 
-              {/* Submit */}
               <Button
                 className="btn-gold w-full sm:w-auto"
                 disabled={sampleSelectedIds.length === 0 || submittingSample}
@@ -741,7 +700,6 @@ export default function CreatorProductsPage() {
             </CardContent>
           </Card>
 
-          {/* Previous Requests */}
           {sampleRequests.length > 0 && (
             <Card>
               <CardHeader>

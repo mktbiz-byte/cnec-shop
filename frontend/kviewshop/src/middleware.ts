@@ -21,23 +21,27 @@ const buyerRouteRegex = new RegExp(`^/(${LP})/buyer`);
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Handle shop routes (/@username) - these should work without locale prefix
+  // Handle shop routes (/@username) - rewrite to /username (strip @)
+  const shopRouteRegex = new RegExp(`^/(${LP})/@([a-zA-Z0-9_]+)(.*)$`);
+  const shopMatch = pathname.match(shopRouteRegex);
+  if (shopMatch) {
+    const locale = shopMatch[1];
+    const username = shopMatch[2];
+    const rest = shopMatch[3] || '';
+    const newUrl = new URL(`/${locale}/${username}${rest}`, request.url);
+    return NextResponse.rewrite(newUrl);
+  }
+
+  // Handle /@username without locale prefix - redirect to default locale
   if (pathname.startsWith('/@')) {
-    // Redirect to default locale shop route
-    const username = pathname.slice(2);
+    const rest = pathname.slice(2);
     return NextResponse.redirect(
-      new URL(`/${defaultLocale}/@${username}`, request.url)
+      new URL(`/${defaultLocale}/${rest}`, request.url)
     );
   }
 
   // Update Supabase session
   const { supabaseResponse, user } = await updateSession(request);
-
-  // Handle short URL redirects
-  const shortUrlRegex = new RegExp(`^/(${LP})/s/[a-z0-9_]+$`);
-  if (shortUrlRegex.test(pathname)) {
-    // Let the short URL page handle the redirect - pass through
-  }
 
   // Login/signup pages should be accessible without authentication
   const isLoginPage = loginPageRegex.test(pathname);

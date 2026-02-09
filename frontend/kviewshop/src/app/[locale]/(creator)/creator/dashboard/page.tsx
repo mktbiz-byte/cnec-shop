@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/i18n/config';
 import { toast } from 'sonner';
-import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
 
 export default function CreatorDashboardPage() {
   const t = useTranslations('dashboard');
@@ -25,41 +25,10 @@ export default function CreatorDashboardPage() {
   const params = useParams();
   const locale = params.locale as string;
   const [copied, setCopied] = useState(false);
-  const [username, setUsername] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const safetyTimeout = setTimeout(() => {
-      if (!cancelled) setLoading(false);
-    }, 3000);
-
-    async function fetchCreator() {
-      try {
-        const supabase = getClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user && !cancelled) {
-          const { data } = await supabase
-            .from('creators')
-            .select('username')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          if (data && !cancelled) setUsername(data.username);
-        }
-      } catch (error) {
-        console.error('Failed to load creator data:', error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    fetchCreator();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(safetyTimeout);
-    };
-  }, []);
+  // Read auth state from zustand store (populated by Header's useUser hook)
+  const { creator, isLoading: loading } = useAuthStore();
+  const username = creator?.username || '';
 
   const shopUrl = username ? `https://cnecshop.netlify.app/@${username}` : '';
 

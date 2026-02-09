@@ -88,7 +88,15 @@
     "continueShopping": "متابعة التسوق",
     "featured": "مميز",
     "newArrivals": "وصل حديثًا",
-    "bestSellers": "الأكثر مبيعًا"
+    "bestSellers": "الأكثر مبيعًا",
+    "subscribe": "اشتراك",
+    "unsubscribe": "إلغاء الاشتراك",
+    "subscribers": "مشتركين",
+    "noProducts": "لا توجد منتجات بعد",
+    "addedToCart": "!تمت الإضافة",
+    "loginRequired": "يرجى تسجيل الدخول أولاً",
+    "community": "المجتمع",
+    "shareShop": "مشاركة"
   },
   "product": {
     "name": "اسم المنتج",

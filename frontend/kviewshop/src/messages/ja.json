@@ -88,7 +88,15 @@
     "continueShopping": "買い物を続ける",
     "featured": "おすすめ",
     "newArrivals": "新着商品",
-    "bestSellers": "ベストセラー"
+    "bestSellers": "ベストセラー",
+    "subscribe": "フォロー",
+    "unsubscribe": "フォロー解除",
+    "subscribers": "フォロワー",
+    "noProducts": "まだ商品がありません",
+    "addedToCart": "カートに追加しました！",
+    "loginRequired": "ログインしてください",
+    "community": "コミュニティ",
+    "shareShop": "シェア"
   },
   "product": {
     "name": "商品名",

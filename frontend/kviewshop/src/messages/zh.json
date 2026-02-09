@@ -88,7 +88,15 @@
     "continueShopping": "继续购物",
     "featured": "推荐",
     "newArrivals": "新品上架",
-    "bestSellers": "畅销商品"
+    "bestSellers": "畅销商品",
+    "subscribe": "关注",
+    "unsubscribe": "取消关注",
+    "subscribers": "粉丝",
+    "noProducts": "暂无商品",
+    "addedToCart": "已加入购物车！",
+    "loginRequired": "请先登录",
+    "community": "社区",
+    "shareShop": "分享"
   },
   "product": {
     "name": "商品名称",

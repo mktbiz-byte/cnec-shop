@@ -11,10 +11,10 @@ import {
   Package,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/i18n/config';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
 import type { OrderStatus } from '@/types/database';
 
 interface CreatorOrder {
@@ -47,25 +47,31 @@ export default function CreatorOrdersPage() {
   const t = useTranslations('order');
   const tCreator = useTranslations('creator');
 
+  // Read auth state from zustand store (populated by Header's useUser hook)
+  const { creator, isLoading: authLoading } = useAuthStore();
+
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<CreatorOrder[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadOrders() {
+    // Wait for auth store to finish loading
+    if (authLoading) return;
+
+    // No creator = not logged in or wrong role
+    if (!creator) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 8000);
+
+    async function loadOrders(creatorId: string) {
       try {
         const supabase = getClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) { setLoading(false); return; }
-
-        const { data: creator } = await supabase
-          .from('creators')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (!creator) { setLoading(false); return; }
-
         const { data } = await supabase
           .from('orders')
           .select(`
@@ -78,19 +84,26 @@ export default function CreatorOrdersPage() {
               product:products(name_en, name_ko)
             )
           `)
-          .eq('creator_id', creator.id)
+          .eq('creator_id', creatorId)
           .order('created_at', { ascending: false });
 
-        setOrders((data as unknown as CreatorOrder[]) || []);
+        if (!cancelled) {
+          setOrders((data as unknown as CreatorOrder[]) || []);
+        }
       } catch (error) {
         console.error('Failed to load orders:', error);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    loadOrders();
-  }, []);
+    loadOrders(creator.id);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [authLoading, creator]);
 
   const totalRevenue = orders
     .filter(o => o.status !== 'cancelled' && o.status !== 'refunded')
@@ -100,7 +113,7 @@ export default function CreatorOrdersPage() {
     .filter(o => o.status === 'paid' || o.status === 'shipped')
     .reduce((sum, o) => sum + (o.creator_revenue || 0), 0);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

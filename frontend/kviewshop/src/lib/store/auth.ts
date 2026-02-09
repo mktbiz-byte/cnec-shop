@@ -35,6 +35,9 @@ export const useAuthStore = create<AuthState>()(
       name: 'kviewshop-auth',
       partialize: (state) => ({
         user: state.user,
+        brand: state.brand,
+        creator: state.creator,
+        buyer: state.buyer,
       }),
     }
   )
