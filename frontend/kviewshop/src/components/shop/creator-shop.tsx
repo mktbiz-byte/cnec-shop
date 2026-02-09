@@ -558,7 +558,7 @@ export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
       {shopSettings.show_footer && (
         <LegalFooter locale={locale} variant="full" />
       )}
-      <footer className="border-t border-border/50 py-6 px-4">
+      <footer className="border-t border-border/50 py-6 px-4" style={{ backgroundColor: '#1a1a2e' }}>
         <div className="text-center">
           <p className="text-[11px] text-muted-foreground">
             Powered by <span className="font-medium" style={{ color: themeColor }}>CNEC Commerce</span>
