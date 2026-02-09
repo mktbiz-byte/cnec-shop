@@ -102,7 +102,7 @@ export function LegalFooter({ locale, shopName, creatorCountry, variant = 'full'
 
   if (variant === 'minimal') {
     return (
-      <footer className="mt-12 py-6 border-t border-border/30">
+      <footer className="mt-12 py-6 border-t border-border/30" style={{ backgroundColor: '#1a1a2e' }}>
         <div className="container px-4">
           <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
             <Link href={`/${locale}${staticContent.terms.href}`} className="hover:text-foreground transition-colors">
@@ -125,7 +125,7 @@ export function LegalFooter({ locale, shopName, creatorCountry, variant = 'full'
   }
 
   return (
-    <footer className="mt-12 border-t border-border/30 bg-muted/30">
+    <footer className="mt-12 border-t border-border/30" style={{ backgroundColor: '#1a1a2e' }}>
       <div className="container px-4 py-8">
         {/* Main Links */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
