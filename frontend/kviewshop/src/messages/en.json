@@ -596,5 +596,39 @@
     "brandResponsibilityDesc": "Product quality, shipping, returns and exchanges",
     "cnecResponsibility": "CNEC Handles",
     "cnecResponsibilityDesc": "Payment errors, refunds, platform inquiries"
+  },
+  "home": {
+    "title": "Just Focus on Selling",
+    "subtitle": "From customer service to shipping and settlements,\nKviewShop handles everything for you",
+    "creatorCta": "Start as Creator",
+    "brandCta": "Register as Brand",
+    "browseProducts": "Browse Group-Buy Products",
+    "featuredProducts": "Products Available Now",
+    "featuredProductsDesc": "Pick verified products from brands and focus only on selling",
+    "howItWorks": "How It Works",
+    "step1Title": "Pick Products",
+    "step1Desc": "Choose from brand-registered group-buy products and add them to your shop",
+    "step2Title": "Focus on Sales",
+    "step2Desc": "Sell through SNS and live streams. KviewShop handles the rest",
+    "step3Title": "Auto Settlement",
+    "step3Desc": "CS, shipping, refunds, and revenue settlement — all automated",
+    "whyKviewshop": "Why KviewShop?",
+    "benefit1Title": "CS Support",
+    "benefit1Desc": "KviewShop handles customer inquiries, exchanges, and returns for you",
+    "benefit2Title": "Shipping",
+    "benefit2Desc": "Worry-free logistics with shipping infrastructure across 11 countries",
+    "benefit3Title": "Auto Settlement",
+    "benefit3Desc": "Transparent revenue settlement, automatically processed every month",
+    "benefit4Title": "Certified Products",
+    "benefit4Desc": "Only verified products with FDA, KFDA, and international certifications",
+    "stats": {
+      "products": "Products",
+      "creators": "Active Creators",
+      "countries": "Shipping Countries",
+      "brands": "Partner Brands"
+    },
+    "ctaTitle": "Get Started Now",
+    "ctaDesc": "Just sell. Leave everything else to KviewShop.",
+    "loginLink": "Already have an account?"
   }
 }

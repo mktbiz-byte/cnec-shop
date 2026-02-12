@@ -596,5 +596,39 @@
     "brandResponsibilityDesc": "商品品質、配送、返品・交換",
     "cnecResponsibility": "CNEC担当",
     "cnecResponsibilityDesc": "決済エラー、返金、プラットフォームに関するお問い合わせ"
+  },
+  "home": {
+    "title": "販売だけに集中してください",
+    "subtitle": "カスタマーサービスから配送、精算まで、\nKviewShopがすべて対応します",
+    "creatorCta": "クリエイターとして始める",
+    "brandCta": "ブランドとして登録",
+    "browseProducts": "共同購入商品を見る",
+    "featuredProducts": "現在販売中の商品",
+    "featuredProductsDesc": "ブランド認証済みの商品を選んで、販売だけに集中しましょう",
+    "howItWorks": "仕組み",
+    "step1Title": "商品を選ぶ",
+    "step1Desc": "ブランドが登録した共同購入商品を選んで、あなたのショップに追加",
+    "step2Title": "販売に集中",
+    "step2Desc": "SNSやライブ配信で販売。あとはKviewShopにお任せ",
+    "step3Title": "自動精算",
+    "step3Desc": "CS、配送、返品、売上精算——すべて自動化",
+    "whyKviewshop": "なぜKviewShop？",
+    "benefit1Title": "CSサポート",
+    "benefit1Desc": "お客様からのお問い合わせ、交換、返品をKviewShopが対応",
+    "benefit2Title": "配送",
+    "benefit2Desc": "11か国の配送インフラで物流の心配なし",
+    "benefit3Title": "自動精算",
+    "benefit3Desc": "透明な売上精算を毎月自動処理",
+    "benefit4Title": "認証済み商品",
+    "benefit4Desc": "FDA、KFDA、国際認証を取得した検証済み商品のみ",
+    "stats": {
+      "products": "商品数",
+      "creators": "アクティブクリエイター",
+      "countries": "配送対応国",
+      "brands": "パートナーブランド"
+    },
+    "ctaTitle": "今すぐ始めましょう",
+    "ctaDesc": "販売だけしてください。残りはKviewShopにお任せを。",
+    "loginLink": "すでにアカウントをお持ちですか？"
   }
 }

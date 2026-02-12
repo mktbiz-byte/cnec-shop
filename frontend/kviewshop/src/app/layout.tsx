@@ -4,12 +4,12 @@ import { Toaster } from '@/components/ui/sonner';
 
 export const metadata: Metadata = {
   title: {
-    default: 'KviewShop - Global Beauty Incubator',
+    default: 'KviewShop - 이제 공구는 판매만 하세요',
     template: '%s | KviewShop',
   },
   description:
-    'Data-Driven Global Beauty Incubator. Premium K-Beauty products curated by your favorite creators.',
-  keywords: ['K-Beauty', 'Korean cosmetics', 'beauty', 'skincare', 'makeup', 'influencer', 'creator shop'],
+    'C/S부터 배송에 정산까지 원스톱으로. 크리에이터를 위한 공동구매 플랫폼 KviewShop',
+  keywords: ['공동구매', '공구', '크리에이터', 'K-Beauty', 'Korean cosmetics', 'beauty', 'influencer', 'creator shop', 'group buy'],
   authors: [{ name: 'KviewShop' }],
   openGraph: {
     type: 'website',

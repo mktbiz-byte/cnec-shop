@@ -467,5 +467,39 @@
     "brandResponsibilityDesc": "Qualidade do produto, envio, devolucoes e trocas",
     "cnecResponsibility": "Responsabilidade CNEC",
     "cnecResponsibilityDesc": "Erros de pagamento, reembolsos, consultas da plataforma"
+  },
+  "home": {
+    "title": "Foque apenas em vender",
+    "subtitle": "Do atendimento ao cliente até envios e liquidações,\nKviewShop cuida de tudo para você",
+    "creatorCta": "Começar como criador",
+    "brandCta": "Registrar como marca",
+    "browseProducts": "Explorar produtos de compra coletiva",
+    "featuredProducts": "Produtos disponíveis agora",
+    "featuredProductsDesc": "Escolha produtos verificados de marcas e foque apenas em vender",
+    "howItWorks": "Como funciona",
+    "step1Title": "Escolha produtos",
+    "step1Desc": "Selecione produtos de compra coletiva registrados por marcas e adicione à sua loja",
+    "step2Title": "Foque nas vendas",
+    "step2Desc": "Venda pelas redes sociais e transmissões ao vivo. KviewShop cuida do resto",
+    "step3Title": "Liquidação automática",
+    "step3Desc": "Atendimento, envios, reembolsos e liquidação de receitas — tudo automatizado",
+    "whyKviewshop": "Por que KviewShop?",
+    "benefit1Title": "Suporte ao cliente",
+    "benefit1Desc": "KviewShop gerencia consultas, trocas e devoluções dos seus clientes",
+    "benefit2Title": "Envios",
+    "benefit2Desc": "Logística descomplicada com infraestrutura de envio em 11 países",
+    "benefit3Title": "Liquidação automática",
+    "benefit3Desc": "Liquidação transparente de receitas, processada automaticamente todo mês",
+    "benefit4Title": "Produtos certificados",
+    "benefit4Desc": "Apenas produtos verificados com certificações FDA, KFDA e internacionais",
+    "stats": {
+      "products": "Produtos",
+      "creators": "Criadores ativos",
+      "countries": "Países de envio",
+      "brands": "Marcas parceiras"
+    },
+    "ctaTitle": "Comece agora",
+    "ctaDesc": "Apenas venda. Deixe todo o resto com KviewShop.",
+    "loginLink": "Já tem uma conta?"
   }
 }

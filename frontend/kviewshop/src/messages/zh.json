@@ -467,5 +467,39 @@
     "brandResponsibilityDesc": "产品质量、物流配送、退货退换",
     "cnecResponsibility": "CNEC负责",
     "cnecResponsibilityDesc": "支付错误、退款、平台咨询"
+  },
+  "home": {
+    "title": "专注于销售就好",
+    "subtitle": "从客户服务到物流配送和结算，\nKviewShop为您处理一切",
+    "creatorCta": "成为创作者",
+    "brandCta": "注册品牌",
+    "browseProducts": "浏览团购商品",
+    "featuredProducts": "正在销售的商品",
+    "featuredProductsDesc": "挑选品牌认证商品，专注于销售即可",
+    "howItWorks": "运作方式",
+    "step1Title": "选择商品",
+    "step1Desc": "从品牌注册的团购商品中选择，添加到您的店铺",
+    "step2Title": "专注销售",
+    "step2Desc": "通过社交媒体和直播进行销售，其余交给KviewShop",
+    "step3Title": "自动结算",
+    "step3Desc": "客服、物流、退款和收益结算——全部自动化",
+    "whyKviewshop": "为什么选择KviewShop？",
+    "benefit1Title": "客服支持",
+    "benefit1Desc": "KviewShop为您处理客户咨询、换货和退货",
+    "benefit2Title": "物流配送",
+    "benefit2Desc": "覆盖11个国家的物流基础设施，让您无后顾之忧",
+    "benefit3Title": "自动结算",
+    "benefit3Desc": "透明的收益结算，每月自动处理",
+    "benefit4Title": "认证商品",
+    "benefit4Desc": "仅提供通过FDA、KFDA及国际认证的验证商品",
+    "stats": {
+      "products": "商品数",
+      "creators": "活跃创作者",
+      "countries": "配送国家",
+      "brands": "合作品牌"
+    },
+    "ctaTitle": "立即开始",
+    "ctaDesc": "只管销售，其余的交给KviewShop。",
+    "loginLink": "已有账户？"
   }
 }

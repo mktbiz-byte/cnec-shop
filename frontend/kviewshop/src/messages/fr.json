@@ -467,5 +467,39 @@
     "brandResponsibilityDesc": "Qualite produit, livraison, retours et echanges",
     "cnecResponsibility": "CNEC responsable",
     "cnecResponsibilityDesc": "Erreurs de paiement, remboursements, demandes plateforme"
+  },
+  "home": {
+    "title": "Concentrez-vous uniquement sur la vente",
+    "subtitle": "Du service client aux expéditions et règlements,\nKviewShop s'occupe de tout pour vous",
+    "creatorCta": "Commencer en tant que créateur",
+    "brandCta": "S'inscrire en tant que marque",
+    "browseProducts": "Parcourir les produits d'achat groupé",
+    "featuredProducts": "Produits disponibles maintenant",
+    "featuredProductsDesc": "Choisissez des produits vérifiés de marques et concentrez-vous uniquement sur la vente",
+    "howItWorks": "Comment ça marche",
+    "step1Title": "Choisissez les produits",
+    "step1Desc": "Sélectionnez des produits d'achat groupé enregistrés par les marques et ajoutez-les à votre boutique",
+    "step2Title": "Concentrez-vous sur les ventes",
+    "step2Desc": "Vendez via les réseaux sociaux et le streaming en direct. KviewShop s'occupe du reste",
+    "step3Title": "Règlement automatique",
+    "step3Desc": "Service client, expéditions, remboursements et règlement des revenus — tout est automatisé",
+    "whyKviewshop": "Pourquoi KviewShop ?",
+    "benefit1Title": "Support client",
+    "benefit1Desc": "KviewShop gère les demandes, échanges et retours de vos clients",
+    "benefit2Title": "Expéditions",
+    "benefit2Desc": "Logistique sans souci grâce à une infrastructure d'expédition dans 11 pays",
+    "benefit3Title": "Règlement automatique",
+    "benefit3Desc": "Règlement transparent des revenus, traité automatiquement chaque mois",
+    "benefit4Title": "Produits certifiés",
+    "benefit4Desc": "Uniquement des produits vérifiés avec des certifications FDA, KFDA et internationales",
+    "stats": {
+      "products": "Produits",
+      "creators": "Créateurs actifs",
+      "countries": "Pays de livraison",
+      "brands": "Marques partenaires"
+    },
+    "ctaTitle": "Commencez maintenant",
+    "ctaDesc": "Vendez, c'est tout. Laissez le reste à KviewShop.",
+    "loginLink": "Vous avez déjà un compte ?"
   }
 }

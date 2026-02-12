@@ -467,5 +467,39 @@
     "brandResponsibilityDesc": "Qualita prodotto, spedizione, resi e cambi",
     "cnecResponsibility": "Gestito da CNEC",
     "cnecResponsibilityDesc": "Errori di pagamento, rimborsi, richieste piattaforma"
+  },
+  "home": {
+    "title": "Concentrati solo sulla vendita",
+    "subtitle": "Dal servizio clienti alle spedizioni e liquidazioni,\nKviewShop gestisce tutto per te",
+    "creatorCta": "Inizia come creatore",
+    "brandCta": "Registrati come brand",
+    "browseProducts": "Esplora i prodotti di acquisto di gruppo",
+    "featuredProducts": "Prodotti disponibili ora",
+    "featuredProductsDesc": "Scegli prodotti verificati dai brand e concentrati solo sulla vendita",
+    "howItWorks": "Come funziona",
+    "step1Title": "Scegli i prodotti",
+    "step1Desc": "Seleziona prodotti di acquisto di gruppo registrati dai brand e aggiungili al tuo negozio",
+    "step2Title": "Concentrati sulle vendite",
+    "step2Desc": "Vendi tramite social e live streaming. KviewShop si occupa del resto",
+    "step3Title": "Liquidazione automatica",
+    "step3Desc": "Assistenza clienti, spedizioni, rimborsi e liquidazione ricavi — tutto automatizzato",
+    "whyKviewshop": "Perché KviewShop?",
+    "benefit1Title": "Supporto clienti",
+    "benefit1Desc": "KviewShop gestisce richieste, cambi e resi dei tuoi clienti",
+    "benefit2Title": "Spedizioni",
+    "benefit2Desc": "Logistica senza pensieri con infrastruttura di spedizione in 11 paesi",
+    "benefit3Title": "Liquidazione automatica",
+    "benefit3Desc": "Liquidazione trasparente dei ricavi, elaborata automaticamente ogni mese",
+    "benefit4Title": "Prodotti certificati",
+    "benefit4Desc": "Solo prodotti verificati con certificazioni FDA, KFDA e internazionali",
+    "stats": {
+      "products": "Prodotti",
+      "creators": "Creatori attivi",
+      "countries": "Paesi di spedizione",
+      "brands": "Brand partner"
+    },
+    "ctaTitle": "Inizia subito",
+    "ctaDesc": "Vendi e basta. Lascia tutto il resto a KviewShop.",
+    "loginLink": "Hai già un account?"
   }
 }

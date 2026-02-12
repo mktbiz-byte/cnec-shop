@@ -467,5 +467,39 @@
     "brandResponsibilityDesc": "Produktqualitat, Versand, Rucksendungen und Umtausch",
     "cnecResponsibility": "CNEC zustandig",
     "cnecResponsibilityDesc": "Zahlungsfehler, Erstattungen, Plattform-Anfragen"
+  },
+  "home": {
+    "title": "Konzentrieren Sie sich nur auf den Verkauf",
+    "subtitle": "Vom Kundenservice über Versand bis zur Abrechnung —\nKviewShop kümmert sich um alles für Sie",
+    "creatorCta": "Als Creator starten",
+    "brandCta": "Als Marke registrieren",
+    "browseProducts": "Gruppenkauf-Produkte durchsuchen",
+    "featuredProducts": "Jetzt verfügbare Produkte",
+    "featuredProductsDesc": "Wählen Sie verifizierte Produkte von Marken und konzentrieren Sie sich nur auf den Verkauf",
+    "howItWorks": "So funktioniert es",
+    "step1Title": "Produkte auswählen",
+    "step1Desc": "Wählen Sie von Marken registrierte Gruppenkauf-Produkte und fügen Sie sie Ihrem Shop hinzu",
+    "step2Title": "Auf Verkauf konzentrieren",
+    "step2Desc": "Verkaufen Sie über Social Media und Livestreams. KviewShop erledigt den Rest",
+    "step3Title": "Automatische Abrechnung",
+    "step3Desc": "Kundenservice, Versand, Rückerstattungen und Umsatzabrechnung — alles automatisiert",
+    "whyKviewshop": "Warum KviewShop?",
+    "benefit1Title": "Kundenservice",
+    "benefit1Desc": "KviewShop bearbeitet Kundenanfragen, Umtausch und Rücksendungen für Sie",
+    "benefit2Title": "Versand",
+    "benefit2Desc": "Sorgenfreie Logistik mit Versandinfrastruktur in 11 Ländern",
+    "benefit3Title": "Automatische Abrechnung",
+    "benefit3Desc": "Transparente Umsatzabrechnung, jeden Monat automatisch verarbeitet",
+    "benefit4Title": "Zertifizierte Produkte",
+    "benefit4Desc": "Nur verifizierte Produkte mit FDA-, KFDA- und internationalen Zertifizierungen",
+    "stats": {
+      "products": "Produkte",
+      "creators": "Aktive Creators",
+      "countries": "Versandländer",
+      "brands": "Partnermarken"
+    },
+    "ctaTitle": "Jetzt loslegen",
+    "ctaDesc": "Einfach verkaufen. Überlassen Sie alles andere KviewShop.",
+    "loginLink": "Bereits ein Konto?"
   }
 }

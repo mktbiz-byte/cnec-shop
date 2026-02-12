@@ -467,5 +467,39 @@
     "brandResponsibilityDesc": "Calidad del producto, envio, devoluciones y cambios",
     "cnecResponsibility": "Responsabilidad de CNEC",
     "cnecResponsibilityDesc": "Errores de pago, reembolsos, consultas de plataforma"
+  },
+  "home": {
+    "title": "Solo concéntrate en vender",
+    "subtitle": "Desde atención al cliente hasta envíos y liquidaciones,\nKviewShop se encarga de todo por ti",
+    "creatorCta": "Comenzar como creador",
+    "brandCta": "Registrarse como marca",
+    "browseProducts": "Explorar productos de compra grupal",
+    "featuredProducts": "Productos disponibles ahora",
+    "featuredProductsDesc": "Elige productos verificados de marcas y concéntrate solo en vender",
+    "howItWorks": "Cómo funciona",
+    "step1Title": "Elige productos",
+    "step1Desc": "Selecciona productos de compra grupal registrados por marcas y agrégalos a tu tienda",
+    "step2Title": "Concéntrate en vender",
+    "step2Desc": "Vende a través de redes sociales y transmisiones en vivo. KviewShop se encarga del resto",
+    "step3Title": "Liquidación automática",
+    "step3Desc": "Atención al cliente, envíos, reembolsos y liquidación de ingresos — todo automatizado",
+    "whyKviewshop": "¿Por qué KviewShop?",
+    "benefit1Title": "Soporte al cliente",
+    "benefit1Desc": "KviewShop gestiona las consultas, cambios y devoluciones de tus clientes",
+    "benefit2Title": "Envíos",
+    "benefit2Desc": "Logística sin preocupaciones con infraestructura de envío en 11 países",
+    "benefit3Title": "Liquidación automática",
+    "benefit3Desc": "Liquidación de ingresos transparente, procesada automáticamente cada mes",
+    "benefit4Title": "Productos certificados",
+    "benefit4Desc": "Solo productos verificados con certificaciones FDA, KFDA e internacionales",
+    "stats": {
+      "products": "Productos",
+      "creators": "Creadores activos",
+      "countries": "Países de envío",
+      "brands": "Marcas asociadas"
+    },
+    "ctaTitle": "Comienza ahora",
+    "ctaDesc": "Solo vende. Deja todo lo demás a KviewShop.",
+    "loginLink": "¿Ya tienes una cuenta?"
   }
 }

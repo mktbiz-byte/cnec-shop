@@ -619,5 +619,39 @@
     "brandResponsibilityDesc": "상품 품질, 배송, 반품 및 교환",
     "cnecResponsibility": "CNEC 담당",
     "cnecResponsibilityDesc": "결제 오류, 환불, 플랫폼 문의"
+  },
+  "home": {
+    "title": "이제 공구는 판매만 하세요",
+    "subtitle": "C/S부터 배송에 정산까지\nKviewShop에서 원스톱으로 해드릴게요",
+    "creatorCta": "크리에이터 시작하기",
+    "brandCta": "기업(브랜드) 입점하기",
+    "browseProducts": "공구 상품 둘러보기",
+    "featuredProducts": "지금 공구 가능한 상품",
+    "featuredProductsDesc": "기업이 등록한 검증된 공구 상품을 선택하고, 판매만 집중하세요",
+    "howItWorks": "이렇게 진행돼요",
+    "step1Title": "상품 선택",
+    "step1Desc": "기업이 등록한 공구 상품 중 원하는 상품을 골라 내 샵에 추가하세요",
+    "step2Title": "판매에 집중",
+    "step2Desc": "SNS, 라이브 방송으로 판매만 하세요. 나머지는 KviewShop이 처리합니다",
+    "step3Title": "자동 정산",
+    "step3Desc": "C/S, 배송, 환불 처리부터 수익 정산까지 모두 자동으로 진행됩니다",
+    "whyKviewshop": "왜 KviewShop인가요?",
+    "benefit1Title": "C/S 대행",
+    "benefit1Desc": "고객 문의, 교환/반품 처리를 KviewShop이 대신합니다",
+    "benefit2Title": "배송 관리",
+    "benefit2Desc": "전세계 11개국 배송 인프라로 걱정 없는 물류 처리",
+    "benefit3Title": "정산 자동화",
+    "benefit3Desc": "투명한 수익 정산, 매월 자동으로 정산됩니다",
+    "benefit4Title": "인증 상품",
+    "benefit4Desc": "FDA, KFDA 등 각국 인증을 갖춘 검증된 상품만 취급",
+    "stats": {
+      "products": "등록 상품",
+      "creators": "활동 크리에이터",
+      "countries": "배송 가능국",
+      "brands": "입점 브랜드"
+    },
+    "ctaTitle": "지금 바로 시작하세요",
+    "ctaDesc": "판매만 하면 됩니다. 나머지는 전부 KviewShop에 맡기세요.",
+    "loginLink": "이미 계정이 있으신가요?"
   }
 }
