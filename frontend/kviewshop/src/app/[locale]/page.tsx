@@ -1,7 +1,8 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
@@ -21,9 +22,11 @@ import {
   Zap,
   Users,
   CheckCircle2,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LegalFooter } from '@/components/shop/legal-footer';
+import { locales, localeNames, type Locale } from '@/lib/i18n/config';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 24 },
@@ -39,6 +42,24 @@ export default function HomePage() {
   const params = useParams();
   const locale = (params.locale as string) || 'en';
   const t = useTranslations('home');
+  const router = useRouter();
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function switchLocale(newLocale: Locale) {
+    setLangOpen(false);
+    router.push(`/${newLocale}`);
+  }
 
   const steps = [
     { icon: ShoppingBag, title: t('step1Title'), desc: t('step1Desc') },
@@ -61,39 +82,15 @@ export default function HomePage() {
   ];
 
   const forCreators = [
-    {
-      icon: ShoppingBag,
-      title: locale === 'ko' ? '상품만 고르세요' : 'Just Pick Products',
-      desc: locale === 'ko' ? '기업이 등록한 검증된 공구 상품 중 마음에 드는 상품을 골라 내 샵에 추가하세요' : 'Browse verified group-buy products from brands and add them to your shop',
-    },
-    {
-      icon: Megaphone,
-      title: locale === 'ko' ? '판매만 집중하세요' : 'Focus Only on Selling',
-      desc: locale === 'ko' ? 'SNS, 유튜브, 라이브 방송으로 판매만 하면 됩니다. 재고 걱정 없어요' : 'Sell through SNS, YouTube, live streams. No inventory worries',
-    },
-    {
-      icon: Wallet,
-      title: locale === 'ko' ? '수익은 자동 정산' : 'Auto Revenue Settlement',
-      desc: locale === 'ko' ? '판매 실적에 따른 수수료가 매월 자동으로 정산됩니다' : 'Commission based on sales performance, settled automatically every month',
-    },
+    { icon: ShoppingBag, title: t('forCreator1Title'), desc: t('forCreator1Desc') },
+    { icon: Megaphone, title: t('forCreator2Title'), desc: t('forCreator2Desc') },
+    { icon: Wallet, title: t('forCreator3Title'), desc: t('forCreator3Desc') },
   ];
 
   const forBrands = [
-    {
-      icon: Store,
-      title: locale === 'ko' ? '상품 등록' : 'Register Products',
-      desc: locale === 'ko' ? '공구 상품을 등록하면 크리에이터들이 선택하여 판매합니다' : 'Register products and creators will pick and sell them',
-    },
-    {
-      icon: Users,
-      title: locale === 'ko' ? '크리에이터 네트워크' : 'Creator Network',
-      desc: locale === 'ko' ? '1,200+ 크리에이터가 내 상품을 홍보하고 판매합니다' : '1,200+ creators promote and sell your products',
-    },
-    {
-      icon: BarChart3,
-      title: locale === 'ko' ? '매출 확대' : 'Scale Revenue',
-      desc: locale === 'ko' ? '다양한 채널을 통해 상품 노출과 매출을 극대화하세요' : 'Maximize product exposure and sales through diverse channels',
-    },
+    { icon: Store, title: t('forBrand1Title'), desc: t('forBrand1Desc') },
+    { icon: Users, title: t('forBrand2Title'), desc: t('forBrand2Desc') },
+    { icon: BarChart3, title: t('forBrand3Title'), desc: t('forBrand3Desc') },
   ];
 
   return (
@@ -105,6 +102,32 @@ export default function HomePage() {
             KviewShop
           </Link>
           <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="relative" ref={langRef}>
+              <button
+                onClick={() => setLangOpen(!langOpen)}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">{localeNames[locale as Locale] || locale}</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {langOpen && (
+                <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-border bg-card shadow-lg py-1 z-50">
+                  {locales.map((l) => (
+                    <button
+                      key={l}
+                      onClick={() => switchLocale(l)}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-muted/50 ${
+                        l === locale ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {localeNames[l]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Link href={`/${locale}/creator/login`}>
               <Button variant="ghost" size="sm">
                 {t('creatorCta')}
@@ -140,7 +163,7 @@ export default function HomePage() {
               transition={{ duration: 0.5 }}
             >
               <Zap className="h-3.5 w-3.5" />
-              {locale === 'ko' ? '크리에이터 공구 플랫폼' : 'Creator Group-Buy Platform'}
+              {t('badge')}
             </motion.div>
 
             <motion.h1
@@ -226,9 +249,7 @@ export default function HomePage() {
           >
             <h2 className="font-headline text-3xl font-bold md:text-4xl">{t('howItWorks')}</h2>
             <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
-              {locale === 'ko'
-                ? '기업이 상품을 등록하면 크리에이터가 선택하여 판매합니다. 나머지는 KviewShop이 처리합니다.'
-                : 'Brands register products, creators pick and sell them. KviewShop handles the rest.'}
+              {t('howItWorksDesc')}
             </p>
           </motion.div>
 
@@ -250,15 +271,13 @@ export default function HomePage() {
                 <Package className="h-8 w-8 text-accent" />
               </div>
               <span className="inline-block rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent mb-3">
-                {locale === 'ko' ? '기업(브랜드)' : 'Brand'}
+                {t('brandLabel')}
               </span>
               <h3 className="text-lg font-semibold mb-2">
-                {locale === 'ko' ? '공구 상품 등록' : 'Register Products'}
+                {t('brandFlowTitle')}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {locale === 'ko'
-                  ? '검증된 공구 상품을 등록하고 크리에이터에게 판매를 맡기세요'
-                  : 'Register verified products and let creators handle the sales'}
+                {t('brandFlowDesc')}
               </p>
             </motion.div>
 
@@ -285,24 +304,24 @@ export default function HomePage() {
                   KviewShop
                 </span>
                 <h3 className="text-lg font-semibold mb-2">
-                  {locale === 'ko' ? '원스톱 운영 대행' : 'One-Stop Operations'}
+                  {t('kviewshopFlowTitle')}
                 </h3>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>{locale === 'ko' ? 'C/S 고객 대응' : 'Customer Service'}</span>
+                    <span>{t('kviewshopFlowCS')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>{locale === 'ko' ? '배송 및 물류' : 'Shipping & Logistics'}</span>
+                    <span>{t('kviewshopFlowShipping')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>{locale === 'ko' ? '정산 자동화' : 'Auto Settlement'}</span>
+                    <span>{t('kviewshopFlowSettlement')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span>{locale === 'ko' ? '교환/반품 처리' : 'Returns & Exchanges'}</span>
+                    <span>{t('kviewshopFlowReturns')}</span>
                   </div>
                 </div>
               </div>
@@ -318,15 +337,13 @@ export default function HomePage() {
                 <Megaphone className="h-8 w-8 text-primary" />
               </div>
               <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-3">
-                {locale === 'ko' ? '크리에이터' : 'Creator'}
+                {t('creatorLabel')}
               </span>
               <h3 className="text-lg font-semibold mb-2">
-                {locale === 'ko' ? '상품 선택 & 판매' : 'Pick & Sell'}
+                {t('creatorFlowTitle')}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                {locale === 'ko'
-                  ? '원하는 상품을 골라 내 샵에 추가하고 SNS, 라이브로 판매하세요'
-                  : 'Pick products for your shop and sell through SNS and live streams'}
+                {t('creatorFlowDesc')}
               </p>
             </motion.div>
           </motion.div>
@@ -345,7 +362,7 @@ export default function HomePage() {
             transition={{ duration: 0.5 }}
           >
             <h2 className="font-headline text-3xl font-bold md:text-4xl">
-              {locale === 'ko' ? '크리에이터 3단계' : '3 Steps for Creators'}
+              {t('creatorStepsTitle')}
             </h2>
           </motion.div>
 
@@ -442,10 +459,10 @@ export default function HomePage() {
             >
               <motion.div variants={fadeInUp} transition={{ duration: 0.5 }}>
                 <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-4">
-                  {locale === 'ko' ? '크리에이터' : 'For Creators'}
+                  {t('forCreatorsLabel')}
                 </span>
                 <h3 className="font-headline text-2xl font-bold md:text-3xl mb-8">
-                  {locale === 'ko' ? '판매에만 집중하세요' : 'Focus Only on Sales'}
+                  {t('forCreatorsTitle')}
                 </h3>
               </motion.div>
               <div className="space-y-6">
@@ -485,10 +502,10 @@ export default function HomePage() {
             >
               <motion.div variants={fadeInUp} transition={{ duration: 0.5 }}>
                 <span className="inline-block rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent mb-4">
-                  {locale === 'ko' ? '기업(브랜드)' : 'For Brands'}
+                  {t('forBrandsLabel')}
                 </span>
                 <h3 className="font-headline text-2xl font-bold md:text-3xl mb-8">
-                  {locale === 'ko' ? '크리에이터에게 판매를 맡기세요' : 'Let Creators Sell for You'}
+                  {t('forBrandsTitle')}
                 </h3>
               </motion.div>
               <div className="space-y-6">
@@ -575,12 +592,10 @@ export default function HomePage() {
             <Globe className="h-10 w-10 text-primary shrink-0" />
             <div>
               <h3 className="text-xl font-semibold">
-                {locale === 'ko' ? '전세계 11개국 배송 인프라' : 'Global Shipping to 11 Countries'}
+                {t('globalReachTitle')}
               </h3>
               <p className="text-muted-foreground mt-1">
-                {locale === 'ko'
-                  ? '일본, 미국, 중국, 동남아, 유럽 등 전세계 크리에이터와 함께하세요'
-                  : 'Connect with creators worldwide — Japan, US, China, SEA, Europe and more'}
+                {t('globalReachDesc')}
               </p>
             </div>
           </motion.div>

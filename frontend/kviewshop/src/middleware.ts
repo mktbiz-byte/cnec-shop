@@ -1,12 +1,65 @@
 import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
-import { locales, defaultLocale, localePattern } from '@/lib/i18n/config';
+import { locales, defaultLocale, localePattern, type Locale } from '@/lib/i18n/config';
+
+// Country code → locale mapping for IP-based (geo) detection
+const countryToLocale: Record<string, Locale> = {
+  KR: 'ko',
+  JP: 'ja',
+  US: 'en',
+  GB: 'en',
+  AU: 'en',
+  CA: 'en',
+  NZ: 'en',
+  ES: 'es',
+  MX: 'es',
+  AR: 'es',
+  CL: 'es',
+  CO: 'es',
+  IT: 'it',
+  RU: 'ru',
+  KZ: 'ru',
+  UZ: 'ru',
+  AE: 'ar',
+  SA: 'ar',
+  KW: 'ar',
+  QA: 'ar',
+  BH: 'ar',
+  CN: 'zh',
+  TW: 'zh',
+  HK: 'zh',
+  FR: 'fr',
+  BR: 'pt',
+  PT: 'pt',
+  DE: 'de',
+  AT: 'de',
+  CH: 'de',
+};
+
+/**
+ * Detect locale from geo headers (IP-based).
+ * Supports: Vercel (x-vercel-ip-country), Cloudflare (cf-ipcountry),
+ * AWS CloudFront (cloudfront-viewer-country), and generic x-country-code.
+ */
+function detectLocaleFromGeo(request: NextRequest): Locale | null {
+  const country =
+    request.headers.get('x-vercel-ip-country') ||
+    request.headers.get('cf-ipcountry') ||
+    request.headers.get('cloudfront-viewer-country') ||
+    request.headers.get('x-country-code');
+
+  if (!country) return null;
+
+  const locale = countryToLocale[country.toUpperCase()];
+  return locale || null;
+}
 
 const intlMiddleware = createMiddleware({
   locales,
   defaultLocale,
   localePrefix: 'always',
+  localeDetection: true,
 });
 
 // Build regex patterns dynamically from config
@@ -38,6 +91,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(
       new URL(`/${defaultLocale}/${rest}`, request.url)
     );
+  }
+
+  // Geo-based locale detection: redirect root or unlocalized paths to detected locale
+  const hasLocalePrefix = locales.some(
+    (l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`)
+  );
+  if (!hasLocalePrefix && pathname === '/') {
+    const geoLocale = detectLocaleFromGeo(request);
+    if (geoLocale && geoLocale !== defaultLocale) {
+      return NextResponse.redirect(new URL(`/${geoLocale}`, request.url));
+    }
   }
 
   // Update Supabase session
