@@ -1,587 +1,573 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/button';
+import { useParams } from 'next/navigation';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
-import { formatCurrency } from '@/lib/i18n/config';
-import { useCartStore } from '@/lib/store/auth';
+import { Instagram } from 'lucide-react';
+import type {
+  Creator,
+  CreatorShopItem,
+  Collection,
+  SkinType,
+  PersonalColor,
+} from '@/types/database';
 import {
-  ShoppingCart,
-  Plus,
-  Minus,
-  Instagram,
-  Youtube,
-  Bell,
-  BellOff,
-  Award,
-  MessageSquare,
-  Music2,
-  Loader2,
-  Share2,
-  ChevronRight,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import type { Product, SocialLinks, Country } from '@/types/database';
-import { LegalFooter } from '@/components/shop/legal-footer';
-import { getClient } from '@/lib/supabase/client';
+  SKIN_TYPE_LABELS,
+  PERSONAL_COLOR_LABELS,
+} from '@/types/database';
 
-const levelColors: Record<string, { color: string; name: string }> = {
-  bronze: { color: '#CD7F32', name: 'Bronze' },
-  silver: { color: '#C0C0C0', name: 'Silver' },
-  gold: { color: '#FFD700', name: 'Gold' },
-  platinum: { color: '#E5E4E2', name: 'Platinum' },
-  diamond: { color: '#B9F2FF', name: 'Diamond' },
-};
+// =============================================
+// Props
+// =============================================
 
-interface ShopSettings {
-  show_footer: boolean;
-  show_social_links: boolean;
-  show_subscriber_count: boolean;
-  layout: 'grid' | 'list';
-  products_per_row: number;
-  show_prices: boolean;
-  announcement: string;
-  announcement_active: boolean;
-}
-
-interface CreatorShopProps {
-  creator: {
-    id: string;
-    username: string;
-    displayName?: string;
-    profileImage?: string;
-    bio?: string;
-    themeColor: string;
-    backgroundColor?: string;
-    country: Country;
-    socialLinks?: SocialLinks;
-    instagram?: string;
-    youtube?: string;
-    tiktok?: string;
-    level?: string;
-    communityEnabled?: boolean;
-    shopSettings?: ShopSettings;
-  };
-  products: (Product & { displayOrder: number; isFeatured: boolean })[];
+interface CreatorShopPageProps {
+  creator: Creator;
+  shopItems: CreatorShopItem[];
+  collections: Collection[];
   locale: string;
 }
 
-function getCurrencyForLocale(locale: string): string {
-  const map: Record<string, string> = {
-    en: 'USD', ja: 'JPY', ko: 'KRW', es: 'EUR', it: 'EUR',
-    fr: 'EUR', de: 'EUR', ru: 'RUB', ar: 'AED', zh: 'CNY', pt: 'BRL',
-  };
-  return map[locale] || 'USD';
+// =============================================
+// Helpers
+// =============================================
+
+function formatKRW(amount: number): string {
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: 'KRW',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
-function getProductName(product: Product, locale: string): string {
-  if (locale === 'ja' && product.name_jp) return product.name_jp;
-  if (locale === 'ko' && product.name_ko) return product.name_ko;
-  return product.name_en || product.name || '';
+function calculateDDay(endAt: string | undefined): string {
+  if (!endAt) return '';
+  const now = new Date();
+  const end = new Date(endAt);
+  const diff = end.getTime() - now.getTime();
+  if (diff <= 0) return '마감';
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'D-Day';
+  return `D-${days}`;
 }
 
-function getProductPrice(product: Product, currency: string): number {
-  if (currency === 'JPY' && product.price_jpy) return product.price_jpy;
-  if (currency === 'KRW' && product.price_krw) return product.price_krw;
-  if (currency === 'EUR' && product.price_eur) return product.price_eur;
-  return product.price_usd || product.price || 0;
+function calculateDiscountPercent(original: number, sale: number): number {
+  if (original <= 0) return 0;
+  return Math.round(((original - sale) / original) * 100);
 }
 
-function MobileProductCard({
-  product,
+// =============================================
+// Main Component
+// =============================================
+
+export function CreatorShopPage({
+  creator,
+  shopItems,
+  collections,
   locale,
-  currency,
-  themeColor,
-  onAddToCart,
-}: {
-  product: Product & { isFeatured: boolean };
-  locale: string;
-  currency: string;
-  themeColor: string;
-  onAddToCart: (productId: string) => void;
-}) {
-  const t = useTranslations('shop');
-  const productName = getProductName(product, locale);
-  const price = getProductPrice(product, currency);
+}: CreatorShopPageProps) {
+  const params = useParams();
+  const username = params.username as string;
+
+  // Track visit on mount
+  useEffect(() => {
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creator_id: creator.id }),
+    }).catch(() => {});
+  }, [creator.id]);
+
+  // Separate items by type
+  const gongguItems = useMemo(
+    () => shopItems.filter((item) => item.type === 'GONGGU'),
+    [shopItems]
+  );
+
+  const pickItems = useMemo(
+    () => shopItems.filter((item) => item.type === 'PICK'),
+    [shopItems]
+  );
+
+  // Group pick items by collection
+  const collectionGroups = useMemo(() => {
+    const groups: { collection: Collection | null; items: CreatorShopItem[] }[] = [];
+
+    // Items in named collections
+    for (const col of collections) {
+      const colItems = pickItems.filter((item) => item.collection_id === col.id);
+      if (colItems.length > 0) {
+        groups.push({ collection: col, items: colItems });
+      }
+    }
+
+    // Items not in any collection
+    const collectionIds = new Set(collections.map((c) => c.id));
+    const uncategorized = pickItems.filter(
+      (item) => !item.collection_id || !collectionIds.has(item.collection_id)
+    );
+    if (uncategorized.length > 0) {
+      groups.push({ collection: null, items: uncategorized });
+    }
+
+    return groups;
+  }, [pickItems, collections]);
+
+  const defaultTab = gongguItems.length > 0 ? 'gonggu' : 'pick';
 
   return (
-    <div className="group">
-      <div className="relative aspect-square rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-        {product.images?.[0] ? (
-          <Image
-            src={product.images[0]}
-            alt={productName}
-            fill
-            className="object-cover transition-transform duration-300 group-active:scale-95"
-            sizes="(max-width: 768px) 50vw, 33vw"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center">
-            <ShoppingCart className="h-8 w-8 text-zinc-300 dark:text-zinc-600" />
-          </div>
-        )}
-        {product.isFeatured && (
-          <div
-            className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
-            style={{ backgroundColor: themeColor }}
-          >
-            HOT
-          </div>
-        )}
-        {product.stock === 0 && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white text-sm font-medium">{t('outOfStock')}</span>
-          </div>
-        )}
+    <div className="min-h-screen bg-background">
+      {/* Header / Profile Section */}
+      <ShopHeader creator={creator} />
+
+      {/* Beauty Profile */}
+      <BeautyProfile creator={creator} />
+
+      {/* Social Links */}
+      <SocialLinks creator={creator} />
+
+      <Separator className="my-0" />
+
+      {/* Tabs */}
+      <div className="max-w-lg mx-auto px-4 pt-4 pb-6">
+        <Tabs defaultValue={defaultTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-2" variant="line">
+            <TabsTrigger value="gonggu" className="text-base">
+              <span className="mr-1">🔥</span> 공구
+              {gongguItems.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({gongguItems.length})
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="pick" className="text-base">
+              <span className="mr-1">💜</span> 크리에이터픽
+              {pickItems.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({pickItems.length})
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Gonggu Tab Content */}
+          <TabsContent value="gonggu" className="mt-4">
+            {gongguItems.length === 0 ? (
+              <EmptyState message="현재 진행 중인 공구가 없습니다." />
+            ) : (
+              <div className="space-y-4">
+                {gongguItems.map((item) => (
+                  <GongguCard
+                    key={item.id}
+                    item={item}
+                    username={username}
+                    locale={locale}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Creator Pick Tab Content */}
+          <TabsContent value="pick" className="mt-4">
+            {pickItems.length === 0 ? (
+              <EmptyState message="아직 추천 상품이 없습니다." />
+            ) : (
+              <div className="space-y-8">
+                {collectionGroups.map((group) => (
+                  <CollectionSection
+                    key={group.collection?.id || 'all'}
+                    collection={group.collection}
+                    items={group.items}
+                    username={username}
+                    locale={locale}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
-      <div className="mt-2 px-0.5">
-        <p className="text-sm font-medium leading-tight line-clamp-2 text-foreground">
-          {productName}
-        </p>
-        <p className="text-sm font-bold mt-1" style={{ color: themeColor }}>
-          {formatCurrency(price, currency)}
-        </p>
-      </div>
-      <Button
-        className="w-full mt-2 h-9 rounded-xl text-xs font-semibold text-white"
-        style={{ backgroundColor: themeColor }}
-        disabled={product.stock === 0}
-        onClick={() => onAddToCart(product.id)}
-      >
-        <Plus className="h-3.5 w-3.5 mr-1" />
-        {t('addToCart')}
-      </Button>
+
+      {/* Banner Section */}
+      {creator.banner_image_url && (
+        <BannerSection
+          bannerImageUrl={creator.banner_image_url}
+          bannerLink={creator.banner_link}
+        />
+      )}
+
+      {/* Footer */}
+      <footer className="border-t border-border py-6">
+        <div className="max-w-lg mx-auto px-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            Powered by CNEC Commerce
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
 
-export function CreatorShop({ creator, products, locale }: CreatorShopProps) {
-  const t = useTranslations('shop');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [subscriberCount, setSubscriberCount] = useState(0);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isSubscribing, setIsSubscribing] = useState(false);
-  const { items, addItem, removeItem, updateQuantity } = useCartStore();
+// Re-export for backward compatibility
+export { CreatorShopPage as CreatorShop };
 
-  const currency = getCurrencyForLocale(locale);
-  const themeColor = creator.themeColor || '#d4af37';
-  const shopSettings = creator.shopSettings || {
-    show_footer: true,
-    show_social_links: true,
-    show_subscriber_count: false,
-    layout: 'grid',
-    products_per_row: 2,
-    show_prices: true,
-    announcement: '',
-    announcement_active: false,
-  };
+// =============================================
+// Sub-components
+// =============================================
 
-  useEffect(() => {
-    const loadSubscriberCount = async () => {
-      try {
-        const supabase = getClient();
-        const { count } = await supabase
-          .from('mall_subscriptions')
-          .select('*', { count: 'exact', head: true })
-          .eq('creator_id', creator.id)
-          .eq('status', 'active');
-        setSubscriberCount(count || 0);
-      } catch {
-        // ignore
-      }
-    };
-    loadSubscriberCount();
-  }, [creator.id]);
-
-  const handleSubscribe = async () => {
-    setIsSubscribing(true);
-    try {
-      const supabase = getClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session?.user) {
-        toast.error(t('loginRequired') || 'Please login to subscribe');
-        setIsSubscribing(false);
-        return;
-      }
-
-      const { data: buyer } = await supabase
-        .from('buyers')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-
-      if (!buyer) {
-        setIsSubscribing(false);
-        return;
-      }
-
-      if (isSubscribed) {
-        await supabase
-          .from('mall_subscriptions')
-          .delete()
-          .eq('buyer_id', buyer.id)
-          .eq('creator_id', creator.id);
-        setIsSubscribed(false);
-        setSubscriberCount((c) => Math.max(0, c - 1));
-      } else {
-        await supabase.from('mall_subscriptions').insert({
-          buyer_id: buyer.id,
-          creator_id: creator.id,
-        });
-        setIsSubscribed(true);
-        setSubscriberCount((c) => c + 1);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setIsSubscribing(false);
-    }
-  };
-
-  const handleAddToCart = (productId: string) => {
-    addItem({ productId, quantity: 1, creatorId: creator.id });
-    toast.success(t('addedToCart') || 'Added!');
-  };
-
-  const handleShare = async () => {
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: creator.displayName || `@${creator.username}`, url });
-      } catch {
-        // cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied!');
-    }
-  };
-
-  const cartItems = items.filter((item) => item.creatorId === creator.id);
-  const cartProducts = cartItems.map((item) => ({
-    ...item,
-    product: products.find((p) => p.id === item.productId),
-  }));
-  const cartTotal = cartProducts.reduce((total, item) => {
-    if (!item.product) return total;
-    return total + getProductPrice(item.product, currency) * item.quantity;
-  }, 0);
-  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-  const hasSocial = creator.instagram || creator.youtube || creator.tiktok;
-
+function ShopHeader({ creator }: { creator: Creator }) {
   return (
-    <div className="min-h-screen bg-background max-w-lg mx-auto relative">
-      {/* Announcement Banner */}
-      {shopSettings.announcement_active && shopSettings.announcement && (
-        <div
-          className="px-4 py-2.5 text-center text-xs font-medium text-white"
-          style={{ backgroundColor: themeColor }}
-        >
-          {shopSettings.announcement}
-        </div>
-      )}
+    <div className="relative">
+      {/* Cover Image */}
+      <div className="h-44 sm:h-56 bg-secondary relative overflow-hidden">
+        {creator.cover_image_url ? (
+          <img
+            src={creator.cover_image_url}
+            alt="Cover"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-primary/20 via-secondary to-accent/20" />
+        )}
+      </div>
 
-      {/* Top Nav Bar - minimal */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        <div className="flex items-center justify-between px-4 h-12">
-          <span className="text-base font-bold tracking-tight" style={{ color: themeColor }}>
-            CNEC
-          </span>
-          <div className="flex items-center gap-2">
-            <button onClick={handleShare} className="p-2 rounded-full hover:bg-muted transition-colors">
-              <Share2 className="h-4 w-4 text-muted-foreground" />
-            </button>
-            <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-              <SheetTrigger asChild>
-                <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
-                  <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                  {cartCount > 0 && (
-                    <span
-                      className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full text-[10px] font-bold flex items-center justify-center text-white"
-                      style={{ backgroundColor: themeColor }}
-                    >
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
-              </SheetTrigger>
-              <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh]">
-                <SheetHeader>
-                  <SheetTitle className="text-base">{t('cart')}</SheetTitle>
-                </SheetHeader>
-                <div className="mt-4 flex flex-col gap-3 overflow-y-auto max-h-[50vh]">
-                  {cartProducts.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8 text-sm">
-                      {t('emptyCart')}
-                    </p>
-                  ) : (
-                    <>
-                      {cartProducts.map((item) => {
-                        if (!item.product) return null;
-                        const price = getProductPrice(item.product, currency);
-                        const name = getProductName(item.product, locale);
-                        return (
-                          <div key={item.productId} className="flex gap-3 py-3 border-b border-border/50 last:border-0">
-                            <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-muted shrink-0">
-                              {item.product.images?.[0] ? (
-                                <Image src={item.product.images[0]} alt={name} fill className="object-cover" />
-                              ) : (
-                                <div className="h-full w-full bg-muted" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium line-clamp-1">{name}</p>
-                              <p className="text-sm font-bold mt-0.5" style={{ color: themeColor }}>
-                                {formatCurrency(price, currency)}
-                              </p>
-                              <div className="flex items-center gap-3 mt-1.5">
-                                <button
-                                  className="h-7 w-7 rounded-full border flex items-center justify-center"
-                                  onClick={() =>
-                                    item.quantity > 1
-                                      ? updateQuantity(item.productId, item.quantity - 1)
-                                      : removeItem(item.productId)
-                                  }
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </button>
-                                <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
-                                <button
-                                  className="h-7 w-7 rounded-full border flex items-center justify-center"
-                                  onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </>
-                  )}
-                </div>
-                {cartProducts.length > 0 && (
-                  <div className="mt-4 space-y-3">
-                    <Separator />
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-muted-foreground">{t('total')}</span>
-                      <span className="text-lg font-bold" style={{ color: themeColor }}>
-                        {formatCurrency(cartTotal, currency)}
-                      </span>
-                    </div>
-                    <Button
-                      className="w-full h-12 rounded-xl text-sm font-semibold text-white"
-                      style={{ backgroundColor: themeColor }}
-                      asChild
-                    >
-                      <Link
-                        href={`/${locale}/@${creator.username}/checkout`}
-                        onClick={() => setCartOpen(false)}
-                      >
-                        {t('checkout')}
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Link>
-                    </Button>
-                  </div>
-                )}
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </header>
-
-      {/* Profile Section - compact mobile design */}
-      <section className="px-4 pt-8 pb-6">
-        <div className="flex flex-col items-center text-center">
-          {/* Avatar */}
-          <Avatar className="h-20 w-20 ring-2 ring-offset-2 ring-offset-background" style={{ ['--tw-ring-color' as any]: themeColor }}>
-            <AvatarImage src={creator.profileImage} alt={creator.displayName || creator.username} />
-            <AvatarFallback
-              className="text-2xl font-bold text-white"
-              style={{ backgroundColor: themeColor }}
-            >
-              {(creator.displayName || creator.username).charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-
-          {/* Name + Badge */}
-          <div className="flex items-center gap-1.5 mt-3">
-            <h1 className="text-lg font-bold">
-              {creator.displayName || `@${creator.username}`}
-            </h1>
-            {creator.level && levelColors[creator.level] && (
-              <Badge
-                style={{ backgroundColor: levelColors[creator.level].color }}
-                className="text-black text-[10px] px-1.5 py-0 font-medium"
-              >
-                <Award className="h-2.5 w-2.5 mr-0.5" />
-                {levelColors[creator.level].name}
-              </Badge>
+      {/* Profile Section */}
+      <div className="max-w-lg mx-auto px-4 relative">
+        {/* Profile Image */}
+        <div className="absolute -top-12 left-4">
+          <div className="w-24 h-24 rounded-full border-4 border-background overflow-hidden bg-secondary">
+            {creator.profile_image_url ? (
+              <img
+                src={creator.profile_image_url}
+                alt={creator.display_name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                {creator.display_name?.charAt(0) || '?'}
+              </div>
             )}
           </div>
+        </div>
 
-          <p className="text-xs text-muted-foreground mt-0.5">@{creator.username}</p>
-
-          {shopSettings.show_subscriber_count && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {subscriberCount.toLocaleString(locale)} {t('subscribers') || 'subscribers'}
-            </p>
-          )}
-
-          {/* Bio */}
+        {/* Name & Bio */}
+        <div className="pt-16 pb-4">
+          <h1 className="text-xl font-bold text-foreground">
+            {creator.display_name}
+          </h1>
           {creator.bio && (
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed max-w-xs">
+            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
               {creator.bio}
             </p>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-          {/* Social Icons - inline */}
-          {shopSettings.show_social_links && hasSocial && (
-            <div className="flex gap-2 mt-3">
-              {creator.instagram && (
-                <a
-                  href={creator.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-8 w-8 rounded-full flex items-center justify-center transition-opacity active:opacity-70"
-                  style={{ backgroundColor: themeColor + '20' }}
-                >
-                  <Instagram className="h-4 w-4" style={{ color: themeColor }} />
-                </a>
-              )}
-              {creator.youtube && (
-                <a
-                  href={creator.youtube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-8 w-8 rounded-full flex items-center justify-center transition-opacity active:opacity-70"
-                  style={{ backgroundColor: themeColor + '20' }}
-                >
-                  <Youtube className="h-4 w-4" style={{ color: themeColor }} />
-                </a>
-              )}
-              {creator.tiktok && (
-                <a
-                  href={creator.tiktok}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-8 w-8 rounded-full flex items-center justify-center transition-opacity active:opacity-70"
-                  style={{ backgroundColor: themeColor + '20' }}
-                >
-                  <Music2 className="h-4 w-4" style={{ color: themeColor }} />
-                </a>
-              )}
+function BeautyProfile({ creator }: { creator: Creator }) {
+  const tags: { label: string; variant: 'outline' | 'secondary' }[] = [];
+
+  if (creator.skin_type) {
+    tags.push({
+      label: SKIN_TYPE_LABELS[creator.skin_type],
+      variant: 'secondary',
+    });
+  }
+
+  if (creator.personal_color) {
+    tags.push({
+      label: PERSONAL_COLOR_LABELS[creator.personal_color],
+      variant: 'secondary',
+    });
+  }
+
+  if (creator.skin_concerns && creator.skin_concerns.length > 0) {
+    creator.skin_concerns.forEach((concern) => {
+      tags.push({ label: concern, variant: 'outline' });
+    });
+  }
+
+  if (tags.length === 0) return null;
+
+  return (
+    <div className="max-w-lg mx-auto px-4 pb-3">
+      <div className="flex flex-wrap gap-1.5">
+        {tags.map((tag, idx) => (
+          <Badge key={idx} variant={tag.variant} className="text-xs">
+            {tag.label}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SocialLinks({ creator }: { creator: Creator }) {
+  if (!creator.instagram_handle) return null;
+
+  return (
+    <div className="max-w-lg mx-auto px-4 pb-4">
+      <div className="flex gap-3">
+        {creator.instagram_handle && (
+          <a
+            href={`https://instagram.com/${creator.instagram_handle}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Instagram className="w-4 h-4" />
+            <span>@{creator.instagram_handle}</span>
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GongguCard({
+  item,
+  username,
+  locale,
+}: {
+  item: CreatorShopItem;
+  username: string;
+  locale: string;
+}) {
+  const product = item.product;
+  const campaign = item.campaign;
+  const campaignProduct = item.campaign_product;
+
+  if (!product) return null;
+
+  const effectivePrice = campaignProduct?.campaign_price ?? product.sale_price;
+  const discountPercent = calculateDiscountPercent(product.original_price, effectivePrice);
+  const dDay = campaign?.end_at ? calculateDDay(campaign.end_at) : '';
+  const brandName = product.brand?.brand_name || '';
+  const isActive = campaign?.status === 'ACTIVE';
+
+  return (
+    <Link
+      href={`/${locale}/${username}/product/${product.id}${item.campaign_id ? `?campaign=${item.campaign_id}` : ''}`}
+      className="block"
+    >
+      <div className="flex gap-3 p-3 rounded-xl bg-card border border-border card-hover group">
+        {/* Product Image */}
+        <div className="relative w-28 h-28 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
+          {product.images?.[0] ? (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+              No Image
             </div>
           )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 mt-4 w-full max-w-xs">
-            <Button
-              className="flex-1 h-9 rounded-xl text-xs font-semibold text-white"
-              style={{ backgroundColor: isSubscribed ? 'transparent' : themeColor, color: isSubscribed ? themeColor : 'white', border: isSubscribed ? `1px solid ${themeColor}` : 'none' }}
-              onClick={handleSubscribe}
-              disabled={isSubscribing}
-            >
-              {isSubscribing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : isSubscribed ? (
-                <><BellOff className="h-3.5 w-3.5 mr-1" />{t('unsubscribe') || 'Unsubscribe'}</>
-              ) : (
-                <><Bell className="h-3.5 w-3.5 mr-1" />{t('subscribe') || 'Subscribe'}</>
-              )}
-            </Button>
-            {creator.communityEnabled && (
-              <Button
-                variant="outline"
-                className="flex-1 h-9 rounded-xl text-xs font-semibold"
-                asChild
-              >
-                <Link href={`/${locale}/@${creator.username}/community`}>
-                  <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                  {t('community') || 'Community'}
-                </Link>
-              </Button>
+          {/* Fire Badge + D-Day */}
+          <div className="absolute top-1.5 left-1.5 flex gap-1">
+            <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5">
+              🔥 공구
+            </Badge>
+            {dDay && isActive && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                {dDay}
+              </Badge>
             )}
           </div>
         </div>
-      </section>
 
-      {/* Divider */}
-      <div className="mx-4">
-        <Separator />
+        {/* Product Info */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+          <div>
+            {brandName && (
+              <p className="text-xs text-muted-foreground mb-0.5 truncate">
+                {brandName}
+              </p>
+            )}
+            <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
+              {product.name}
+            </h3>
+            {campaign?.title && (
+              <p className="text-xs text-muted-foreground mt-1 truncate">
+                {campaign.title}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-end justify-between mt-2">
+            <div className="flex items-baseline gap-2">
+              {discountPercent > 0 && (
+                <span className="text-sm font-bold text-accent">
+                  {discountPercent}%
+                </span>
+              )}
+              <span className="text-base font-bold text-foreground">
+                {formatKRW(effectivePrice)}
+              </span>
+              {discountPercent > 0 && (
+                <span className="text-xs text-muted-foreground line-through">
+                  {formatKRW(product.original_price)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function CollectionSection({
+  collection,
+  items,
+  username,
+  locale,
+}: {
+  collection: Collection | null;
+  items: CreatorShopItem[];
+  username: string;
+  locale: string;
+}) {
+  const title = collection?.name || '전체 상품';
+  const description = collection?.description;
+
+  return (
+    <div>
+      {/* Section Header */}
+      <div className="mb-3">
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        {description && (
+          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+        )}
       </div>
 
-      {/* Products Section */}
-      <section className="px-4 pt-6 pb-8">
-        <h2 className="text-base font-bold mb-4">
-          {t('title')} ({products.length})
-        </h2>
+      {/* Horizontal Scroll Product Cards */}
+      <div
+        className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4"
+        style={{ scrollbarWidth: 'none' }}
+      >
+        {items.map((item) => (
+          <PickProductCard
+            key={item.id}
+            item={item}
+            username={username}
+            locale={locale}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-        {products.length === 0 ? (
-          <div className="text-center py-16">
-            <ShoppingCart className="h-10 w-10 mx-auto text-muted-foreground/30" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              {t('noProducts') || 'No products yet. Check back soon!'}
+function PickProductCard({
+  item,
+  username,
+  locale,
+}: {
+  item: CreatorShopItem;
+  username: string;
+  locale: string;
+}) {
+  const product = item.product;
+  if (!product) return null;
+
+  const effectivePrice = item.campaign_product?.campaign_price ?? product.sale_price;
+  const discountPercent = calculateDiscountPercent(product.original_price, effectivePrice);
+  const brandName = product.brand?.brand_name || '';
+
+  return (
+    <Link
+      href={`/${locale}/${username}/product/${product.id}${item.campaign_id ? `?campaign=${item.campaign_id}` : ''}`}
+      className="flex-shrink-0 w-36"
+    >
+      <div className="group">
+        {/* Image */}
+        <div className="w-36 h-36 rounded-lg overflow-hidden bg-secondary mb-2">
+          {product.images?.[0] ? (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+              No Image
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div>
+          {brandName && (
+            <p className="text-[11px] text-muted-foreground truncate">
+              {brandName}
             </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {products.map((product) => (
-              <MobileProductCard
-                key={product.id}
-                product={product}
-                locale={locale}
-                currency={currency}
-                themeColor={themeColor}
-                onAddToCart={handleAddToCart}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Footer - minimal mobile */}
-      {shopSettings.show_footer && (
-        <LegalFooter locale={locale} variant="full" />
-      )}
-      <footer className="border-t border-border/50 py-6 px-4" style={{ backgroundColor: '#1a1a2e' }}>
-        <div className="text-center">
-          <p className="text-[11px] text-muted-foreground">
-            Powered by <span className="font-medium" style={{ color: themeColor }}>CNEC Commerce</span>
-          </p>
-        </div>
-      </footer>
-
-      {/* Floating Cart Button - mobile only */}
-      {cartCount > 0 && !cartOpen && (
-        <div className="fixed bottom-6 left-4 right-4 max-w-lg mx-auto z-40">
-          <button
-            onClick={() => setCartOpen(true)}
-            className="w-full h-12 rounded-2xl text-white text-sm font-semibold flex items-center justify-between px-5 shadow-lg active:scale-[0.98] transition-transform"
-            style={{ backgroundColor: themeColor }}
-          >
-            <span className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              {t('cart')} ({cartCount})
+          )}
+          <h4 className="text-xs font-medium text-foreground line-clamp-2 leading-snug mt-0.5">
+            {product.name}
+          </h4>
+          <div className="flex items-baseline gap-1 mt-1">
+            {discountPercent > 0 && (
+              <span className="text-xs font-bold text-accent">
+                {discountPercent}%
+              </span>
+            )}
+            <span className="text-sm font-bold text-foreground">
+              {formatKRW(effectivePrice)}
             </span>
-            <span className="font-bold">{formatCurrency(cartTotal, currency)}</span>
-          </button>
+          </div>
+          {discountPercent > 0 && (
+            <span className="text-[11px] text-muted-foreground line-through">
+              {formatKRW(product.original_price)}
+            </span>
+          )}
         </div>
-      )}
+      </div>
+    </Link>
+  );
+}
+
+function BannerSection({
+  bannerImageUrl,
+  bannerLink,
+}: {
+  bannerImageUrl: string;
+  bannerLink?: string;
+}) {
+  const content = (
+    <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="rounded-xl overflow-hidden">
+        <img
+          src={bannerImageUrl}
+          alt="Banner"
+          className="w-full h-auto object-cover"
+        />
+      </div>
+    </div>
+  );
+
+  if (bannerLink) {
+    return (
+      <a href={bannerLink} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    );
+  }
+
+  return content;
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="py-16 text-center">
+      <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }

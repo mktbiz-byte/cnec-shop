@@ -15,7 +15,10 @@ import {
   Calendar,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/i18n/config';
-import { MOCRA_THRESHOLDS } from '@/types/database';
+const MOCRA_THRESHOLDS = {
+  WARNING: 750000,
+  CRITICAL: 1000000,
+} as const;
 
 // Mock data
 const mockMoCRAData: {

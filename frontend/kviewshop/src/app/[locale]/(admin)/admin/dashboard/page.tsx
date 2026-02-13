@@ -1,26 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Building2,
   Users,
   DollarSign,
   ShoppingCart,
-  Package,
+  Megaphone,
+  TrendingUp,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/i18n/config';
 import { getClient } from '@/lib/supabase/client';
 
 export default function AdminDashboardPage() {
-  const t = useTranslations('dashboard');
-  const tAdmin = useTranslations('admin');
   const [stats, setStats] = useState({
     totalBrands: 0,
     totalCreators: 0,
-    totalProducts: 0,
     totalOrders: 0,
+    totalGMV: 0,
+    activeCampaigns: 0,
+    pendingSettlements: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -29,18 +29,23 @@ export default function AdminDashboardPage() {
       try {
         const supabase = getClient();
 
-        const [brandsRes, creatorsRes, productsRes, ordersRes] = await Promise.all([
+        const [brandsRes, creatorsRes, ordersRes, campaignsRes, settlementsRes] = await Promise.all([
           supabase.from('brands').select('id', { count: 'exact', head: true }),
           supabase.from('creators').select('id', { count: 'exact', head: true }),
-          supabase.from('products').select('id', { count: 'exact', head: true }),
-          supabase.from('orders').select('id', { count: 'exact', head: true }),
+          supabase.from('orders').select('id, total_amount'),
+          supabase.from('campaigns').select('id', { count: 'exact', head: true }).in('status', ['RECRUITING', 'ACTIVE']),
+          supabase.from('settlements').select('id', { count: 'exact', head: true }).eq('status', 'PENDING'),
         ]);
+
+        const totalGMV = (ordersRes.data || []).reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
 
         setStats({
           totalBrands: brandsRes.count || 0,
           totalCreators: creatorsRes.count || 0,
-          totalProducts: productsRes.count || 0,
-          totalOrders: ordersRes.count || 0,
+          totalOrders: ordersRes.data?.length || 0,
+          totalGMV,
+          activeCampaigns: campaignsRes.count || 0,
+          pendingSettlements: settlementsRes.count || 0,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -50,86 +55,79 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
+  const formatKRW = (amount: number) =>
+    new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', minimumFractionDigits: 0 }).format(amount);
+
+  const statCards = [
+    { label: '총 거래액 (GMV)', value: formatKRW(stats.totalGMV), icon: DollarSign, desc: '전체 누적 매출' },
+    { label: '총 주문', value: stats.totalOrders.toString(), icon: ShoppingCart, desc: '전체 주문 건수' },
+    { label: '입점 브랜드', value: stats.totalBrands.toString(), icon: Building2, desc: '등록된 브랜드' },
+    { label: '활성 크리에이터', value: stats.totalCreators.toString(), icon: Users, desc: '등록된 크리에이터' },
+    { label: '진행 중 캠페인', value: stats.activeCampaigns.toString(), icon: Megaphone, desc: '모집중 + 진행중' },
+    { label: '미정산 건', value: stats.pendingSettlements.toString(), icon: TrendingUp, desc: '정산 대기 중' },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-headline font-bold">{tAdmin('title')}</h1>
-        <p className="text-muted-foreground">{t('overview')}</p>
+        <h1 className="text-3xl font-headline font-bold">크넥 어드민</h1>
+        <p className="text-muted-foreground">플랫폼 전체 현황을 확인합니다</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{tAdmin('totalTransaction')}</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(0, 'KRW')}</div>
-            <p className="text-xs text-muted-foreground mt-1">주문 데이터 없음</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalOrders')}</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
-            <p className="text-xs text-muted-foreground mt-1">전체 주문</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('activeBrands')}</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalBrands}</div>
-            <p className="text-xs text-muted-foreground mt-1">등록된 브랜드</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('activeCreators')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCreators}</div>
-            <p className="text-xs text-muted-foreground mt-1">등록된 크리에이터</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {statCards.map((card) => (
+          <Card key={card.label} className="card-hover">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">{card.label}</CardTitle>
+              <card.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{card.value}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{card.desc}</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Empty State */}
+      {/* Getting Started */}
       <Card>
         <CardHeader>
-          <CardTitle>시작하기</CardTitle>
-          <CardDescription>플랫폼을 시작하려면 아래 단계를 따르세요</CardDescription>
+          <CardTitle>크넥 커머스 시작하기</CardTitle>
+          <CardDescription>크리에이터 셀렉트샵 플랫폼의 운영 구조</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">1</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">1</div>
             <div>
-              <p className="font-medium">브랜드 등록</p>
-              <p className="text-sm text-muted-foreground">브랜드가 회원가입하여 상품을 등록합니다</p>
+              <p className="font-medium">브랜드 → 상품 등록 + 캠페인 생성</p>
+              <p className="text-sm text-muted-foreground">브랜드가 상품을 등록하고 공구/상시 캠페인을 생성합니다</p>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">2</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">2</div>
             <div>
-              <p className="font-medium">크리에이터 등록</p>
-              <p className="text-sm text-muted-foreground">크리에이터가 회원가입하여 상품을 선택합니다</p>
+              <p className="font-medium">크리에이터 → 셀렉트샵 운영 + SNS 홍보</p>
+              <p className="text-sm text-muted-foreground">크리에이터가 상품을 선택하여 내 셀렉트샵에 추가하고 팔로워에게 홍보합니다</p>
             </div>
           </div>
           <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">3</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">3</div>
             <div>
-              <p className="font-medium">고객 주문</p>
-              <p className="text-sm text-muted-foreground">고객이 크리에이터 샵에서 상품을 구매합니다</p>
+              <p className="font-medium">팔로워 → 크리에이터 샵에서 구매</p>
+              <p className="text-sm text-muted-foreground">팔로워가 크리에이터 셀렉트샵에서 상품을 구매합니다 (크넥 PG 결제)</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold">4</div>
+            <div>
+              <p className="font-medium">크넥 → 전환 추적 + 커미션 정산</p>
+              <p className="text-sm text-muted-foreground">직접 전환 + 간접 전환(3%) 추적, 매월 20일 크리에이터에게 정산합니다</p>
             </div>
           </div>
         </CardContent>

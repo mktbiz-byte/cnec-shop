@@ -34,12 +34,11 @@ interface CreatorOrder {
 
 function getStatusColor(status: OrderStatus) {
   switch (status) {
-    case 'pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-    case 'paid': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-    case 'shipped': return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
-    case 'completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
-    case 'cancelled': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
-    case 'refunded': return 'bg-red-500/10 text-red-600 border-red-500/20';
+    case 'PAID': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
+    case 'SHIPPING': return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
+    case 'DELIVERED': return 'bg-green-500/10 text-green-600 border-green-500/20';
+    case 'CONFIRMED': return 'bg-green-500/10 text-green-600 border-green-500/20';
+    case 'CANCELLED': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
   }
 }
 
@@ -106,11 +105,11 @@ export default function CreatorOrdersPage() {
   }, [authLoading, creator]);
 
   const totalRevenue = orders
-    .filter(o => o.status !== 'cancelled' && o.status !== 'refunded')
+    .filter(o => o.status !== 'CANCELLED')
     .reduce((sum, o) => sum + (o.creator_revenue || 0), 0);
 
   const pendingRevenue = orders
-    .filter(o => o.status === 'paid' || o.status === 'shipped')
+    .filter(o => o.status === 'PAID' || o.status === 'SHIPPING')
     .reduce((sum, o) => sum + (o.creator_revenue || 0), 0);
 
   if (loading || authLoading) {

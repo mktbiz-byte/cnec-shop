@@ -1,6 +1,15 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { CreatorShop } from '@/components/shop/creator-shop';
+import { CreatorShopPage } from '@/components/shop/creator-shop';
+import type { Metadata } from 'next';
+import type {
+  Creator,
+  CreatorShopItem,
+  Collection,
+  Product,
+  Campaign,
+  CampaignProduct,
+} from '@/types/database';
 
 interface ShopPageProps {
   params: Promise<{
@@ -9,40 +18,77 @@ interface ShopPageProps {
   }>;
 }
 
-async function getCreatorData(username: string) {
+async function getCreatorByShopId(shopId: string) {
   const supabase = await createClient();
 
-  // Fetch creator by username
   const { data: creator, error } = await supabase
     .from('creators')
-    .select(`
-      *,
-      creator_products (
-        *,
-        product:products (
-          *,
-          brand:brands (
-            id,
-            company_name,
-            company_name_en,
-            company_name_jp
-          )
-        )
-      )
-    `)
-    .eq('username', username.toLowerCase())
+    .select('*')
+    .ilike('shop_id', shopId)
     .maybeSingle();
 
   if (error || !creator) {
     return null;
   }
 
-  return creator;
+  return creator as Creator;
 }
 
-export async function generateMetadata({ params }: ShopPageProps) {
-  const { username, locale } = await params;
-  const creator = await getCreatorData(username);
+async function getShopItems(creatorId: string) {
+  const supabase = await createClient();
+
+  const { data: items, error } = await supabase
+    .from('creator_shop_items')
+    .select(`
+      *,
+      product:products (
+        *,
+        brand:brands (
+          id,
+          brand_name,
+          logo_url
+        )
+      ),
+      campaign:campaigns (
+        *
+      ),
+      campaign_product:campaign_products (
+        *
+      )
+    `)
+    .eq('creator_id', creatorId)
+    .eq('is_visible', true)
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching shop items:', error);
+    return [];
+  }
+
+  return (items || []) as CreatorShopItem[];
+}
+
+async function getCollections(creatorId: string) {
+  const supabase = await createClient();
+
+  const { data: collections, error } = await supabase
+    .from('collections')
+    .select('*')
+    .eq('creator_id', creatorId)
+    .eq('is_visible', true)
+    .order('display_order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching collections:', error);
+    return [];
+  }
+
+  return (collections || []) as Collection[];
+}
+
+export async function generateMetadata({ params }: ShopPageProps): Promise<Metadata> {
+  const { username } = await params;
+  const creator = await getCreatorByShopId(username);
 
   if (!creator) {
     return {
@@ -50,70 +96,41 @@ export async function generateMetadata({ params }: ShopPageProps) {
     };
   }
 
-  const displayName = creator.display_name || `@${creator.username}`;
+  const displayName = creator.display_name || creator.shop_id;
 
   return {
-    title: `${displayName}'s Shop`,
-    description: creator.bio || `Shop curated K-Beauty products from ${displayName}`,
+    title: `${displayName}의 셀렉샵 | CNEC`,
+    description: creator.bio || `${displayName}이(가) 추천하는 뷰티 아이템을 만나보세요`,
     openGraph: {
-      title: `${displayName}'s Shop | KviewShop`,
-      description: creator.bio || `Shop curated K-Beauty products from ${displayName}`,
-      images: creator.profile_image ? [creator.profile_image] : [],
+      title: `${displayName}의 셀렉샵 | CNEC Commerce`,
+      description: creator.bio || `${displayName}이(가) 추천하는 뷰티 아이템을 만나보세요`,
+      images: creator.profile_image_url ? [creator.profile_image_url] : [],
     },
     robots: {
-      index: false,
-      follow: false,
+      index: true,
+      follow: true,
     },
   };
 }
 
 export default async function ShopPage({ params }: ShopPageProps) {
   const { username, locale } = await params;
-  const creator = await getCreatorData(username);
+  const creator = await getCreatorByShopId(username);
 
   if (!creator) {
     notFound();
   }
 
-  // Transform products data
-  const products = creator.creator_products
-    ?.map((cp: any) => ({
-      ...cp.product,
-      displayOrder: cp.display_order,
-      isFeatured: cp.is_featured,
-    }))
-    .sort((a: any, b: any) => a.displayOrder - b.displayOrder) || [];
+  const [shopItems, collections] = await Promise.all([
+    getShopItems(creator.id),
+    getCollections(creator.id),
+  ]);
 
   return (
-    <CreatorShop
-      creator={{
-        id: creator.id,
-        username: creator.username,
-        displayName: creator.display_name,
-        profileImage: creator.profile_image,
-        bio: locale === 'ja' ? creator.bio_jp : locale === 'en' ? creator.bio_en : creator.bio,
-        themeColor: creator.theme_color,
-        backgroundColor: creator.background_color || '#1a1a1a',
-
-        country: creator.country,
-        socialLinks: creator.social_links,
-        instagram: creator.instagram,
-        youtube: creator.youtube,
-        tiktok: creator.tiktok,
-        level: creator.level || 'bronze',
-        communityEnabled: creator.community_enabled || false,
-        shopSettings: creator.shop_settings || {
-          show_footer: true,
-          show_social_links: true,
-          show_subscriber_count: false,
-          layout: 'grid',
-          products_per_row: 3,
-          show_prices: true,
-          announcement: '',
-          announcement_active: false,
-        },
-      }}
-      products={products}
+    <CreatorShopPage
+      creator={creator}
+      shopItems={shopItems}
+      collections={collections}
       locale={locale}
     />
   );
