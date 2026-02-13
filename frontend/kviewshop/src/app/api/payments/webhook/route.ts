@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 // Inline types
 type OrderStatus = 'PENDING' | 'PAID' | 'PREPARING' | 'SHIPPING' | 'DELIVERED' | 'CONFIRMED' | 'CANCELLED' | 'REFUNDED';
@@ -48,21 +49,35 @@ function mapWebhookEventToStatus(eventType: string): OrderStatus | null {
   }
 }
 
+function verifyWebhookSignature(body: string, signature: string, secret: string): boolean {
+  const expected = createHmac('sha256', secret).update(body).digest('hex');
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook signature (mock for now)
-    // In production, verify the PortOne webhook signature:
-    //   const signature = request.headers.get('x-portone-signature');
-    //   const webhookSecret = process.env.PORTONE_WEBHOOK_SECRET;
-    //   Verify HMAC-SHA256 of request body matches signature
+    const rawBody = await request.text();
+
+    // Verify webhook signature
+    const webhookSecret = process.env.PORTONE_WEBHOOK_SECRET;
     const signature = request.headers.get('x-portone-signature');
-    if (signature) {
-      // TODO: Implement actual signature verification
-      // const isValid = verifySignature(body, signature, webhookSecret);
-      // if (!isValid) return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+
+    if (webhookSecret) {
+      if (!signature) {
+        return NextResponse.json({ error: 'Missing webhook signature' }, { status: 401 });
+      }
+      if (!verifyWebhookSignature(rawBody, signature, webhookSecret)) {
+        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
+      }
+    } else {
+      console.warn('PORTONE_WEBHOOK_SECRET is not set — skipping signature verification');
     }
 
-    const payload: WebhookPayload = await request.json();
+    const payload: WebhookPayload = JSON.parse(rawBody);
 
     if (!payload.type || !payload.data) {
       return NextResponse.json(

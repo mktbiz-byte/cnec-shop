@@ -179,8 +179,8 @@ const demoCampaigns = {
 };
 
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Not allowed in production' }, { status: 403 });
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Seed endpoint is only available in development' }, { status: 403 });
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
