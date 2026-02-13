@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
+import type { Order, OrderItem, OrderStatus, Creator } from '@/types/database';
+import { ORDER_STATUS_LABELS } from '@/types/database';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -14,371 +24,462 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  ShoppingCart,
-  Loader2,
-  Search,
-  Package,
-  User,
-  ChevronDown,
-  ChevronUp,
-  Truck,
-  DollarSign,
-} from 'lucide-react';
-import { formatCurrency } from '@/lib/i18n/config';
-import { getClient } from '@/lib/supabase/client';
-import type { OrderStatus } from '@/types/database';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 
-interface OrderData {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  customer_email: string;
-  total_amount: number;
-  creator_revenue: number;
-  platform_revenue: number;
-  brand_revenue: number;
-  currency: string;
-  country: string;
-  status: OrderStatus;
-  tracking_number?: string;
-  created_at: string;
-  creator?: { id: string; username: string; display_name?: string };
-  items?: { product_id: string; quantity: number; unit_price: number; product?: { name_en: string; name_ko: string; images: string[] } }[];
+interface OrderWithDetails extends Order {
+  items?: (OrderItem & { product?: { name: string } })[];
+  creator?: Creator;
 }
 
-function getStatusColor(status: OrderStatus) {
+function formatCurrency(num: number): string {
+  return `${num.toLocaleString('ko-KR')}원`;
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getStatusVariant(
+  status: OrderStatus
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status) {
-    case 'pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-    case 'paid': return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
-    case 'shipped': return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
-    case 'completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
-    case 'cancelled': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
-    case 'refunded': return 'bg-red-500/10 text-red-600 border-red-500/20';
+    case 'PAID':
+      return 'default';
+    case 'SHIPPING':
+      return 'secondary';
+    case 'DELIVERED':
+      return 'secondary';
+    case 'CONFIRMED':
+      return 'outline';
+    case 'CANCELLED':
+      return 'destructive';
+    default:
+      return 'outline';
   }
 }
 
-export default function BrandOrdersPage() {
-  const t = useTranslations('order');
-  const tDash = useTranslations('dashboard');
+const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
+  PAID: 'SHIPPING',
+  SHIPPING: 'DELIVERED',
+  DELIVERED: 'CONFIRMED',
+};
 
-  const [loading, setLoading] = useState(true);
-  const [orders, setOrders] = useState<OrderData[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+const NEXT_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
+  PAID: '배송 시작',
+  SHIPPING: '배송완료 처리',
+  DELIVERED: '구매확정 처리',
+};
+
+function TableSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-10 w-full" />
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Skeleton key={i} className="h-14 w-full" />
+      ))}
+    </div>
+  );
+}
+
+export default function BrandOrdersPage() {
+  const { brand } = useAuthStore();
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [trackingInputs, setTrackingInputs] = useState<
+    Record<string, string>
+  >({});
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadOrders() {
-      try {
-        const supabase = getClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) { setLoading(false); return; }
+    if (!brand?.id) return;
 
-        const { data: brand } = await supabase
-          .from('brands')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (!brand) { setLoading(false); return; }
-
-        const { data } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            creator:creators(id, username, display_name),
-            items:order_items(
-              product_id,
-              quantity,
-              unit_price,
-              product:products(name_en, name_ko, images)
-            )
-          `)
-          .eq('brand_id', brand.id)
-          .order('created_at', { ascending: false });
-
-        setOrders((data as unknown as OrderData[]) || []);
-      } catch (error) {
-        console.error('Failed to load orders:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadOrders();
-  }, []);
-
-  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
-    setUpdatingStatus(orderId);
-    try {
+    async function fetchOrders() {
       const supabase = getClient();
-      const updateData: Record<string, unknown> = { status: newStatus };
-      if (newStatus === 'shipped') updateData.shipped_at = new Date().toISOString();
-      if (newStatus === 'completed') updateData.completed_at = new Date().toISOString();
-
-      const { error } = await supabase
+      let query = supabase
         .from('orders')
-        .update(updateData)
-        .eq('id', orderId);
+        .select(
+          '*, items:order_items(*, product:products(name)), creator:creators(*)'
+        )
+        .eq('brand_id', brand!.id)
+        .order('created_at', { ascending: false });
 
-      if (!error) {
-        setOrders(orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      if (statusFilter !== 'ALL') {
+        query = query.eq('status', statusFilter);
       }
-    } catch (error) {
-      console.error('Status update failed:', error);
-    } finally {
-      setUpdatingStatus(null);
-    }
-  };
 
-  const handleUpdateTracking = async (orderId: string, trackingNumber: string) => {
+      const { data, error } = await query;
+      if (error) {
+        console.error('Failed to fetch orders:', error);
+      } else {
+        setOrders((data ?? []) as OrderWithDetails[]);
+      }
+      setIsLoading(false);
+    }
+
+    setIsLoading(true);
+    fetchOrders();
+  }, [brand?.id, statusFilter]);
+
+  async function handleStatusChange(orderId: string, newStatus: OrderStatus) {
+    setUpdatingId(orderId);
     const supabase = getClient();
-    await supabase
+
+    const updateData: Record<string, unknown> = { status: newStatus };
+    if (newStatus === 'SHIPPING') {
+      updateData.shipped_at = new Date().toISOString();
+      const trackingNumber = trackingInputs[orderId];
+      if (trackingNumber) {
+        updateData.tracking_number = trackingNumber;
+      }
+    }
+    if (newStatus === 'DELIVERED') {
+      updateData.delivered_at = new Date().toISOString();
+    }
+    if (newStatus === 'CONFIRMED') {
+      updateData.confirmed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', orderId);
+
+    if (!error) {
+      setOrders(
+        orders.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: newStatus,
+                ...(updateData.tracking_number
+                  ? { tracking_number: updateData.tracking_number as string }
+                  : {}),
+              }
+            : o
+        )
+      );
+    }
+    setUpdatingId(null);
+  }
+
+  async function handleTrackingSave(orderId: string) {
+    const trackingNumber = trackingInputs[orderId];
+    if (!trackingNumber) return;
+
+    const supabase = getClient();
+    const { error } = await supabase
       .from('orders')
       .update({ tracking_number: trackingNumber })
       .eq('id', orderId);
 
-    setOrders(orders.map(o => o.id === orderId ? { ...o, tracking_number: trackingNumber } : o));
-  };
-
-  const filteredOrders = orders
-    .filter(o => statusFilter === 'all' || o.status === statusFilter)
-    .filter(o =>
-      !searchQuery ||
-      o.order_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.creator?.username?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-  const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending' || o.status === 'paid').length,
-    shipped: orders.filter(o => o.status === 'shipped').length,
-    completed: orders.filter(o => o.status === 'completed').length,
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    if (!error) {
+      setOrders(
+        orders.map((o) =>
+          o.id === orderId ? { ...o, tracking_number: trackingNumber } : o
+        )
+      );
+    }
   }
+
+  function toggleExpand(orderId: string) {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+  }
+
+  // Count by status
+  const statusCounts = orders.reduce(
+    (acc, o) => {
+      acc[o.status] = (acc[o.status] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-headline font-bold">{t('orderSummary')}</h1>
-        <p className="text-sm text-muted-foreground">{t('manageOrders')}</p>
+      <h1 className="text-2xl font-bold">주문 관리</h1>
+
+      {/* Status summary cards */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {Object.entries(ORDER_STATUS_LABELS).map(([status, label]) => (
+          <Card key={status}>
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground">{label}</p>
+              <p className="text-xl font-bold">
+                {statusCounts[status] ?? 0}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">{tDash('totalOrders')}</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">{t('pending')}</p>
-                <p className="text-2xl font-bold">{stats.pending}</p>
-              </div>
-              <Package className="h-5 w-5 text-warning" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">{t('shipped')}</p>
-                <p className="text-2xl font-bold">{stats.shipped}</p>
-              </div>
-              <Truck className="h-5 w-5 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="card-hover">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">{t('completed')}</p>
-                <p className="text-2xl font-bold">{stats.completed}</p>
-              </div>
-              <DollarSign className="h-5 w-5 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
+      {/* Filter */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('searchOrders')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">주문 상태</span>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-40">
+              <SelectTrigger className="w-[150px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('allOrders')}</SelectItem>
-                <SelectItem value="pending">{t('pending')}</SelectItem>
-                <SelectItem value="paid">{t('paid')}</SelectItem>
-                <SelectItem value="shipped">{t('shipped')}</SelectItem>
-                <SelectItem value="completed">{t('completed')}</SelectItem>
-                <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-                <SelectItem value="refunded">{t('refunded')}</SelectItem>
+                <SelectItem value="ALL">전체</SelectItem>
+                {Object.entries(ORDER_STATUS_LABELS).map(
+                  ([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Orders Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            주문 목록{' '}
+            <span className="text-sm font-normal text-muted-foreground">
+              ({orders.length}건)
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-muted-foreground">{t('noOrders')}</p>
+          {isLoading ? (
+            <TableSkeleton />
+          ) : orders.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-muted-foreground">주문이 없습니다.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredOrders.map((order) => {
-                const isExpanded = expandedOrder === order.id;
-                return (
-                  <div key={order.id} className="border rounded-lg overflow-hidden">
-                    <button
-                      className="w-full text-left p-4 hover:bg-muted/30 transition-colors"
-                      onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono text-sm font-medium">#{order.order_number}</span>
-                              <Badge className={getStatusColor(order.status)}>
-                                {t(order.status)}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                              <span>{order.customer_name}</span>
-                              {order.creator && (
-                                <span className="flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  @{order.creator.username}
+            <div className="space-y-2">
+              {/* Table header */}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>주문번호</TableHead>
+                    <TableHead>주문일시</TableHead>
+                    <TableHead>상품</TableHead>
+                    <TableHead>구매자</TableHead>
+                    <TableHead>크리에이터</TableHead>
+                    <TableHead className="text-right">금액</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead className="w-8" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => {
+                    const isExpanded = expandedOrderId === order.id;
+                    return (
+                      <>
+                        <TableRow
+                          key={order.id}
+                          className="cursor-pointer"
+                          onClick={() => toggleExpand(order.id)}
+                        >
+                          <TableCell className="font-mono text-sm">
+                            {order.order_number}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {formatDate(order.created_at)}
+                          </TableCell>
+                          <TableCell>
+                            {order.items && order.items.length > 0 ? (
+                              <div>
+                                <span className="text-sm">
+                                  {order.items[0].product?.name ?? '상품'}
                                 </span>
-                              )}
-                              <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="font-bold">
-                            {formatCurrency(order.total_amount, order.currency || 'USD')}
-                          </span>
-                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </div>
-                      </div>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="p-4 pt-0 border-t space-y-4">
-                        {/* Revenue Split */}
-                        <div className="grid grid-cols-3 gap-3 text-center">
-                          <div className="bg-muted/50 p-3 rounded-lg">
-                            <p className="text-[10px] text-muted-foreground">{t('brandRevenue')}</p>
-                            <p className="text-sm font-bold">{formatCurrency(order.brand_revenue || 0, order.currency || 'USD')}</p>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded-lg">
-                            <p className="text-[10px] text-muted-foreground">{t('creatorRevenue')}</p>
-                            <p className="text-sm font-bold">{formatCurrency(order.creator_revenue || 0, order.currency || 'USD')}</p>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded-lg">
-                            <p className="text-[10px] text-muted-foreground">{t('platformFee')}</p>
-                            <p className="text-sm font-bold">{formatCurrency(order.platform_revenue || 0, order.currency || 'USD')}</p>
-                          </div>
-                        </div>
-
-                        {/* Creator Attribution */}
-                        {order.creator && (
-                          <div className="flex items-center gap-2 text-sm bg-primary/5 p-3 rounded-lg">
-                            <User className="h-4 w-4 text-primary" />
-                            <span>{t('viaCreator')}: <strong>@{order.creator.username}</strong></span>
-                            {order.creator.display_name && (
-                              <span className="text-muted-foreground">({order.creator.display_name})</span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Order Items */}
-                        {order.items && order.items.length > 0 && (
-                          <div className="space-y-2">
-                            {order.items.map((item, idx) => (
-                              <div key={idx} className="flex items-center justify-between text-sm">
-                                <span>{item.product?.name_en || item.product?.name_ko || 'Product'} x{item.quantity}</span>
-                                <span className="font-medium">{formatCurrency(item.unit_price * item.quantity, order.currency || 'USD')}</span>
+                                {order.items.length > 1 && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    외 {order.items.length - 1}건
+                                  </span>
+                                )}
                               </div>
-                            ))}
-                          </div>
+                            ) : (
+                              '-'
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {order.buyer_name}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {order.creator?.display_name ?? '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(order.total_amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={getStatusVariant(order.status)}
+                            >
+                              {ORDER_STATUS_LABELS[order.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs text-muted-foreground">
+                              {isExpanded ? '▲' : '▼'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+
+                        {/* Expanded detail row */}
+                        {isExpanded && (
+                          <TableRow key={`${order.id}-detail`}>
+                            <TableCell colSpan={8} className="bg-muted/30">
+                              <div className="space-y-4 p-4">
+                                {/* Shipping info */}
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      배송지 정보
+                                    </p>
+                                    <div className="mt-1 text-sm text-muted-foreground space-y-0.5">
+                                      <p>
+                                        {order.buyer_name} ({order.buyer_phone})
+                                      </p>
+                                      <p>{order.shipping_address}</p>
+                                      {order.shipping_detail && (
+                                        <p>{order.shipping_detail}</p>
+                                      )}
+                                      {order.shipping_zipcode && (
+                                        <p>우편번호: {order.shipping_zipcode}</p>
+                                      )}
+                                      <p>이메일: {order.buyer_email}</p>
+                                    </div>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      주문 상품
+                                    </p>
+                                    <div className="mt-1 space-y-1">
+                                      {(order.items ?? []).map((item) => (
+                                        <div
+                                          key={item.id}
+                                          className="flex justify-between text-sm"
+                                        >
+                                          <span>
+                                            {item.product?.name ?? '상품'} x{' '}
+                                            {item.quantity}
+                                          </span>
+                                          <span className="text-muted-foreground">
+                                            {formatCurrency(item.total_price)}
+                                          </span>
+                                        </div>
+                                      ))}
+                                      <Separator className="my-1" />
+                                      <div className="flex justify-between text-sm">
+                                        <span>배송비</span>
+                                        <span>
+                                          {formatCurrency(order.shipping_fee)}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between text-sm font-medium">
+                                        <span>총 결제금액</span>
+                                        <span>
+                                          {formatCurrency(order.total_amount)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Tracking & Status Actions */}
+                                <div className="flex flex-wrap items-end gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">송장번호</Label>
+                                    <Input
+                                      value={
+                                        trackingInputs[order.id] ??
+                                        order.tracking_number ??
+                                        ''
+                                      }
+                                      onChange={(e) =>
+                                        setTrackingInputs({
+                                          ...trackingInputs,
+                                          [order.id]: e.target.value,
+                                        })
+                                      }
+                                      placeholder="송장번호 입력"
+                                      className="w-56"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleTrackingSave(order.id);
+                                    }}
+                                  >
+                                    송장 저장
+                                  </Button>
+
+                                  {NEXT_STATUS[order.status] && (
+                                    <Button
+                                      size="sm"
+                                      disabled={updatingId === order.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusChange(
+                                          order.id,
+                                          NEXT_STATUS[order.status]!
+                                        );
+                                      }}
+                                    >
+                                      {updatingId === order.id
+                                        ? '처리 중...'
+                                        : NEXT_STATUS_LABEL[order.status]}
+                                    </Button>
+                                  )}
+
+                                  {order.status === 'PAID' && (
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      disabled={updatingId === order.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleStatusChange(
+                                          order.id,
+                                          'CANCELLED'
+                                        );
+                                      }}
+                                    >
+                                      주문 취소
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         )}
-
-                        {/* Tracking */}
-                        <div className="flex items-center gap-2">
-                          <Input
-                            placeholder={t('trackingNumber')}
-                            defaultValue={order.tracking_number || ''}
-                            onBlur={(e) => {
-                              if (e.target.value !== (order.tracking_number || '')) {
-                                handleUpdateTracking(order.id, e.target.value);
-                              }
-                            }}
-                            className="flex-1 text-sm"
-                          />
-                        </div>
-
-                        {/* Status Actions */}
-                        <div className="flex gap-2 flex-wrap">
-                          {order.status === 'paid' && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpdateStatus(order.id, 'shipped')}
-                              disabled={updatingStatus === order.id}
-                            >
-                              {updatingStatus === order.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Truck className="mr-1 h-3 w-3" />}
-                              {t('markShipped')}
-                            </Button>
-                          )}
-                          {order.status === 'shipped' && (
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpdateStatus(order.id, 'completed')}
-                              disabled={updatingStatus === order.id}
-                            >
-                              {updatingStatus === order.id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
-                              {t('markCompleted')}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      </>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>

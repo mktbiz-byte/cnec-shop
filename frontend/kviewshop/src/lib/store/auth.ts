@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, Brand, Creator, Buyer } from '@/types/database';
+import type { User, Brand, Creator } from '@/types/database';
 
 interface AuthState {
   user: User | null;
   brand: Brand | null;
   creator: Creator | null;
-  buyer: Buyer | null;
+  buyer: Record<string, any> | null; // kept for compat
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setBrand: (brand: Brand | null) => void;
   setCreator: (creator: Creator | null) => void;
-  setBuyer: (buyer: Buyer | null) => void;
+  setBuyer: (buyer: Record<string, any> | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;
 }
@@ -32,12 +32,11 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, brand: null, creator: null, buyer: null }),
     }),
     {
-      name: 'kviewshop-auth',
+      name: 'cnec-auth',
       partialize: (state) => ({
         user: state.user,
         brand: state.brand,
         creator: state.creator,
-        buyer: state.buyer,
       }),
     }
   )
@@ -46,8 +45,10 @@ export const useAuthStore = create<AuthState>()(
 // Cart Store
 interface CartItem {
   productId: string;
+  campaignId?: string;
   quantity: number;
   creatorId: string;
+  unitPrice: number;
 }
 
 interface CartState {
@@ -56,6 +57,7 @@ interface CartState {
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  getTotal: () => number;
 }
 
 export const useCartStore = create<CartState>()(
@@ -85,9 +87,10 @@ export const useCartStore = create<CartState>()(
         set({ items });
       },
       clearCart: () => set({ items: [] }),
+      getTotal: () => get().items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0),
     }),
     {
-      name: 'kviewshop-cart',
+      name: 'cnec-cart',
     }
   )
 );

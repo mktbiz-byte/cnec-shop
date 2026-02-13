@@ -99,7 +99,7 @@ export default function HomePage() {
       <header className="fixed top-0 inset-x-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href={`/${locale}`} className="font-headline text-xl font-bold text-gold-gradient">
-            KviewShop
+            CNEC
           </Link>
           <div className="flex items-center gap-3">
             {/* Language Switcher */}
@@ -301,7 +301,7 @@ export default function HomePage() {
                   <Shield className="h-8 w-8 text-primary" />
                 </div>
                 <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-3">
-                  KviewShop
+                  CNEC
                 </span>
                 <h3 className="text-lg font-semibold mb-2">
                   {t('kviewshopFlowTitle')}

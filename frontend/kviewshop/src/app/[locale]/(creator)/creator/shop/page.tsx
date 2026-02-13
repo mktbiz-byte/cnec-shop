@@ -1,161 +1,124 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Palette,
-  User,
-  Link as LinkIcon,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Save,
   Loader2,
-  ExternalLink,
-  Copy,
-  Check,
-  Eye,
-  Settings,
-  MessageSquare,
+  User,
   Instagram,
   Youtube,
   Music2,
-  Award,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import type { Creator, SkinType, PersonalColor } from '@/types/database';
+import {
+  SKIN_TYPE_LABELS,
+  PERSONAL_COLOR_LABELS,
+} from '@/types/database';
 
-interface ShopSettings {
-  show_footer: boolean;
-  footer_type: 'full' | 'minimal';
-  show_social_links: boolean;
-  show_subscriber_count: boolean;
-  layout: 'grid' | 'list';
-  products_per_row: number;
-  show_prices: boolean;
-  announcement: string;
-  announcement_active: boolean;
+const SKIN_CONCERNS_OPTIONS = [
+  { value: 'acne', label: '여드름' },
+  { value: 'wrinkle', label: '주름' },
+  { value: 'pigmentation', label: '색소침착' },
+  { value: 'pore', label: '모공' },
+  { value: 'sensitivity', label: '민감성' },
+  { value: 'dryness', label: '건조' },
+  { value: 'redness', label: '홍조' },
+  { value: 'dark_circles', label: '다크서클' },
+];
+
+const SCALP_CONCERNS_OPTIONS = [
+  { value: 'hair_loss', label: '탈모' },
+  { value: 'dandruff', label: '비듬' },
+  { value: 'oily_scalp', label: '지성 두피' },
+  { value: 'dry_scalp', label: '건성 두피' },
+  { value: 'sensitive_scalp', label: '민감성 두피' },
+  { value: 'thin_hair', label: '가는 모발' },
+];
+
+interface ShopForm {
+  display_name: string;
+  bio: string;
+  cover_image_url: string;
+  profile_image_url: string;
+  instagram_handle: string;
+  youtube_handle: string;
+  tiktok_handle: string;
+  skin_type: SkinType | '';
+  personal_color: PersonalColor | '';
+  skin_concerns: string[];
+  scalp_concerns: string[];
+  banner_image_url: string;
+  banner_link: string;
 }
 
 export default function CreatorShopPage() {
-  const t = useTranslations('creator');
-  const tCommon = useTranslations('common');
-  const params = useParams();
-  const locale = params.locale as string;
-
-  // Read auth state from zustand store (populated by Header's useUser hook)
-  const { creator: storeCreator, isLoading: authLoading } = useAuthStore();
+  const { creator, setCreator, isLoading: authLoading } = useAuthStore();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
-  const [username, setUsername] = useState('');
-  const [creatorId, setCreatorId] = useState('');
-  const [level, setLevel] = useState('bronze');
-
-  const [settings, setSettings] = useState({
-    displayName: '',
+  const [form, setForm] = useState<ShopForm>({
+    display_name: '',
     bio: '',
-    themeColor: '#d4af37',
-    backgroundColor: '#1a1a1a',
-    textColor: '#ffffff',
-    instagram: '',
-    youtube: '',
-    tiktok: '',
-    communityEnabled: false,
-    communityType: 'board' as 'board' | 'chat',
+    cover_image_url: '',
+    profile_image_url: '',
+    instagram_handle: '',
+    youtube_handle: '',
+    tiktok_handle: '',
+    skin_type: '',
+    personal_color: '',
+    skin_concerns: [],
+    scalp_concerns: [],
+    banner_image_url: '',
+    banner_link: '',
   });
-
-  const [shopSettings, setShopSettings] = useState<ShopSettings>({
-    show_footer: true,
-    footer_type: 'full',
-    show_social_links: true,
-    show_subscriber_count: false,
-    layout: 'grid',
-    products_per_row: 3,
-    show_prices: true,
-    announcement: '',
-    announcement_active: false,
-  });
-
-  const themeColors = [
-    { name: 'Gold', value: '#d4af37' },
-    { name: 'Rose', value: '#e91e63' },
-    { name: 'Blue', value: '#2196f3' },
-    { name: 'Purple', value: '#9c27b0' },
-    { name: 'Green', value: '#4caf50' },
-    { name: 'Orange', value: '#ff9800' },
-    { name: 'Teal', value: '#009688' },
-    { name: 'Pink', value: '#ff4081' },
-    { name: 'Coral', value: '#ff6b6b' },
-  ];
-
-  const backgroundColors = [
-    { name: 'Black', value: '#1a1a1a' },
-    { name: 'White', value: '#ffffff' },
-    { name: 'Dark Gray', value: '#2d2d2d' },
-    { name: 'Navy', value: '#1a237e' },
-    { name: 'Forest', value: '#1b5e20' },
-    { name: 'Wine', value: '#4a1c40' },
-  ];
-
-  const levelColors: Record<string, { color: string; icon: string }> = {
-    bronze: { color: '#CD7F32', icon: 'medal' },
-    silver: { color: '#C0C0C0', icon: 'award' },
-    gold: { color: '#FFD700', icon: 'crown' },
-    platinum: { color: '#E5E4E2', icon: 'gem' },
-    diamond: { color: '#B9F2FF', icon: 'diamond' },
-  };
-
-  // Populate form from creator data (store or freshly fetched)
-  const populateFromCreator = (creator: any) => {
-    setCreatorId(creator.id);
-    setUsername(creator.username || '');
-    setLevel(creator.level || 'bronze');
-    setSettings({
-      displayName: creator.display_name || '',
-      bio: creator.bio || '',
-      themeColor: creator.theme_color || '#d4af37',
-      backgroundColor: creator.background_color || '#1a1a1a',
-      textColor: creator.text_color || '#ffffff',
-      instagram: creator.instagram || '',
-      youtube: creator.youtube || '',
-      tiktok: creator.tiktok || '',
-      communityEnabled: creator.community_enabled || false,
-      communityType: creator.community_type || 'board',
-    });
-    if (creator.shop_settings) {
-      setShopSettings(creator.shop_settings);
-    }
-  };
 
   useEffect(() => {
-    // Wait for auth store to finish loading
     if (authLoading) return;
 
-    // If creator data already in store, use it directly (no extra DB calls)
-    if (storeCreator) {
-      populateFromCreator(storeCreator);
+    if (creator) {
+      setForm({
+        display_name: creator.display_name || '',
+        bio: creator.bio || '',
+        cover_image_url: creator.cover_image_url || '',
+        profile_image_url: creator.profile_image_url || '',
+        instagram_handle: creator.instagram_handle || '',
+        youtube_handle: creator.youtube_handle || '',
+        tiktok_handle: creator.tiktok_handle || '',
+        skin_type: creator.skin_type || '',
+        personal_color: creator.personal_color || '',
+        skin_concerns: creator.skin_concerns || [],
+        scalp_concerns: creator.scalp_concerns || [],
+        banner_image_url: creator.banner_image_url || '',
+        banner_link: creator.banner_link || '',
+      });
       setIsLoading(false);
       return;
     }
 
-    // No creator in store - either not logged in or need to auto-create
+    // Fallback: fetch from Supabase
     let cancelled = false;
-    const timeout = setTimeout(() => {
-      if (!cancelled) setIsLoading(false);
-    }, 5000);
-
-    const initCreator = async () => {
+    async function fetchCreator() {
       try {
         const supabase = getClient();
         const { data: { session } } = await supabase.auth.getSession();
@@ -164,603 +127,381 @@ export default function CreatorShopPage() {
           return;
         }
 
-        // Try to fetch creator (maybe store missed it)
-        const { data: creator } = await supabase
+        const { data } = await supabase
           .from('creators')
           .select('*')
           .eq('user_id', session.user.id)
           .maybeSingle();
 
-        if (cancelled) return;
-
-        if (creator) {
-          populateFromCreator(creator);
-        } else {
-          // Auto-create creator record
-          const defaultUsername = session.user.email?.split('@')[0] || `user_${Date.now()}`;
-          const { data: newCreator, error: insertError } = await supabase
-            .from('creators')
-            .insert({
-              user_id: session.user.id,
-              username: defaultUsername,
-              display_name: session.user.user_metadata?.name || defaultUsername,
-              country: locale === 'ja' ? 'JP' : 'US',
-              theme_color: '#d4af37',
-              background_color: '#1a1a1a',
-              text_color: '#ffffff',
-            })
-            .select()
-            .single();
-
-          if (!insertError && newCreator && !cancelled) {
-            populateFromCreator(newCreator);
-          }
+        if (data && !cancelled) {
+          setForm({
+            display_name: data.display_name || '',
+            bio: data.bio || '',
+            cover_image_url: data.cover_image_url || '',
+            profile_image_url: data.profile_image_url || '',
+            instagram_handle: data.instagram_handle || '',
+            youtube_handle: data.youtube_handle || '',
+            tiktok_handle: data.tiktok_handle || '',
+            skin_type: data.skin_type || '',
+            personal_color: data.personal_color || '',
+            skin_concerns: data.skin_concerns || [],
+            scalp_concerns: data.scalp_concerns || [],
+            banner_image_url: data.banner_image_url || '',
+            banner_link: data.banner_link || '',
+          });
         }
       } catch (error) {
-        console.error('Failed to load creator data:', error);
+        console.error('Failed to fetch creator:', error);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
-    };
+    }
 
-    initCreator();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
-  }, [authLoading, storeCreator]);
+    fetchCreator();
+    return () => { cancelled = true; };
+  }, [authLoading, creator]);
 
   const handleSave = async () => {
+    if (!creator) return;
     setIsSaving(true);
-
-    // 10-second timeout for save
-    const saveTimeout = setTimeout(() => {
-      setIsSaving(false);
-      toast.error(tCommon('error'));
-    }, 10000);
 
     try {
       const supabase = getClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        clearTimeout(saveTimeout);
-        setIsSaving(false);
-        return;
-      }
 
-      const updateData = {
-        display_name: settings.displayName || null,
-        bio: settings.bio || null,
-        theme_color: settings.themeColor,
-        background_color: settings.backgroundColor,
-        text_color: settings.textColor,
-        instagram: settings.instagram || null,
-        youtube: settings.youtube || null,
-        tiktok: settings.tiktok || null,
-        community_enabled: settings.communityEnabled,
-        community_type: settings.communityType,
-        shop_settings: shopSettings,
+      const updateData: Record<string, unknown> = {
+        display_name: form.display_name || null,
+        bio: form.bio || null,
+        cover_image_url: form.cover_image_url || null,
+        profile_image_url: form.profile_image_url || null,
+        instagram_handle: form.instagram_handle || null,
+        youtube_handle: form.youtube_handle || null,
+        tiktok_handle: form.tiktok_handle || null,
+        skin_type: form.skin_type || null,
+        personal_color: form.personal_color || null,
+        skin_concerns: form.skin_concerns,
+        scalp_concerns: form.scalp_concerns,
+        banner_image_url: form.banner_image_url || null,
+        banner_link: form.banner_link || null,
       };
 
-      const { data: updated, error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('creators')
         .update(updateData)
-        .eq('user_id', session.user.id)
-        .select();
+        .eq('id', creator.id)
+        .select()
+        .single();
 
-      clearTimeout(saveTimeout);
-
-      if (updateError) {
-        toast.error(tCommon('error'));
-        console.error('Save error:', updateError);
-      } else if (!updated || updated.length === 0) {
-        const defaultUsername = username || session.user.email?.split('@')[0] || `user_${Date.now()}`;
-        const { error: insertError } = await supabase
-          .from('creators')
-          .insert({
-            user_id: session.user.id,
-            username: defaultUsername,
-            country: locale === 'ja' ? 'JP' : 'US',
-            ...updateData,
-          });
-
-        if (insertError) {
-          toast.error(tCommon('error'));
-          console.error('Insert error:', insertError);
-        } else {
-          toast.success(t('settingsSaved'));
-        }
+      if (error) {
+        toast.error('저장에 실패했습니다');
+        console.error('Save error:', error);
       } else {
-        toast.success(t('settingsSaved'));
+        toast.success('저장되었습니다');
+        if (data) {
+          setCreator(data as Creator);
+        }
       }
     } catch (error) {
-      clearTimeout(saveTimeout);
-      toast.error(tCommon('error'));
+      toast.error('저장에 실패했습니다');
+      console.error('Save error:', error);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const copyToClipboard = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedUrl(text);
-    toast.success(t('linkCopied'));
-    setTimeout(() => setCopiedUrl(null), 2000);
+  const toggleSkinConcern = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      skin_concerns: prev.skin_concerns.includes(value)
+        ? prev.skin_concerns.filter((c) => c !== value)
+        : [...prev.skin_concerns, value],
+    }));
   };
 
-  const getShopUrl = () => {
-    if (typeof window !== 'undefined') {
-      return `${window.location.origin}/${locale}/@${username}`;
-    }
-    return `/@${username}`;
+  const toggleScalpConcern = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      scalp_concerns: prev.scalp_concerns.includes(value)
+        ? prev.scalp_concerns.filter((c) => c !== value)
+        : [...prev.scalp_concerns, value],
+    }));
   };
 
-  if (isLoading || authLoading) {
+  if (authLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6 max-w-3xl">
+        <div>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72 mt-2" />
+        </div>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-48 w-full" />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="flex gap-6 h-[calc(100vh-8rem)]">
-      {/* Left: Settings Panel */}
-      <div className="w-1/2 overflow-y-auto pr-4 space-y-6">
-        <div className="flex items-center justify-between sticky top-0 bg-background py-2 z-10">
-          <div>
-            <h1 className="text-3xl font-headline font-bold">{t('customizeShop')}</h1>
-            <p className="text-muted-foreground">{t('customizeShopDesc')}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge
-              style={{ backgroundColor: levelColors[level]?.color }}
-              className="text-black font-medium"
-            >
-              <Award className="h-3 w-3 mr-1" />
-              {level.charAt(0).toUpperCase() + level.slice(1)}
-            </Badge>
-          </div>
+    <div className="space-y-6 max-w-3xl">
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">샵 프로필 설정</h1>
+          <p className="text-sm text-muted-foreground">내 샵의 프로필과 뷰티 정보를 관리하세요</p>
         </div>
-
-        <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="profile"><User className="h-4 w-4 mr-1" /> {t('tabProfile')}</TabsTrigger>
-            <TabsTrigger value="theme"><Palette className="h-4 w-4 mr-1" /> {t('tabTheme')}</TabsTrigger>
-            <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1" /> {t('tabSettings')}</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="profile" className="space-y-4 mt-4">
-            {/* Profile Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  {t('profileSection')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>{t('displayName')}</Label>
-                  <Input
-                    placeholder={t('shopNamePlaceholder')}
-                    value={settings.displayName}
-                    onChange={(e) => setSettings({ ...settings, displayName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('bio')}</Label>
-                  <Textarea
-                    placeholder={t('bioPlaceholderShop')}
-                    value={settings.bio}
-                    onChange={(e) => setSettings({ ...settings, bio: e.target.value })}
-                    rows={4}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Social Links */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5" />
-                  {t('socialLinks')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Instagram className="h-4 w-4" /> Instagram
-                  </Label>
-                  <Input
-                    placeholder="https://instagram.com/..."
-                    value={settings.instagram}
-                    onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Youtube className="h-4 w-4" /> YouTube
-                  </Label>
-                  <Input
-                    placeholder="https://youtube.com/..."
-                    value={settings.youtube}
-                    onChange={(e) => setSettings({ ...settings, youtube: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Music2 className="h-4 w-4" /> TikTok
-                  </Label>
-                  <Input
-                    placeholder="https://tiktok.com/..."
-                    value={settings.tiktok}
-                    onChange={(e) => setSettings({ ...settings, tiktok: e.target.value })}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Shop URL */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ExternalLink className="h-5 w-5" />
-                  {t('shopUrl')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <Input value={getShopUrl()} readOnly className="font-mono text-sm" />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => copyToClipboard(getShopUrl())}
-                  >
-                    {copiedUrl === getShopUrl() ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                  <Button variant="outline" size="icon" asChild>
-                    <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="theme" className="space-y-4 mt-4">
-            {/* Theme Color */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('themeColor')}</CardTitle>
-                <CardDescription>{t('themeColorDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-3">
-                  {themeColors.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setSettings({ ...settings, themeColor: color.value })}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        settings.themeColor === color.value
-                          ? 'border-primary scale-105'
-                          : 'border-transparent hover:border-muted'
-                      }`}
-                      style={{ backgroundColor: color.value + '20' }}
-                    >
-                      <div
-                        className="w-6 h-6 rounded-full mx-auto mb-1"
-                        style={{ backgroundColor: color.value }}
-                      />
-                      <p className="text-xs text-center">{color.name}</p>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Background Color */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('backgroundColor')}</CardTitle>
-                <CardDescription>{t('backgroundColorDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-3">
-                  {backgroundColors.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => setSettings({
-                        ...settings,
-                        backgroundColor: color.value,
-                        textColor: color.value === '#ffffff' ? '#1a1a1a' : '#ffffff'
-                      })}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        settings.backgroundColor === color.value
-                          ? 'border-primary scale-105'
-                          : 'border-transparent hover:border-muted'
-                      }`}
-                    >
-                      <div
-                        className="w-6 h-6 rounded-full mx-auto mb-1 border"
-                        style={{ backgroundColor: color.value }}
-                      />
-                      <p className="text-xs text-center">{color.name}</p>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-4 mt-4">
-            {/* Community Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  {t('community')}
-                </CardTitle>
-                <CardDescription>{t('enableCommunityDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{t('enableCommunity')}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {t('enableCommunityDesc')}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.communityEnabled}
-                    onCheckedChange={(checked) =>
-                      setSettings({ ...settings, communityEnabled: checked })
-                    }
-                  />
-                </div>
-                {settings.communityEnabled && (
-                  <div className="space-y-2">
-                    <Label>{t('communityType')}</Label>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={settings.communityType === 'board' ? 'default' : 'outline'}
-                        className="flex-1"
-                        onClick={() => setSettings({ ...settings, communityType: 'board' })}
-                      >
-                        {t('communityBoard')}
-                      </Button>
-                      <Button
-                        variant={settings.communityType === 'chat' ? 'default' : 'outline'}
-                        className="flex-1"
-                        onClick={() => setSettings({ ...settings, communityType: 'chat' })}
-                      >
-                        {t('communityChat')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Shop Display Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('displaySettings')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{t('showFooter')}</p>
-                    <p className="text-sm text-muted-foreground">{t('showFooterDesc')}</p>
-                  </div>
-                  <Switch
-                    checked={shopSettings.show_footer}
-                    onCheckedChange={(checked) =>
-                      setShopSettings({ ...shopSettings, show_footer: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{t('showSocialLinks')}</p>
-                    <p className="text-sm text-muted-foreground">{t('showSocialLinksDesc')}</p>
-                  </div>
-                  <Switch
-                    checked={shopSettings.show_social_links}
-                    onCheckedChange={(checked) =>
-                      setShopSettings({ ...shopSettings, show_social_links: checked })
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{t('showSubscriberCount')}</p>
-                    <p className="text-sm text-muted-foreground">{t('showSubscriberCountDesc')}</p>
-                  </div>
-                  <Switch
-                    checked={shopSettings.show_subscriber_count}
-                    onCheckedChange={(checked) =>
-                      setShopSettings({ ...shopSettings, show_subscriber_count: checked })
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Announcement */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('shopAnnouncement')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>{t('active')}</Label>
-                  <Switch
-                    checked={shopSettings.announcement_active}
-                    onCheckedChange={(checked) =>
-                      setShopSettings({ ...shopSettings, announcement_active: checked })
-                    }
-                  />
-                </div>
-                <Textarea
-                  placeholder={t('enterAnnouncement')}
-                  value={shopSettings.announcement}
-                  onChange={(e) =>
-                    setShopSettings({ ...shopSettings, announcement: e.target.value })
-                  }
-                  rows={3}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Save Button */}
-        <div className="sticky bottom-0 bg-background py-4 border-t">
-          <Button className="w-full btn-gold" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{tCommon('loading')}</>
-            ) : (
-              <><Save className="mr-2 h-4 w-4" />{tCommon('save')}</>
-            )}
-          </Button>
-        </div>
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />저장 중...</>
+          ) : (
+            <><Save className="mr-2 h-4 w-4" />저장</>
+          )}
+        </Button>
       </div>
 
-      {/* Right: Live Preview */}
-      <div className="w-1/2 border-l pl-6">
-        <div className="sticky top-0">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              {t('livePreview')}
-            </h2>
-            <Button variant="outline" size="sm" asChild>
-              <a href={getShopUrl()} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                {t('openShop')}
-              </a>
-            </Button>
+      {/* Cover & Profile Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            이미지 설정
+          </CardTitle>
+          <CardDescription>샵에 표시될 커버 이미지와 프로필 이미지 URL을 입력하세요</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>커버 이미지 URL</Label>
+            <Input
+              placeholder="https://example.com/cover.jpg"
+              value={form.cover_image_url}
+              onChange={(e) => setForm({ ...form, cover_image_url: e.target.value })}
+            />
           </div>
+          <div className="space-y-2">
+            <Label>프로필 이미지 URL</Label>
+            <Input
+              placeholder="https://example.com/profile.jpg"
+              value={form.profile_image_url}
+              onChange={(e) => setForm({ ...form, profile_image_url: e.target.value })}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Preview Frame */}
-          <div
-            className="rounded-lg overflow-hidden border shadow-lg"
-            style={{
-              backgroundColor: settings.backgroundColor,
-              color: settings.textColor,
-            }}
-          >
-            {/* Announcement Banner */}
-            {shopSettings.announcement_active && shopSettings.announcement && (
-              <div
-                className="p-2 text-center text-sm"
-                style={{ backgroundColor: settings.themeColor }}
-              >
-                {shopSettings.announcement}
-              </div>
-            )}
+      {/* Basic Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            기본 정보
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>샵 이름</Label>
+            <Input
+              placeholder="나의 뷰티 셀렉트샵"
+              value={form.display_name}
+              onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>샵 설명</Label>
+            <Textarea
+              placeholder="내 샵을 소개해 주세요"
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              rows={4}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Header */}
-            <div className="p-6 text-center">
-              <Avatar
-                className="h-20 w-20 mx-auto mb-4 ring-4 ring-offset-2"
-                style={{
-                  ['--tw-ring-color' as any]: settings.themeColor,
-                  ['--tw-ring-offset-color' as any]: settings.backgroundColor,
-                }}
-              >
-                <AvatarFallback
-                  style={{ backgroundColor: settings.themeColor }}
-                  className="text-2xl font-bold text-white"
-                >
-                  {settings.displayName?.charAt(0)?.toUpperCase() || username?.charAt(0)?.toUpperCase() || '?'}
-                </AvatarFallback>
-              </Avatar>
+      {/* Social Channels */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LinkIcon className="h-5 w-5" />
+            대표 채널 URL
+          </CardTitle>
+          <CardDescription>SNS 채널 주소를 입력하세요</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Instagram className="h-4 w-4" /> Instagram
+            </Label>
+            <Input
+              placeholder="https://instagram.com/yourhandle"
+              value={form.instagram_handle}
+              onChange={(e) => setForm({ ...form, instagram_handle: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Youtube className="h-4 w-4" /> YouTube
+            </Label>
+            <Input
+              placeholder="https://youtube.com/@yourchannel"
+              value={form.youtube_handle}
+              onChange={(e) => setForm({ ...form, youtube_handle: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Music2 className="h-4 w-4" /> TikTok
+            </Label>
+            <Input
+              placeholder="https://tiktok.com/@yourhandle"
+              value={form.tiktok_handle}
+              onChange={(e) => setForm({ ...form, tiktok_handle: e.target.value })}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-              <h2 className="text-xl font-bold">
-                {settings.displayName || username || t('yourShop')}
-              </h2>
-              <p className="text-sm opacity-70 mt-1">@{username}</p>
-
-              {shopSettings.show_subscriber_count && (
-                <p className="text-xs opacity-50 mt-1">0 {t('subscribers')}</p>
-              )}
-
-              {settings.bio && (
-                <p className="mt-3 text-sm opacity-80 max-w-xs mx-auto">
-                  {settings.bio}
-                </p>
-              )}
-
-              {/* Social Links */}
-              {shopSettings.show_social_links && (settings.instagram || settings.youtube || settings.tiktok) && (
-                <div className="flex justify-center gap-3 mt-4">
-                  {settings.instagram && (
-                    <div
-                      className="p-2 rounded-full"
-                      style={{ backgroundColor: settings.themeColor + '30' }}
-                    >
-                      <Instagram className="h-4 w-4" style={{ color: settings.themeColor }} />
-                    </div>
-                  )}
-                  {settings.youtube && (
-                    <div
-                      className="p-2 rounded-full"
-                      style={{ backgroundColor: settings.themeColor + '30' }}
-                    >
-                      <Youtube className="h-4 w-4" style={{ color: settings.themeColor }} />
-                    </div>
-                  )}
-                  {settings.tiktok && (
-                    <div
-                      className="p-2 rounded-full"
-                      style={{ backgroundColor: settings.themeColor + '30' }}
-                    >
-                      <Music2 className="h-4 w-4" style={{ color: settings.themeColor }} />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Products Grid Preview */}
-            <div className="p-6 pt-0">
-              <div className="grid grid-cols-2 gap-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="aspect-square rounded-lg flex items-center justify-center text-xs border border-dashed"
-                    style={{
-                      borderColor: settings.themeColor + '40',
-                      backgroundColor: settings.themeColor + '10',
-                      color: settings.textColor,
-                      opacity: 0.5,
-                    }}
-                  >
-                    {t('productPlaceholder')} {i}
-                  </div>
+      {/* Beauty Profile Tags */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            뷰티 프로필 태그
+          </CardTitle>
+          <CardDescription>뷰티 프로필 정보를 설정하면 맞춤 추천에 활용됩니다</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Skin Type */}
+          <div className="space-y-2">
+            <Label>피부 타입</Label>
+            <Select
+              value={form.skin_type}
+              onValueChange={(value) => setForm({ ...form, skin_type: value as SkinType })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="피부 타입 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(SKIN_TYPE_LABELS) as [SkinType, string][]).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-
-            {/* Footer Preview */}
-            {shopSettings.show_footer && (
-              <div
-                className="p-4 text-center text-xs border-t"
-                style={{
-                  borderColor: settings.textColor + '20',
-                  opacity: 0.5,
-                }}
-              >
-                <p>KviewShop | Terms | Privacy</p>
-              </div>
-            )}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
+
+          {/* Personal Color */}
+          <div className="space-y-2">
+            <Label>퍼스널 컬러</Label>
+            <Select
+              value={form.personal_color}
+              onValueChange={(value) => setForm({ ...form, personal_color: value as PersonalColor })}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="퍼스널 컬러 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.entries(PERSONAL_COLOR_LABELS) as [PersonalColor, string][]).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
+          {/* Skin Concerns */}
+          <div className="space-y-3">
+            <Label>피부 고민 (복수 선택)</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {SKIN_CONCERNS_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={form.skin_concerns.includes(option.value)}
+                    onCheckedChange={() => toggleSkinConcern(option.value)}
+                  />
+                  <span className="text-sm">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Scalp Concerns */}
+          <div className="space-y-3">
+            <Label>두피 고민 (복수 선택)</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {SCALP_CONCERNS_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={form.scalp_concerns.includes(option.value)}
+                    onCheckedChange={() => toggleScalpConcern(option.value)}
+                  />
+                  <span className="text-sm">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Banner Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            배너 설정
+          </CardTitle>
+          <CardDescription>샵 상단에 표시되는 배너를 설정하세요</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>배너 이미지 URL</Label>
+            <Input
+              placeholder="https://example.com/banner.jpg"
+              value={form.banner_image_url}
+              onChange={(e) => setForm({ ...form, banner_image_url: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>배너 클릭 링크</Label>
+            <Input
+              placeholder="https://example.com/promotion"
+              value={form.banner_link}
+              onChange={(e) => setForm({ ...form, banner_link: e.target.value })}
+            />
+          </div>
+          {form.banner_image_url && (
+            <div className="rounded-lg overflow-hidden border">
+              <img
+                src={form.banner_image_url}
+                alt="배너 미리보기"
+                className="w-full h-32 object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Sticky Save Button */}
+      <div className="sticky bottom-0 bg-background py-4 border-t">
+        <Button className="w-full" onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" />저장 중...</>
+          ) : (
+            <><Save className="mr-2 h-4 w-4" />변경사항 저장</>
+          )}
+        </Button>
       </div>
     </div>
   );

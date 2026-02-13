@@ -1,419 +1,482 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import {
-  Package,
-  Users,
-  DollarSign,
-  ShoppingCart,
-  AlertTriangle,
-  Loader2,
-} from 'lucide-react';
-import { formatCurrency } from '@/lib/i18n/config';
-import { MOCRA_THRESHOLDS } from '@/types/database';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/auth';
+import type {
+  BrandDashboardStats,
+  Campaign,
+  Creator,
+} from '@/types/database';
+import { CAMPAIGN_STATUS_LABELS } from '@/types/database';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
-interface BrandStats {
-  totalRevenue: number;
-  totalOrders: number;
-  productCount: number;
-  activeCreators: number;
-  usSalesYTD: number;
-  jpSalesYTD: number;
-  mocraStatus: 'green' | 'yellow' | 'red';
+interface CreatorRanking {
+  creator: Creator;
+  totalSales: number;
+  orderCount: number;
 }
 
-interface TopProduct {
-  id: string;
-  name: string;
-  sold: number;
-  revenue: number;
+function formatNumber(num: number): string {
+  return num.toLocaleString('ko-KR');
 }
 
-interface TopCreator {
-  id: string;
-  name: string;
-  sold: number;
-  revenue: number;
+function formatCurrency(num: number): string {
+  return `${formatNumber(num)}원`;
 }
 
-function getMoCRAStatusColor(status: 'green' | 'yellow' | 'red') {
-  switch (status) {
-    case 'green':
-      return 'mocra-green';
-    case 'yellow':
-      return 'mocra-yellow';
-    case 'red':
-      return 'mocra-red';
-  }
+function StatsCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <Skeleton className="h-4 w-20" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-28" />
+      </CardContent>
+    </Card>
+  );
 }
 
-function getMoCRAStatus(usSales: number): 'green' | 'yellow' | 'red' {
-  if (usSales >= MOCRA_THRESHOLDS.CRITICAL) return 'red';
-  if (usSales >= MOCRA_THRESHOLDS.WARNING) return 'yellow';
-  return 'green';
+function TableSkeleton({ rows = 5 }: { rows?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} className="h-10 w-full" />
+      ))}
+    </div>
+  );
 }
 
 export default function BrandDashboardPage() {
-  const t = useTranslations('dashboard');
-  const tMocra = useTranslations('mocra');
-
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<BrandStats>({
-    totalRevenue: 0,
-    totalOrders: 0,
-    productCount: 0,
-    activeCreators: 0,
-    usSalesYTD: 0,
-    jpSalesYTD: 0,
-    mocraStatus: 'green',
-  });
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
-  const [topCreators, setTopCreators] = useState<TopCreator[]>([]);
+  const { brand } = useAuthStore();
+  const [stats, setStats] = useState<BrandDashboardStats | null>(null);
+  const [activeGonggu, setActiveGonggu] = useState<Campaign | null>(null);
+  const [creatorRankings, setCreatorRankings] = useState<CreatorRanking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!brand?.id) return;
+
     async function fetchDashboardData() {
+      const supabase = getClient();
+      const brandId = brand!.id;
+
       try {
-        const supabase = getClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-          setLoading(false);
-          return;
+        // 1. Get brand's campaign IDs
+        const { data: brandCampaigns } = await supabase
+          .from('campaigns')
+          .select('id, type, status, title, description, start_at, end_at, sold_count, total_stock, target_participants, commission_rate, recruitment_type, brand_id, created_at')
+          .eq('brand_id', brandId);
+
+        const campaignIds = (brandCampaigns ?? []).map((c) => c.id);
+
+        // 2. Get brand's order IDs
+        const { data: brandOrders } = await supabase
+          .from('orders')
+          .select('id, total_amount, status, creator_id')
+          .eq('brand_id', brandId);
+
+        const orders = brandOrders ?? [];
+        const orderIds = orders.map((o) => o.id);
+
+        // 3. Get products count
+        const { count: productCount } = await supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', brandId)
+          .eq('status', 'ACTIVE');
+
+        // 4. Get active participations (unique creators)
+        const { data: participations } = await supabase
+          .from('campaign_participations')
+          .select('creator_id')
+          .eq('status', 'APPROVED')
+          .in('campaign_id', campaignIds.length > 0 ? campaignIds : ['__none__']);
+
+        const uniqueCreatorIds = new Set(
+          (participations ?? []).map((p) => p.creator_id)
+        );
+
+        // 5. Get total commission
+        const { data: conversions } = await supabase
+          .from('conversions')
+          .select('commission_amount')
+          .eq('status', 'CONFIRMED')
+          .in('order_id', orderIds.length > 0 ? orderIds : ['__none__']);
+
+        const totalCommission = (conversions ?? []).reduce(
+          (sum, c) => sum + (c.commission_amount || 0),
+          0
+        );
+
+        // 6. Get visits count for creators associated with this brand's campaigns
+        const creatorIdArr = Array.from(uniqueCreatorIds);
+        let totalVisits = 0;
+        if (creatorIdArr.length > 0) {
+          const { count } = await supabase
+            .from('shop_visits')
+            .select('id', { count: 'exact', head: true })
+            .in('creator_id', creatorIdArr);
+          totalVisits = count ?? 0;
         }
 
-        const userId = session.user.id;
-
-        // Get brand info
-        const { data: brand } = await supabase
-          .from('brands')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (!brand) {
-          setLoading(false);
-          return;
-        }
-
-        const brandId = brand.id;
-
-        // Fetch all data in parallel
-        const [productsRes, ordersRes, creatorsRes] = await Promise.all([
-          supabase.from('products').select('id, name, is_active').eq('brand_id', brandId),
-          supabase.from('orders').select('id, total_amount, currency, country, created_at, items').eq('brand_id', brandId),
-          supabase.from('creators').select('id, display_name, username, picked_products').not('picked_products', 'is', null),
-        ]);
-
-        const products = productsRes.data || [];
-        const orders = ordersRes.data || [];
-
-        // Calculate stats from real data
-        const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-        const totalOrders = orders.length;
-        const productCount = products.filter(p => p.is_active).length;
-
-        // Count creators that have picked this brand's products
-        const productIds = products.map(p => p.id);
-        const allCreators = creatorsRes.data || [];
-        const activeCreators = allCreators.filter(c => {
-          try {
-            const picked = c.picked_products || [];
-            return picked.some((pid: string) => productIds.includes(pid));
-          } catch {
-            return false;
-          }
-        });
-
-        // Calculate US and JP sales YTD
-        const currentYear = new Date().getFullYear();
-        const ytdOrders = orders.filter(o => new Date(o.created_at).getFullYear() === currentYear);
-        const usSalesYTD = ytdOrders
-          .filter(o => o.country === 'US')
+        // Calculate stats
+        const totalRevenue = orders
+          .filter((o) => o.status !== 'CANCELLED')
           .reduce((sum, o) => sum + (o.total_amount || 0), 0);
-        const jpSalesYTD = ytdOrders
-          .filter(o => o.country === 'JP')
-          .reduce((sum, o) => sum + (o.total_amount || 0), 0);
-
-        const mocraStatus = getMoCRAStatus(usSalesYTD);
+        const totalOrders = orders.filter((o) => o.status !== 'CANCELLED').length;
+        const activeCampaigns = (brandCampaigns ?? []).filter(
+          (c) => c.status === 'ACTIVE' || c.status === 'RECRUITING'
+        ).length;
 
         setStats({
-          totalRevenue,
-          totalOrders,
-          productCount,
-          activeCreators: activeCreators.length,
-          usSalesYTD,
-          jpSalesYTD,
-          mocraStatus,
+          total_visits: totalVisits,
+          total_orders: totalOrders,
+          total_revenue: totalRevenue,
+          total_commission: totalCommission,
+          conversion_rate:
+            totalVisits > 0
+              ? Math.round((totalOrders / totalVisits) * 10000) / 100
+              : 0,
+          active_campaigns: activeCampaigns,
+          active_creators: uniqueCreatorIds.size,
+          product_count: productCount ?? 0,
         });
 
-        // Calculate top products by revenue from order items
-        const productRevenue: Record<string, { name: string; sold: number; revenue: number }> = {};
-        for (const order of orders) {
-          const items = order.items || [];
-          for (const item of items) {
-            if (!productRevenue[item.product_id]) {
-              const prod = products.find(p => p.id === item.product_id);
-              productRevenue[item.product_id] = {
-                name: prod?.name || item.product_name || 'Unknown',
-                sold: 0,
-                revenue: 0,
-              };
-            }
-            productRevenue[item.product_id].sold += item.quantity || 1;
-            productRevenue[item.product_id].revenue += item.total || item.price || 0;
-          }
+        // Active gonggu campaign
+        const gongguCampaign = (brandCampaigns ?? []).find(
+          (c) => c.type === 'GONGGU' && c.status === 'ACTIVE'
+        );
+        if (gongguCampaign) {
+          setActiveGonggu(gongguCampaign as Campaign);
         }
-        const sortedProducts = Object.entries(productRevenue)
-          .map(([id, data]) => ({ id, ...data }))
-          .sort((a, b) => b.revenue - a.revenue)
-          .slice(0, 3);
-        setTopProducts(sortedProducts);
 
-        // Calculate top creators by revenue
-        const creatorRevenue: Record<string, { name: string; sold: number; revenue: number }> = {};
+        // Creator sales ranking from orders
+        const creatorSalesMap = new Map<
+          string,
+          { totalSales: number; orderCount: number }
+        >();
         for (const order of orders) {
-          const cid = (order as Record<string, unknown>).creator_id as string | undefined;
-          if (!cid) continue;
-          if (!creatorRevenue[cid]) {
-            const creator = allCreators.find(c => c.id === cid);
-            creatorRevenue[cid] = {
-              name: creator ? `@${creator.username || creator.display_name}` : 'Unknown',
-              sold: 0,
-              revenue: 0,
+          if (order.status !== 'CANCELLED' && order.creator_id) {
+            const existing = creatorSalesMap.get(order.creator_id) ?? {
+              totalSales: 0,
+              orderCount: 0,
             };
+            existing.totalSales += order.total_amount || 0;
+            existing.orderCount += 1;
+            creatorSalesMap.set(order.creator_id, existing);
           }
-          creatorRevenue[cid].sold += 1;
-          creatorRevenue[cid].revenue += (order.total_amount || 0);
         }
-        const sortedCreators = Object.entries(creatorRevenue)
-          .map(([id, data]) => ({ id, ...data }))
-          .sort((a, b) => b.revenue - a.revenue)
-          .slice(0, 3);
-        setTopCreators(sortedCreators);
 
+        const topCreatorIds = Array.from(creatorSalesMap.entries())
+          .sort((a, b) => b[1].totalSales - a[1].totalSales)
+          .slice(0, 10)
+          .map(([id]) => id);
+
+        if (topCreatorIds.length > 0) {
+          const { data: creators } = await supabase
+            .from('creators')
+            .select('*')
+            .in('id', topCreatorIds);
+
+          const rankings: CreatorRanking[] = (creators ?? [])
+            .map((creator) => ({
+              creator: creator as Creator,
+              ...(creatorSalesMap.get(creator.id) ?? {
+                totalSales: 0,
+                orderCount: 0,
+              }),
+            }))
+            .sort((a, b) => b.totalSales - a.totalSales);
+
+          setCreatorRankings(rankings);
+        }
       } catch (error) {
-        console.error('Failed to load dashboard:', error);
+        console.error('Failed to fetch dashboard data:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     }
 
     fetchDashboardData();
-  }, []);
+  }, [brand?.id]);
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">대시보드</h1>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <StatsCardSkeleton key={i} />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+            <CardContent>
+              <TableSkeleton rows={5} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+            <CardContent>
+              <TableSkeleton rows={5} />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
-  const mocraProgress = stats.usSalesYTD > 0
-    ? (stats.usSalesYTD / MOCRA_THRESHOLDS.CRITICAL) * 100
-    : 0;
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-headline font-bold">{t('welcome')}</h1>
-        <p className="text-muted-foreground">{t('overview')}</p>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">대시보드</h1>
+        <p className="text-sm text-muted-foreground">
+          {brand?.brand_name ?? '브랜드'}
+        </p>
       </div>
 
-      {/* MoCRA Alert Banner */}
-      {stats.mocraStatus !== 'green' && (
-        <Card className={`border ${getMoCRAStatusColor(stats.mocraStatus)}`}>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              <CardTitle className="text-lg">{tMocra('title')}</CardTitle>
-              <Badge className={getMoCRAStatusColor(stats.mocraStatus)}>
-                {tMocra(stats.mocraStatus)}
-              </Badge>
-            </div>
+            <CardDescription>방문수</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{tMocra('usSalesYTD')}</span>
-                <span className="font-bold">
-                  {formatCurrency(stats.usSalesYTD, 'USD')}
-                </span>
-              </div>
-              <Progress value={mocraProgress} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {tMocra(`${stats.mocraStatus}Desc`)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalRevenue')}</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(stats.totalRevenue, 'USD')}
-            </div>
+            <p className="text-2xl font-bold">
+              {formatNumber(stats?.total_visits ?? 0)}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalOrders')}</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>주문수</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            <p className="text-2xl font-bold">
+              {formatNumber(stats?.total_orders ?? 0)}
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('activeProducts')}</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>전환율</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.productCount}</div>
+            <p className="text-2xl font-bold">
+              {stats?.conversion_rate ?? 0}%
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t('activeCreators')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>매출</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeCreators}</div>
+            <p className="text-2xl font-bold">
+              {formatCurrency(stats?.total_revenue ?? 0)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>커미션</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {formatCurrency(stats?.total_commission ?? 0)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>진행중 캠페인</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {formatNumber(stats?.active_campaigns ?? 0)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>활동 크리에이터</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {formatNumber(stats?.active_creators ?? 0)}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>등록 상품</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {formatNumber(stats?.product_count ?? 0)}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Top Products & Creators */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Real-time Gonggu Dashboard */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('topProducts')}</CardTitle>
-            <CardDescription>{t('topProductsDesc')}</CardDescription>
+            <CardTitle>실시간 공구 현황</CardTitle>
+            <CardDescription>
+              현재 진행 중인 공구 캠페인의 실시간 상태
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {topProducts.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">{t('noData')}</p>
-            ) : (
+            {activeGonggu ? (
               <div className="space-y-4">
-                {topProducts.map((product, index) => (
-                  <div
-                    key={product.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
-                        {index + 1}
-                      </span>
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {product.sold} {t('sold')}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-bold">
-                      {formatCurrency(product.revenue, 'USD')}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="font-semibold">{activeGonggu.title}</p>
+                    <Badge variant="secondary">
+                      {CAMPAIGN_STATUS_LABELS[activeGonggu.status]}
+                    </Badge>
+                  </div>
+                  <Link href="campaigns/gonggu">
+                    <Button variant="outline" size="sm">
+                      상세보기
+                    </Button>
+                  </Link>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>판매 진행률</span>
+                    <span>
+                      {formatNumber(activeGonggu.sold_count)} /{' '}
+                      {formatNumber(activeGonggu.total_stock ?? 0)}
                     </span>
                   </div>
-                ))}
+                  <Progress
+                    value={
+                      activeGonggu.total_stock
+                        ? (activeGonggu.sold_count / activeGonggu.total_stock) *
+                          100
+                        : 0
+                    }
+                  />
+                </div>
+
+                {activeGonggu.end_at && (
+                  <div className="text-sm text-muted-foreground">
+                    종료:{' '}
+                    {new Date(activeGonggu.end_at).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                )}
+
+                {activeGonggu.target_participants && (
+                  <div className="text-sm text-muted-foreground">
+                    목표 참여 크리에이터:{' '}
+                    {formatNumber(activeGonggu.target_participants)}명
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-muted-foreground">
+                  현재 진행 중인 공구 캠페인이 없습니다.
+                </p>
+                <Link href="campaigns/new" className="mt-4">
+                  <Button variant="outline" size="sm">
+                    새 캠페인 만들기
+                  </Button>
+                </Link>
               </div>
             )}
           </CardContent>
         </Card>
 
+        {/* Creator Sales Ranking */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('topCreators')}</CardTitle>
-            <CardDescription>{t('topCreatorsDesc')}</CardDescription>
+            <CardTitle>크리에이터 매출 랭킹</CardTitle>
+            <CardDescription>
+              누적 매출 기준 상위 크리에이터
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {topCreators.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">{t('noData')}</p>
-            ) : (
-              <div className="space-y-4">
-                {topCreators.map((creator, index) => (
-                  <div
-                    key={creator.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary/10 text-secondary text-sm font-bold">
+            {creatorRankings.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">순위</TableHead>
+                    <TableHead>크리에이터</TableHead>
+                    <TableHead className="text-right">주문수</TableHead>
+                    <TableHead className="text-right">매출</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {creatorRankings.map((ranking, index) => (
+                    <TableRow key={ranking.creator.id}>
+                      <TableCell className="font-medium">
                         {index + 1}
-                      </span>
-                      <div>
-                        <p className="font-medium">{creator.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {creator.sold} {t('itemsSold')}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-bold">
-                      {formatCurrency(creator.revenue, 'USD')}
-                    </span>
-                  </div>
-                ))}
+                      </TableCell>
+                      <TableCell>{ranking.creator.display_name}</TableCell>
+                      <TableCell className="text-right">
+                        {formatNumber(ranking.orderCount)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(ranking.totalSales)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-muted-foreground">
+                  아직 매출 데이터가 없습니다.
+                </p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Sales by Country */}
-      {(stats.usSalesYTD > 0 || stats.jpSalesYTD > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('salesByCountry')}</CardTitle>
-            <CardDescription>{t('salesByCountryDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-2">
-              {stats.jpSalesYTD > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm">JP</span>
-                    <span className="font-medium">{t('japan')}</span>
-                  </div>
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(stats.jpSalesYTD, 'JPY')}
-                  </p>
-                </div>
-              )}
-              {stats.usSalesYTD > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm">US</span>
-                    <span className="font-medium">{t('usa')}</span>
-                  </div>
-                  <p className="text-2xl font-bold">
-                    {formatCurrency(stats.usSalesYTD, 'USD')}
-                  </p>
-                  <Progress value={mocraProgress} className="h-2" />
-                  {stats.mocraStatus !== 'green' && (
-                    <p className="text-xs text-warning">
-                      {tMocra(`${stats.mocraStatus}Desc`)}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

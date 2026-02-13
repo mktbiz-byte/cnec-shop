@@ -42,17 +42,18 @@ export default function CreatorSettingsPage() {
 
     // Populate settings from store data (no extra DB calls needed)
     if (storeCreator) {
-      const notifSettings = storeCreator.notification_settings || {};
+      const c = storeCreator as Record<string, any>;
+      const notifSettings = c.notification_settings || {};
       setSettings({
         displayName: storeCreator.display_name || '',
-        email: storeCreator.email || storeUser?.email || '',
-        phone: storeCreator.phone || storeUser?.phone || '',
-        country: storeCreator.country || 'US',
-        paymentMethod: storeCreator.payment_method || 'paypal',
-        paypalEmail: storeCreator.paypal_email || '',
+        email: c.email || storeUser?.email || '',
+        phone: c.phone || storeUser?.phone || '',
+        country: c.country || 'KR',
+        paymentMethod: c.payment_method || 'bank',
+        paypalEmail: c.paypal_email || '',
         bankName: storeCreator.bank_name || '',
-        accountNumber: storeCreator.account_number || '',
-        swiftCode: storeCreator.swift_code || '',
+        accountNumber: storeCreator.bank_account || '',
+        swiftCode: c.swift_code || '',
         emailNotifications: notifSettings.email_notifications ?? true,
         orderNotifications: notifSettings.order_notifications ?? true,
         settlementNotifications: notifSettings.settlement_notifications ?? true,
