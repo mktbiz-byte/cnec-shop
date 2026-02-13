@@ -98,13 +98,24 @@ export async function generateMetadata({ params }: ShopPageProps): Promise<Metad
 
   const displayName = creator.display_name || creator.shop_id;
 
+  const shopDesc = creator.bio || `${displayName}이(가) 추천하는 뷰티 아이템을 만나보세요`;
+  const ogImage = creator.cover_image_url || creator.profile_image_url;
+
   return {
-    title: `${displayName}의 셀렉샵 | CNEC`,
-    description: creator.bio || `${displayName}이(가) 추천하는 뷰티 아이템을 만나보세요`,
+    title: `${displayName}의 셀렉트샵 — CNEC`,
+    description: shopDesc,
     openGraph: {
-      title: `${displayName}의 셀렉샵 | CNEC Commerce`,
-      description: creator.bio || `${displayName}이(가) 추천하는 뷰티 아이템을 만나보세요`,
-      images: creator.profile_image_url ? [creator.profile_image_url] : [],
+      title: `${displayName}의 셀렉트샵 — CNEC`,
+      description: shopDesc,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 630 }] : [],
+      type: 'website',
+      siteName: 'CNEC Commerce',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${displayName}의 셀렉트샵 — CNEC`,
+      description: shopDesc,
+      images: ogImage ? [ogImage] : [],
     },
     robots: {
       index: true,

@@ -1,0 +1,182 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Inline types
+type OrderStatus = 'PENDING' | 'PAID' | 'PREPARING' | 'SHIPPING' | 'DELIVERED' | 'CONFIRMED' | 'CANCELLED' | 'REFUNDED';
+
+interface WebhookPayload {
+  type: string;
+  timestamp: string;
+  data: {
+    paymentId: string;
+    transactionId?: string;
+    orderNumber?: string;
+    orderId?: string;
+    status?: string;
+    amount?: number;
+    cancelledAt?: string;
+    cancelReason?: string;
+  };
+}
+
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase configuration');
+  }
+
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+// Map PortOne webhook event types to our order statuses
+function mapWebhookEventToStatus(eventType: string): OrderStatus | null {
+  switch (eventType) {
+    case 'payment.paid':
+    case 'payment.confirmed':
+      return 'PAID';
+    case 'payment.cancelled':
+    case 'payment.failed':
+      return 'CANCELLED';
+    case 'payment.refunded':
+      return 'REFUNDED';
+    default:
+      return null;
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Verify webhook signature (mock for now)
+    // In production, verify the PortOne webhook signature:
+    //   const signature = request.headers.get('x-portone-signature');
+    //   const webhookSecret = process.env.PORTONE_WEBHOOK_SECRET;
+    //   Verify HMAC-SHA256 of request body matches signature
+    const signature = request.headers.get('x-portone-signature');
+    if (signature) {
+      // TODO: Implement actual signature verification
+      // const isValid = verifySignature(body, signature, webhookSecret);
+      // if (!isValid) return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+    }
+
+    const payload: WebhookPayload = await request.json();
+
+    if (!payload.type || !payload.data) {
+      return NextResponse.json(
+        { error: 'Invalid webhook payload' },
+        { status: 400 }
+      );
+    }
+
+    const { type: eventType, data } = payload;
+    const { paymentId, orderId: webhookOrderId } = data;
+
+    if (!paymentId) {
+      return NextResponse.json(
+        { error: 'Missing paymentId in webhook data' },
+        { status: 400 }
+      );
+    }
+
+    // Map event type to order status
+    const newStatus = mapWebhookEventToStatus(eventType);
+
+    if (!newStatus) {
+      // Unrecognized event type - acknowledge but don't process
+      console.log(`Unrecognized webhook event type: ${eventType}`);
+      return NextResponse.json({ received: true, processed: false });
+    }
+
+    const supabase = getSupabaseClient();
+
+    // Find the order by pg_transaction_id (paymentId) or by orderId from webhook
+    let orderQuery = supabase
+      .from('orders')
+      .select('id, status, order_number');
+
+    if (webhookOrderId) {
+      orderQuery = orderQuery.eq('id', webhookOrderId);
+    } else {
+      orderQuery = orderQuery.eq('pg_transaction_id', paymentId);
+    }
+
+    const { data: order, error: orderError } = await orderQuery.single();
+
+    if (orderError || !order) {
+      console.error('Webhook: Order not found for paymentId:', paymentId);
+      // Return 200 to prevent PortOne from retrying
+      return NextResponse.json({ received: true, processed: false, reason: 'Order not found' });
+    }
+
+    // Build update payload based on event type
+    const now = new Date().toISOString();
+    const updateData: Record<string, unknown> = {
+      status: newStatus,
+      updated_at: now,
+    };
+
+    switch (newStatus) {
+      case 'PAID':
+        updateData.paid_at = now;
+        updateData.pg_transaction_id = paymentId;
+        break;
+      case 'CANCELLED':
+        updateData.cancelled_at = data.cancelledAt || now;
+        updateData.cancel_reason = data.cancelReason || 'Cancelled via payment gateway';
+        break;
+      case 'REFUNDED':
+        updateData.cancelled_at = now;
+        updateData.cancel_reason = data.cancelReason || 'Refunded via payment gateway';
+        break;
+    }
+
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', order.id);
+
+    if (updateError) {
+      console.error('Webhook: Failed to update order:', updateError);
+      // Still return 200 so PortOne doesn't retry indefinitely
+      return NextResponse.json({
+        received: true,
+        processed: false,
+        reason: 'Failed to update order',
+      });
+    }
+
+    // If cancelled or refunded, also update conversion records
+    if (newStatus === 'CANCELLED' || newStatus === 'REFUNDED') {
+      const { error: conversionError } = await supabase
+        .from('conversions')
+        .update({ status: 'CANCELLED' })
+        .eq('order_id', order.id);
+
+      if (conversionError) {
+        console.error('Webhook: Failed to cancel conversions:', conversionError);
+      }
+    }
+
+    console.log(
+      `Webhook processed: order=${order.order_number}, event=${eventType}, newStatus=${newStatus}`
+    );
+
+    return NextResponse.json({
+      received: true,
+      processed: true,
+      orderNumber: order.order_number,
+      newStatus,
+    });
+  } catch (error: unknown) {
+    console.error('Webhook processing error:', error);
+    // Always return 200 for webhooks to prevent unnecessary retries
+    return NextResponse.json({
+      received: true,
+      processed: false,
+      reason: 'Internal processing error',
+    });
+  }
+}

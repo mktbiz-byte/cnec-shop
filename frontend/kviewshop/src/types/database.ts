@@ -12,7 +12,7 @@ export type CampaignStatus = 'DRAFT' | 'RECRUITING' | 'ACTIVE' | 'ENDED';
 export type RecruitmentType = 'OPEN' | 'APPROVAL';
 export type ParticipationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type ShopItemType = 'GONGGU' | 'PICK';
-export type OrderStatus = 'PAID' | 'SHIPPING' | 'DELIVERED' | 'CONFIRMED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'PAID' | 'PREPARING' | 'SHIPPING' | 'DELIVERED' | 'CONFIRMED' | 'CANCELLED' | 'REFUNDED';
 export type ConversionType = 'DIRECT' | 'INDIRECT';
 export type ConversionStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 export type SettlementStatus = 'PENDING' | 'COMPLETED' | 'CARRIED_OVER';
@@ -20,6 +20,10 @@ export type SkinType = 'combination' | 'dry' | 'oily' | 'normal' | 'oily_sensiti
 export type PersonalColor = 'spring_warm' | 'summer_cool' | 'autumn_warm' | 'winter_cool';
 export type ProductCategory = 'skincare' | 'makeup' | 'hair' | 'body' | 'etc';
 export type ProductStatus = 'ACTIVE' | 'INACTIVE';
+export type ShippingFeeType = 'FREE' | 'PAID' | 'CONDITIONAL_FREE';
+export type BannerType = 'HORIZONTAL' | 'VERTICAL';
+export type BannerLinkType = 'EXTERNAL' | 'COLLECTION' | 'PRODUCT';
+export type NotificationType = 'ORDER' | 'SHIPPING' | 'SETTLEMENT' | 'CAMPAIGN' | 'SYSTEM';
 
 // =============================================
 // CORE TABLES
@@ -44,12 +48,20 @@ export interface Brand {
   brand_name: string;
   logo_url?: string;
   business_number?: string;
+  representative_name?: string;
+  business_registration_url?: string;
   bank_name?: string;
   bank_account?: string;
+  bank_holder?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  default_shipping_fee?: number;
+  free_shipping_threshold?: number;
+  default_courier?: string;
+  return_address?: string;
+  exchange_policy?: string;
   platform_fee_rate: number;
   description?: string;
-  contact_email?: string;
-  contact_phone?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -91,9 +103,16 @@ export interface Product {
   sale_price: number;
   stock: number;
   images: string[];
+  thumbnail_url?: string;
   volume?: string;
   ingredients?: string;
-  how_to_use?: string;
+  usage_info?: string;
+  shipping_fee_type: ShippingFeeType;
+  shipping_fee?: number;
+  free_shipping_threshold?: number;
+  courier?: string;
+  shipping_info?: string;
+  return_policy?: string;
   status: ProductStatus;
   allow_creator_pick: boolean;
   default_commission_rate: number;
@@ -191,18 +210,47 @@ export interface BeautyRoutine {
   id: string;
   creator_id: string;
   name: string;
-  steps: RoutineStep[];
+  is_visible: boolean;
+  display_order: number;
+  created_at: string;
+  // Joined
+  steps?: RoutineStep[];
+}
+
+export interface RoutineStep {
+  id: string;
+  routine_id: string;
+  step_name: string;
+  step_description: string;
+  image_url?: string;
+  link_url?: string;
+  product_tags?: { product_id: string; x: number; y: number }[];
+  display_order: number;
+  // Joined
+  product?: Product;
+}
+
+export interface Banner {
+  id: string;
+  creator_id: string;
+  image_url: string;
+  banner_type: BannerType;
+  link_url?: string;
+  link_type: BannerLinkType;
   is_visible: boolean;
   display_order: number;
   created_at: string;
 }
 
-export interface RoutineStep {
-  name: string;
-  description: string;
-  image_url?: string;
-  product_id?: string;
-  product?: Product;
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  link_url?: string;
+  is_read: boolean;
+  created_at: string;
 }
 
 // =============================================
@@ -214,20 +262,29 @@ export interface Order {
   order_number: string;
   creator_id: string;
   brand_id: string;
+  buyer_id?: string;
   buyer_name: string;
   buyer_phone: string;
   buyer_email: string;
   shipping_address: string;
   shipping_detail?: string;
   shipping_zipcode?: string;
+  shipping_memo?: string;
   total_amount: number;
+  product_amount?: number;
   shipping_fee: number;
+  payment_method?: string;
+  pg_transaction_id?: string;
+  pg_provider?: string;
   status: OrderStatus;
+  courier_code?: string;
   tracking_number?: string;
   paid_at?: string;
   shipped_at?: string;
   delivered_at?: string;
   confirmed_at?: string;
+  cancelled_at?: string;
+  cancel_reason?: string;
   created_at: string;
   updated_at?: string;
   // Joined
@@ -390,11 +447,14 @@ export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
 };
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING: '결제대기',
   PAID: '결제완료',
+  PREPARING: '배송준비',
   SHIPPING: '배송중',
   DELIVERED: '배송완료',
   CONFIRMED: '구매확정',
   CANCELLED: '취소',
+  REFUNDED: '환불',
 };
 
 export const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
@@ -402,6 +462,21 @@ export const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
   RECRUITING: '모집중',
   ACTIVE: '진행중',
   ENDED: '종료',
+};
+
+export const SHIPPING_FEE_TYPE_LABELS: Record<ShippingFeeType, string> = {
+  FREE: '무료배송',
+  PAID: '유료배송',
+  CONDITIONAL_FREE: '조건부 무료',
+};
+
+export const COURIER_LABELS: Record<string, string> = {
+  cj: 'CJ대한통운',
+  hanjin: '한진택배',
+  logen: '로젠택배',
+  epost: '우체국택배',
+  lotte: '롯데택배',
+  etc: '기타',
 };
 
 // =============================================
@@ -485,6 +560,26 @@ export interface Database {
         Row: PromotionKit;
         Insert: Omit<PromotionKit, 'id'>;
         Update: Partial<Omit<PromotionKit, 'id'>>;
+      };
+      beauty_routines: {
+        Row: BeautyRoutine;
+        Insert: Omit<BeautyRoutine, 'id' | 'created_at'>;
+        Update: Partial<Omit<BeautyRoutine, 'id'>>;
+      };
+      routine_steps: {
+        Row: RoutineStep;
+        Insert: Omit<RoutineStep, 'id'>;
+        Update: Partial<Omit<RoutineStep, 'id'>>;
+      };
+      banners: {
+        Row: Banner;
+        Insert: Omit<Banner, 'id' | 'created_at'>;
+        Update: Partial<Omit<Banner, 'id'>>;
+      };
+      notifications: {
+        Row: Notification;
+        Insert: Omit<Notification, 'id' | 'created_at'>;
+        Update: Partial<Omit<Notification, 'id'>>;
       };
     };
   };

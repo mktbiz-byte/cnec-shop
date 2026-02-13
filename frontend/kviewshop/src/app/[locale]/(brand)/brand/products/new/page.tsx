@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/auth';
-import type { ProductCategory } from '@/types/database';
-import { PRODUCT_CATEGORY_LABELS } from '@/types/database';
+import type { ProductCategory, ShippingFeeType } from '@/types/database';
+import { PRODUCT_CATEGORY_LABELS, SHIPPING_FEE_TYPE_LABELS } from '@/types/database';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,6 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
+const COURIERS = [
+  { code: 'cj', name: 'CJ대한통운' },
+  { code: 'hanjin', name: '한진택배' },
+  { code: 'logen', name: '로젠택배' },
+  { code: 'epost', name: '우체국택배' },
+  { code: 'lotte', name: '롯데택배' },
+  { code: 'etc', name: '기타' },
+];
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -47,6 +57,17 @@ export default function NewProductPage() {
   const [volume, setVolume] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [howToUse, setHowToUse] = useState('');
+
+  // Thumbnail
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+
+  // Shipping info
+  const [shippingFeeType, setShippingFeeType] = useState<ShippingFeeType>('FREE');
+  const [shippingFee, setShippingFee] = useState('');
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState('');
+  const [courier, setCourier] = useState('');
+  const [shippingInfo, setShippingInfo] = useState('');
+  const [returnPolicy, setReturnPolicy] = useState('');
 
   // Sales settings
   const [isActive, setIsActive] = useState(true);
@@ -101,9 +122,19 @@ export default function NewProductPage() {
       sale_price: Number(salePrice),
       stock: Number(stock),
       images,
+      thumbnail_url: thumbnailUrl.trim() || null,
       volume: volume.trim() || null,
       ingredients: ingredients.trim() || null,
       how_to_use: howToUse.trim() || null,
+      shipping_fee_type: shippingFeeType,
+      shipping_fee: shippingFeeType !== 'FREE' ? Number(shippingFee) || 0 : 0,
+      free_shipping_threshold:
+        shippingFeeType === 'CONDITIONAL_FREE'
+          ? Number(freeShippingThreshold) || 0
+          : null,
+      courier: courier || null,
+      shipping_info: shippingInfo.trim() || null,
+      return_policy: returnPolicy.trim() || null,
       status: isActive ? 'ACTIVE' : 'INACTIVE',
       allow_creator_pick: allowCreatorPick,
       default_commission_rate: Number(commissionRate),
@@ -283,6 +314,131 @@ export default function NewProductPage() {
               value={howToUse}
               onChange={(e) => setHowToUse(e.target.value)}
               placeholder="사용 방법을 입력하세요"
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Thumbnail */}
+      <Card>
+        <CardHeader>
+          <CardTitle>대표 이미지</CardTitle>
+          <CardDescription>
+            상품 목록에 표시될 대표 썸네일 이미지를 설정하세요.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="thumbnailUrl">대표 이미지 URL</Label>
+            <Input
+              id="thumbnailUrl"
+              value={thumbnailUrl}
+              onChange={(e) => setThumbnailUrl(e.target.value)}
+              placeholder="https://example.com/thumbnail.jpg"
+            />
+            <p className="text-xs text-muted-foreground">
+              상품 카드에 표시될 썸네일 이미지 URL을 입력하세요. 비워두면 대표 이미지가 사용됩니다.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Shipping Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>배송 정보</CardTitle>
+          <CardDescription>
+            배송비, 택배사, 교환/환불 정책을 설정하세요.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <Label>배송비 유형 *</Label>
+            <RadioGroup
+              value={shippingFeeType}
+              onValueChange={(value) => setShippingFeeType(value as ShippingFeeType)}
+              className="flex flex-wrap gap-4"
+            >
+              {Object.entries(SHIPPING_FEE_TYPE_LABELS).map(([value, label]) => (
+                <div key={value} className="flex items-center space-x-2">
+                  <RadioGroupItem value={value} id={`shipping-type-${value}`} />
+                  <Label htmlFor={`shipping-type-${value}`} className="font-normal cursor-pointer">
+                    {label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
+
+          {(shippingFeeType === 'PAID' || shippingFeeType === 'CONDITIONAL_FREE') && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="shippingFee">배송비 (원)</Label>
+                <Input
+                  id="shippingFee"
+                  type="number"
+                  min="0"
+                  value={shippingFee}
+                  onChange={(e) => setShippingFee(e.target.value)}
+                  placeholder="3000"
+                />
+              </div>
+              {shippingFeeType === 'CONDITIONAL_FREE' && (
+                <div className="space-y-2">
+                  <Label htmlFor="freeShippingThreshold">무료배송 기준 금액 (원)</Label>
+                  <Input
+                    id="freeShippingThreshold"
+                    type="number"
+                    min="0"
+                    value={freeShippingThreshold}
+                    onChange={(e) => setFreeShippingThreshold(e.target.value)}
+                    placeholder="50000"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    이 금액 이상 주문 시 배송비가 무료가 됩니다.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label htmlFor="courier">택배사</Label>
+            <Select value={courier} onValueChange={setCourier}>
+              <SelectTrigger className="w-full sm:w-[250px]">
+                <SelectValue placeholder="택배사 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {COURIERS.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shippingInfo">배송 안내</Label>
+            <Textarea
+              id="shippingInfo"
+              value={shippingInfo}
+              onChange={(e) => setShippingInfo(e.target.value)}
+              placeholder="예상 배송일, 주의사항 등을 입력하세요"
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="returnPolicy">교환/환불 정책</Label>
+            <Textarea
+              id="returnPolicy"
+              value={returnPolicy}
+              onChange={(e) => setReturnPolicy(e.target.value)}
+              placeholder="교환 및 환불 관련 정책을 입력하세요"
               rows={3}
             />
           </div>

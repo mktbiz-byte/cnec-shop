@@ -329,10 +329,16 @@ export function ProductDetailPage({
           </button>
           {shippingOpen && (
             <div className="px-4 pb-4 text-sm text-muted-foreground space-y-2">
-              <p>- 배송비: 3,000원 (50,000원 이상 무료배송)</p>
-              <p>- 배송기간: 결제 후 2~5일 이내 배송</p>
-              <p>- 공구 상품의 경우 캠페인 종료 후 일괄 배송될 수 있습니다.</p>
-              <p>- 제주/도서산간 지역은 추가 배송비가 발생할 수 있습니다.</p>
+              {(product as any).shipping_info ? (
+                <p>{(product as any).shipping_info}</p>
+              ) : (
+                <>
+                  <p>- 배송비: {(product as any).shipping_fee_type === 'FREE' ? '무료배송' : (product as any).shipping_fee_type === 'CONDITIONAL_FREE' ? `${formatKRW((product as any).free_shipping_threshold || 50000)} 이상 무료배송 (기본 ${formatKRW((product as any).shipping_fee || 3000)})` : `${formatKRW((product as any).shipping_fee || 3000)}`}</p>
+                  <p>- 배송기간: 결제 후 2~5일 이내 배송</p>
+                  <p>- 공구 상품의 경우 캠페인 종료 후 일괄 배송될 수 있습니다.</p>
+                  <p>- 제주/도서산간 지역은 추가 배송비가 발생할 수 있습니다.</p>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -355,11 +361,17 @@ export function ProductDetailPage({
           </button>
           {returnOpen && (
             <div className="px-4 pb-4 text-sm text-muted-foreground space-y-2">
-              <p>- 상품 수령 후 7일 이내 교환/환불 가능</p>
-              <p>- 고객 변심에 의한 반품 시 왕복 배송비 부담</p>
-              <p>- 상품 하자 시 배송비 포함 100% 환불</p>
-              <p>- 사용 또는 개봉한 상품은 교환/환불이 불가합니다.</p>
-              <p>- 공구 특가 상품은 교환/환불 정책이 다를 수 있습니다.</p>
+              {(product as any).return_policy ? (
+                <p>{(product as any).return_policy}</p>
+              ) : (
+                <>
+                  <p>- 상품 수령 후 7일 이내 교환/환불 가능</p>
+                  <p>- 고객 변심에 의한 반품 시 왕복 배송비 부담</p>
+                  <p>- 상품 하자 시 배송비 포함 100% 환불</p>
+                  <p>- 사용 또는 개봉한 상품은 교환/환불이 불가합니다.</p>
+                  <p>- 공구 특가 상품은 교환/환불 정책이 다를 수 있습니다.</p>
+                </>
+              )}
             </div>
           )}
         </div>
