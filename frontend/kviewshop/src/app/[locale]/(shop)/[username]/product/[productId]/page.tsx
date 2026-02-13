@@ -72,23 +72,46 @@ async function getCampaignProduct(productId: string, campaignId: string) {
 
 export async function generateMetadata({ params, searchParams }: ProductPageProps): Promise<Metadata> {
   const { productId, username } = await params;
-  const product = await getProduct(productId);
+  const { campaign: campaignId } = await searchParams;
+  const [product, creator] = await Promise.all([
+    getProduct(productId),
+    getCreatorByShopId(username),
+  ]);
 
   if (!product) {
     return { title: 'Product Not Found' };
   }
 
+  const brandName = product.brand?.brand_name || '';
+  const shopName = creator?.display_name || username;
+  const discountPercent = product.original_price > product.sale_price
+    ? Math.round(((product.original_price - product.sale_price) / product.original_price) * 100)
+    : 0;
+  const priceText = new Intl.NumberFormat('ko-KR').format(product.sale_price);
+  const titleSuffix = discountPercent > 0 ? ` - ${discountPercent}% OFF` : '';
+  const ogTitle = `${product.name}${titleSuffix} — ${shopName}`;
+  const ogDesc = `${brandName} ${product.name} ${priceText}원`;
+  const ogImage = (product as any).thumbnail_url || product.images?.[0];
+
   return {
-    title: `${product.name} | CNEC`,
-    description: product.description
-      ? product.description.replace(/<[^>]*>/g, '').substring(0, 160)
-      : `${product.name} - CNEC Commerce`,
+    title: `${product.name}${titleSuffix} | CNEC`,
+    description: ogDesc,
     openGraph: {
-      title: `${product.name} | CNEC Commerce`,
-      description: product.description
-        ? product.description.replace(/<[^>]*>/g, '').substring(0, 160)
-        : `${product.name}`,
-      images: product.images?.[0] ? [product.images[0]] : [],
+      title: ogTitle,
+      description: ogDesc,
+      images: ogImage ? [{ url: ogImage, width: 1200, height: 1200 }] : [],
+      type: 'website',
+      siteName: 'CNEC Commerce',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description: ogDesc,
+      images: ogImage ? [ogImage] : [],
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

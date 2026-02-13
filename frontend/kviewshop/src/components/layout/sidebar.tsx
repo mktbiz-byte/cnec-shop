@@ -19,6 +19,9 @@ import {
   TrendingUp,
   Palette,
   FolderHeart,
+  Sparkles,
+  ImageIcon,
+  Bell,
 } from 'lucide-react';
 import type { UserRole } from '@/types/database';
 import type { Locale } from '@/lib/i18n/config';
@@ -98,6 +101,8 @@ export function Sidebar({ role, locale }: SidebarProps) {
             items: [
               { title: '샵 정보', href: `${base}/creator/shop`, icon: Palette },
               { title: '컬렉션 관리', href: `${base}/creator/collections`, icon: FolderHeart },
+              { title: '뷰티 루틴', href: `${base}/creator/routines`, icon: Sparkles },
+              { title: '배너 관리', href: `${base}/creator/banners`, icon: ImageIcon },
             ],
           },
           {
@@ -107,10 +112,12 @@ export function Sidebar({ role, locale }: SidebarProps) {
               { title: '내 캠페인', href: `${base}/creator/campaigns/my`, icon: Store },
             ],
           },
+          { items: [{ title: '주문 현황', href: `${base}/creator/orders`, icon: ShoppingCart }] },
           {
             items: [
               { title: '판매 현황', href: `${base}/creator/sales`, icon: TrendingUp },
               { title: '정산 관리', href: `${base}/creator/settlements`, icon: DollarSign },
+              { title: '알림', href: `${base}/creator/notifications`, icon: Bell },
               { title: '설정', href: `${base}/creator/settings`, icon: Settings },
             ],
           },

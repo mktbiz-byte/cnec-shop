@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
   CardContent,
@@ -33,6 +34,18 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+
+const COURIERS = [
+  { code: 'cj', name: 'CJ대한통운' },
+  { code: 'hanjin', name: '한진택배' },
+  { code: 'logen', name: '로젠택배' },
+  { code: 'epost', name: '우체국택배' },
+  { code: 'lotte', name: '롯데택배' },
+];
+
+const COURIER_MAP: Record<string, string> = Object.fromEntries(
+  COURIERS.map((c) => [c.code, c.name])
+);
 
 interface OrderWithDetails extends Order {
   items?: (OrderItem & { product?: { name: string } })[];
@@ -59,6 +72,8 @@ function getStatusVariant(
   switch (status) {
     case 'PAID':
       return 'default';
+    case 'PREPARING':
+      return 'default';
     case 'SHIPPING':
       return 'secondary';
     case 'DELIVERED':
@@ -67,22 +82,37 @@ function getStatusVariant(
       return 'outline';
     case 'CANCELLED':
       return 'destructive';
+    case 'REFUNDED':
+      return 'destructive';
     default:
       return 'outline';
   }
 }
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
-  PAID: 'SHIPPING',
+  PAID: 'PREPARING',
+  PREPARING: 'SHIPPING',
   SHIPPING: 'DELIVERED',
   DELIVERED: 'CONFIRMED',
 };
 
 const NEXT_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
-  PAID: '배송 시작',
+  PAID: '배송준비',
+  PREPARING: '배송 시작',
   SHIPPING: '배송완료 처리',
   DELIVERED: '구매확정 처리',
 };
+
+// Status filter tabs for quick filtering
+const STATUS_FILTER_TABS: { value: string; label: string }[] = [
+  { value: 'ALL', label: '전체' },
+  { value: 'PAID', label: '결제완료' },
+  { value: 'PREPARING', label: '배송준비' },
+  { value: 'SHIPPING', label: '배송중' },
+  { value: 'DELIVERED', label: '배송완료' },
+  { value: 'CONFIRMED', label: '구매확정' },
+  { value: 'CANCELLED', label: '취소' },
+];
 
 function TableSkeleton() {
   return (
@@ -103,6 +133,15 @@ export default function BrandOrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [trackingInputs, setTrackingInputs] = useState<
     Record<string, string>
+  >({});
+  const [courierInputs, setCourierInputs] = useState<
+    Record<string, string>
+  >({});
+  const [cancelReasonInputs, setCancelReasonInputs] = useState<
+    Record<string, string>
+  >({});
+  const [showCancelForm, setShowCancelForm] = useState<
+    Record<string, boolean>
   >({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -141,11 +180,19 @@ export default function BrandOrdersPage() {
     const supabase = getClient();
 
     const updateData: Record<string, unknown> = { status: newStatus };
+
+    if (newStatus === 'PREPARING') {
+      // Transition from PAID to PREPARING
+    }
     if (newStatus === 'SHIPPING') {
       updateData.shipped_at = new Date().toISOString();
       const trackingNumber = trackingInputs[orderId];
       if (trackingNumber) {
         updateData.tracking_number = trackingNumber;
+      }
+      const courierCode = courierInputs[orderId];
+      if (courierCode) {
+        updateData.courier_code = courierCode;
       }
     }
     if (newStatus === 'DELIVERED') {
@@ -170,6 +217,83 @@ export default function BrandOrdersPage() {
                 ...(updateData.tracking_number
                   ? { tracking_number: updateData.tracking_number as string }
                   : {}),
+                ...(updateData.courier_code
+                  ? { courier_code: updateData.courier_code as string }
+                  : {}),
+              }
+            : o
+        )
+      );
+    }
+    setUpdatingId(null);
+  }
+
+  async function handleCancelOrder(orderId: string) {
+    const cancelReason = cancelReasonInputs[orderId]?.trim();
+    if (!cancelReason) return;
+
+    setUpdatingId(orderId);
+    const supabase = getClient();
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'CANCELLED',
+        cancelled_at: new Date().toISOString(),
+        cancel_reason: cancelReason,
+      })
+      .eq('id', orderId);
+
+    if (!error) {
+      setOrders(
+        orders.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'CANCELLED' as OrderStatus,
+                cancel_reason: cancelReason,
+              }
+            : o
+        )
+      );
+      setShowCancelForm({ ...showCancelForm, [orderId]: false });
+      setCancelReasonInputs({ ...cancelReasonInputs, [orderId]: '' });
+    }
+    setUpdatingId(null);
+  }
+
+  async function handleShippingStart(orderId: string) {
+    const trackingNumber = trackingInputs[orderId];
+    const courierCode = courierInputs[orderId];
+
+    if (!trackingNumber?.trim()) return;
+
+    setUpdatingId(orderId);
+    const supabase = getClient();
+
+    const updateData: Record<string, unknown> = {
+      status: 'SHIPPING',
+      shipped_at: new Date().toISOString(),
+      tracking_number: trackingNumber.trim(),
+    };
+    if (courierCode) {
+      updateData.courier_code = courierCode;
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', orderId);
+
+    if (!error) {
+      setOrders(
+        orders.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: 'SHIPPING' as OrderStatus,
+                tracking_number: trackingNumber.trim(),
+                ...(courierCode ? { courier_code: courierCode } : {}),
               }
             : o
         )
@@ -180,18 +304,32 @@ export default function BrandOrdersPage() {
 
   async function handleTrackingSave(orderId: string) {
     const trackingNumber = trackingInputs[orderId];
+    const courierCode = courierInputs[orderId];
     if (!trackingNumber) return;
 
     const supabase = getClient();
+    const updateData: Record<string, unknown> = {
+      tracking_number: trackingNumber,
+    };
+    if (courierCode) {
+      updateData.courier_code = courierCode;
+    }
+
     const { error } = await supabase
       .from('orders')
-      .update({ tracking_number: trackingNumber })
+      .update(updateData)
       .eq('id', orderId);
 
     if (!error) {
       setOrders(
         orders.map((o) =>
-          o.id === orderId ? { ...o, tracking_number: trackingNumber } : o
+          o.id === orderId
+            ? {
+                ...o,
+                tracking_number: trackingNumber,
+                ...(courierCode ? { courier_code: courierCode } : {}),
+              }
+            : o
         )
       );
     }
@@ -201,7 +339,7 @@ export default function BrandOrdersPage() {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   }
 
-  // Count by status
+  // Count by status (from all orders when filter is ALL, otherwise from fetched)
   const statusCounts = orders.reduce(
     (acc, o) => {
       acc[o.status] = (acc[o.status] || 0) + 1;
@@ -228,26 +366,23 @@ export default function BrandOrdersPage() {
         ))}
       </div>
 
-      {/* Filter */}
+      {/* Status filter tabs */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">주문 상태</span>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">전체</SelectItem>
-                {Object.entries(ORDER_STATUS_LABELS).map(
-                  ([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  )
-                )}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            {STATUS_FILTER_TABS.map((tab) => (
+              <Button
+                key={tab.value}
+                variant={statusFilter === tab.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter(tab.value)}
+              >
+                {tab.label}
+                {statusFilter === 'ALL' && tab.value !== 'ALL' && statusCounts[tab.value]
+                  ? ` (${statusCounts[tab.value]})`
+                  : ''}
+              </Button>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -282,12 +417,17 @@ export default function BrandOrdersPage() {
                     <TableHead>크리에이터</TableHead>
                     <TableHead className="text-right">금액</TableHead>
                     <TableHead>상태</TableHead>
+                    <TableHead>액션</TableHead>
                     <TableHead className="w-8" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => {
                     const isExpanded = expandedOrderId === order.id;
+                    const totalQuantity = (order.items ?? []).reduce(
+                      (sum, item) => sum + item.quantity,
+                      0
+                    );
                     return (
                       <>
                         <TableRow
@@ -312,16 +452,29 @@ export default function BrandOrdersPage() {
                                     외 {order.items.length - 1}건
                                   </span>
                                 )}
+                                <p className="text-xs text-muted-foreground">
+                                  수량: {totalQuantity}개
+                                </p>
                               </div>
                             ) : (
                               '-'
                             )}
                           </TableCell>
-                          <TableCell className="text-sm">
-                            {order.buyer_name}
+                          <TableCell>
+                            <div className="text-sm">{order.buyer_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {order.buyer_phone}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-sm">
-                            {order.creator?.display_name ?? '-'}
+                          <TableCell>
+                            <div className="text-sm">
+                              {order.creator?.display_name ?? '-'}
+                            </div>
+                            {order.creator && (
+                              <div className="text-xs text-muted-foreground">
+                                판매 경유
+                              </div>
+                            )}
                           </TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(order.total_amount)}
@@ -334,6 +487,43 @@ export default function BrandOrdersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            <div
+                              className="flex gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {(order.status === 'PAID' || order.status === 'PREPARING') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={updatingId === order.id}
+                                  onClick={() =>
+                                    handleStatusChange(
+                                      order.id,
+                                      NEXT_STATUS[order.status]!
+                                    )
+                                  }
+                                >
+                                  {NEXT_STATUS_LABEL[order.status]}
+                                </Button>
+                              )}
+                              {order.status === 'PAID' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={updatingId === order.id}
+                                  onClick={() =>
+                                    setShowCancelForm({
+                                      ...showCancelForm,
+                                      [order.id]: true,
+                                    })
+                                  }
+                                >
+                                  취소
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <span className="text-xs text-muted-foreground">
                               {isExpanded ? '▲' : '▼'}
                             </span>
@@ -343,9 +533,9 @@ export default function BrandOrdersPage() {
                         {/* Expanded detail row */}
                         {isExpanded && (
                           <TableRow key={`${order.id}-detail`}>
-                            <TableCell colSpan={8} className="bg-muted/30">
+                            <TableCell colSpan={9} className="bg-muted/30">
                               <div className="space-y-4 p-4">
-                                {/* Shipping info */}
+                                {/* Shipping address & Order items */}
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                   <div>
                                     <p className="text-sm font-medium">
@@ -402,75 +592,236 @@ export default function BrandOrdersPage() {
                                   </div>
                                 </div>
 
+                                {/* Tracking info display (when tracking_number exists) */}
+                                {order.tracking_number && (
+                                  <>
+                                    <Separator />
+                                    <div>
+                                      <p className="text-sm font-medium mb-1">
+                                        배송 추적 정보
+                                      </p>
+                                      <div className="text-sm text-muted-foreground space-y-0.5">
+                                        {order.courier_code && (
+                                          <p>
+                                            택배사:{' '}
+                                            {COURIER_MAP[order.courier_code] ?? order.courier_code}
+                                          </p>
+                                        )}
+                                        <p>송장번호: {order.tracking_number}</p>
+                                        {order.shipped_at && (
+                                          <p>발송일시: {formatDate(order.shipped_at)}</p>
+                                        )}
+                                        {order.delivered_at && (
+                                          <p>배송완료: {formatDate(order.delivered_at)}</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+
+                                {/* Cancel reason display */}
+                                {order.status === 'CANCELLED' && order.cancel_reason && (
+                                  <>
+                                    <Separator />
+                                    <div>
+                                      <p className="text-sm font-medium mb-1 text-destructive">
+                                        취소 사유
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {order.cancel_reason}
+                                      </p>
+                                    </div>
+                                  </>
+                                )}
+
                                 <Separator />
 
-                                {/* Tracking & Status Actions */}
-                                <div className="flex flex-wrap items-end gap-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs">송장번호</Label>
-                                    <Input
-                                      value={
-                                        trackingInputs[order.id] ??
-                                        order.tracking_number ??
-                                        ''
-                                      }
-                                      onChange={(e) =>
-                                        setTrackingInputs({
-                                          ...trackingInputs,
-                                          [order.id]: e.target.value,
-                                        })
-                                      }
-                                      placeholder="송장번호 입력"
-                                      className="w-56"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                  </div>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleTrackingSave(order.id);
-                                    }}
-                                  >
-                                    송장 저장
-                                  </Button>
+                                {/* Courier, Tracking & Shipping Actions */}
+                                {order.status !== 'CANCELLED' &&
+                                  order.status !== 'CONFIRMED' &&
+                                  order.status !== 'REFUNDED' && (
+                                    <div className="space-y-3">
+                                      <p className="text-sm font-medium">배송 처리</p>
+                                      <div className="flex flex-wrap items-end gap-3">
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">택배사</Label>
+                                          <Select
+                                            value={
+                                              courierInputs[order.id] ??
+                                              order.courier_code ??
+                                              ''
+                                            }
+                                            onValueChange={(value) =>
+                                              setCourierInputs({
+                                                ...courierInputs,
+                                                [order.id]: value,
+                                              })
+                                            }
+                                          >
+                                            <SelectTrigger
+                                              className="w-44"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <SelectValue placeholder="택배사 선택" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {COURIERS.map((c) => (
+                                                <SelectItem key={c.code} value={c.code}>
+                                                  {c.name}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs">송장번호</Label>
+                                          <Input
+                                            value={
+                                              trackingInputs[order.id] ??
+                                              order.tracking_number ??
+                                              ''
+                                            }
+                                            onChange={(e) =>
+                                              setTrackingInputs({
+                                                ...trackingInputs,
+                                                [order.id]: e.target.value,
+                                              })
+                                            }
+                                            placeholder="송장번호 입력"
+                                            className="w-56"
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                        </div>
 
-                                  {NEXT_STATUS[order.status] && (
-                                    <Button
-                                      size="sm"
-                                      disabled={updatingId === order.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChange(
-                                          order.id,
-                                          NEXT_STATUS[order.status]!
-                                        );
-                                      }}
-                                    >
-                                      {updatingId === order.id
-                                        ? '처리 중...'
-                                        : NEXT_STATUS_LABEL[order.status]}
-                                    </Button>
+                                        {/* Save tracking info button (for already-shipped orders) */}
+                                        {(order.status === 'SHIPPING' || order.status === 'DELIVERED') && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleTrackingSave(order.id);
+                                            }}
+                                          >
+                                            송장 저장
+                                          </Button>
+                                        )}
+
+                                        {/* "배송 시작" button: for PREPARING status, sets to SHIPPING with courier + tracking */}
+                                        {order.status === 'PREPARING' && (
+                                          <Button
+                                            size="sm"
+                                            disabled={
+                                              updatingId === order.id ||
+                                              !trackingInputs[order.id]?.trim()
+                                            }
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleShippingStart(order.id);
+                                            }}
+                                          >
+                                            {updatingId === order.id
+                                              ? '처리 중...'
+                                              : '배송 시작'}
+                                          </Button>
+                                        )}
+
+                                        {/* Status progression for other statuses */}
+                                        {NEXT_STATUS[order.status] &&
+                                          order.status !== 'PREPARING' && (
+                                            <Button
+                                              size="sm"
+                                              disabled={updatingId === order.id}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleStatusChange(
+                                                  order.id,
+                                                  NEXT_STATUS[order.status]!
+                                                );
+                                              }}
+                                            >
+                                              {updatingId === order.id
+                                                ? '처리 중...'
+                                                : NEXT_STATUS_LABEL[order.status]}
+                                            </Button>
+                                          )}
+                                      </div>
+                                    </div>
                                   )}
 
-                                  {order.status === 'PAID' && (
-                                    <Button
-                                      variant="destructive"
-                                      size="sm"
-                                      disabled={updatingId === order.id}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleStatusChange(
-                                          order.id,
-                                          'CANCELLED'
-                                        );
-                                      }}
-                                    >
-                                      주문 취소
-                                    </Button>
-                                  )}
-                                </div>
+                                {/* Cancel order form (for PAID status only) */}
+                                {order.status === 'PAID' && (
+                                  <>
+                                    <Separator />
+                                    <div className="space-y-3">
+                                      {!showCancelForm[order.id] ? (
+                                        <Button
+                                          variant="destructive"
+                                          size="sm"
+                                          disabled={updatingId === order.id}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowCancelForm({
+                                              ...showCancelForm,
+                                              [order.id]: true,
+                                            });
+                                          }}
+                                        >
+                                          주문 취소
+                                        </Button>
+                                      ) : (
+                                        <div
+                                          className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          <p className="text-sm font-medium text-destructive">
+                                            주문 취소
+                                          </p>
+                                          <Textarea
+                                            value={cancelReasonInputs[order.id] ?? ''}
+                                            onChange={(e) =>
+                                              setCancelReasonInputs({
+                                                ...cancelReasonInputs,
+                                                [order.id]: e.target.value,
+                                              })
+                                            }
+                                            placeholder="취소 사유를 입력하세요"
+                                            rows={2}
+                                          />
+                                          <div className="flex gap-2">
+                                            <Button
+                                              variant="destructive"
+                                              size="sm"
+                                              disabled={
+                                                updatingId === order.id ||
+                                                !cancelReasonInputs[order.id]?.trim()
+                                              }
+                                              onClick={() =>
+                                                handleCancelOrder(order.id)
+                                              }
+                                            >
+                                              {updatingId === order.id
+                                                ? '처리 중...'
+                                                : '취소 확인'}
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={() =>
+                                                setShowCancelForm({
+                                                  ...showCancelForm,
+                                                  [order.id]: false,
+                                                })
+                                              }
+                                            >
+                                              닫기
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
